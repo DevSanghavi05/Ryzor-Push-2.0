@@ -2,6 +2,7 @@
 
 import { askQuestionGetAnswer } from '@/ai/flows/ask-question-get-answer';
 import { getChunks } from '@/ai/flows/get-chunks-from-text';
+import { extractTextFromPdf } from '@/ai/flows/extract-text-from-pdf';
 import { redirect } from 'next/navigation';
 
 const initialState = {
@@ -22,12 +23,13 @@ export async function processPdf(prevState: typeof initialState, formData: FormD
   console.log(`Processing ${file.name}...`);
   
   try {
-    const pdf = (await import('pdf-parse')).default;
     const fileBuffer = Buffer.from(await file.arrayBuffer());
-    const pdfData = await pdf(fileBuffer);
+    const pdfBase64 = fileBuffer.toString('base64');
+
+    const { text } = await extractTextFromPdf({ pdfBase64 });
     
     const fileId = `doc-${Date.now()}`;
-    documentCache.set(fileId, pdfData.text);
+    documentCache.set(fileId, text);
     
     console.log(`Processing complete. File ID: ${fileId}`);
     
