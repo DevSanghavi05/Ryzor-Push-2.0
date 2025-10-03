@@ -1,7 +1,7 @@
 'use server';
 
 /**
- * @fileOverview An AI agent that extracts text from a PDF file.
+ * @fileOverview An AI agent that extracts text from a PDF file using a multimodal model.
  *
  * - extractTextFromPdf - A function that handles the PDF text extraction process.
  * - ExtractTextFromPdfInput - The input type for the extractTextFromPdf function.
@@ -12,7 +12,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const ExtractTextFromPdfInputSchema = z.object({
-  pdfBase64: z.string().describe("The PDF file encoded as a Base64 string."),
+  pdfDataUri: z.string().describe("A PDF file, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:application/pdf;base64,<encoded_data>'."),
 });
 export type ExtractTextFromPdfInput = z.infer<typeof ExtractTextFromPdfInputSchema>;
 
@@ -26,18 +26,23 @@ export async function extractTextFromPdf(input: ExtractTextFromPdfInput): Promis
   return extractTextFromPdfFlow(input);
 }
 
-
 const extractTextFromPdfFlow = ai.defineFlow(
   {
     name: 'extractTextFromPdfFlow',
     inputSchema: ExtractTextFromPdfInputSchema,
     outputSchema: ExtractTextFromPdfOutputSchema,
   },
-  async ({ pdfBase64 }) => {
-    // Use a robust dynamic import inside the flow to avoid build issues.
-    const pdf = (await import('pdf-parse/lib/pdf-parse.js')).default;
-    const pdfBuffer = Buffer.from(pdfBase64, 'base64');
-    const data = await pdf(pdfBuffer);
-    return { text: data.text };
+  async ({ pdfDataUri }) => {
+    const model = ai.getModel('googleai/gemini-2.5-flash');
+
+    const response = await ai.generate({
+      model,
+      prompt: [
+        { text: 'Extract all text from this PDF document.' },
+        { media: { url: pdfDataUri, contentType: 'application/pdf' } },
+      ],
+    });
+
+    return { text: response.text };
   }
 );

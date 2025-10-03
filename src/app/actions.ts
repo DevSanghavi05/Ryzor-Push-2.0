@@ -25,9 +25,10 @@ export async function processPdf(prevState: typeof initialState, formData: FormD
   try {
     const fileBuffer = Buffer.from(await file.arrayBuffer());
     const pdfBase64 = fileBuffer.toString('base64');
+    const pdfDataUri = `data:application/pdf;base64,${pdfBase64}`;
 
     // Call the reliable Genkit flow to extract text
-    const { text } = await extractTextFromPdf({ pdfBase64 });
+    const { text } = await extractTextFromPdf({ pdfDataUri });
     
     if (!text) {
       throw new Error("Failed to extract text from PDF.");
@@ -42,7 +43,7 @@ export async function processPdf(prevState: typeof initialState, formData: FormD
     redirect(`/chat/${fileId}`);
   } catch (error) {
     console.error('Error processing PDF:', error);
-    return { error: 'Failed to process the PDF file. It might be corrupted or protected.' };
+    return { error: 'Failed to process the PDF file. The AI could not extract text from it.' };
   }
 }
 
