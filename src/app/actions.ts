@@ -26,6 +26,7 @@ export async function processPdf(prevState: typeof initialState, formData: FormD
     const fileBuffer = Buffer.from(await file.arrayBuffer());
     const pdfBase64 = fileBuffer.toString('base64');
 
+    // Call the reliable Genkit flow to extract text
     const { text } = await extractTextFromPdf({ pdfBase64 });
     
     if (!text) {

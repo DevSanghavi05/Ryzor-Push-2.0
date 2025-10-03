@@ -34,6 +34,7 @@ const extractTextFromPdfFlow = ai.defineFlow(
     outputSchema: ExtractTextFromPdfOutputSchema,
   },
   async ({ pdfBase64 }) => {
+    // Use a robust dynamic import inside the flow to avoid build issues.
     const pdf = (await import('pdf-parse/lib/pdf-parse.js')).default;
     const pdfBuffer = Buffer.from(pdfBase64, 'base64');
     const data = await pdf(pdfBuffer);
