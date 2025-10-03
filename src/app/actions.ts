@@ -5,15 +5,11 @@ import { getChunks } from '@/ai/flows/get-chunks-from-text';
 import { extractTextFromPdf } from '@/ai/flows/extract-text-from-pdf';
 import { redirect } from 'next/navigation';
 
-const initialState = {
-  error: null as string | null,
-};
-
 // Simple in-memory cache for document text
 const documentCache = new Map<string, string>();
 
 
-export async function processPdf(prevState: typeof initialState, formData: FormData) {
+export async function processPdf(prevState: { error: string | null }, formData: FormData) {
   const file = formData.get('pdf') as File;
 
   if (!file || file.size === 0 || file.type !== 'application/pdf') {
@@ -28,7 +24,7 @@ export async function processPdf(prevState: typeof initialState, formData: FormD
     const pdfDataUri = `data:application/pdf;base64,${pdfBase64}`;
 
     // Call the reliable Genkit flow to extract text
-    const { text } = await extractTextFromPdf({ pdfDataUri });
+    const { text } = await extractTextFromPdf(pdfDataUri);
     
     if (!text) {
       throw new Error("Failed to extract text from PDF.");
