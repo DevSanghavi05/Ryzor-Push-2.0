@@ -1,6 +1,5 @@
 import { config } from 'dotenv';
 config();
 
-import '@/ai/flows/ask-question-get-answer.ts';
-import '@/ai/flows/get-chunks-from-text.ts';
-import '@/ai/flows/extract-text-from-pdf.ts';
+// The AI flows are now imported directly by server actions and should not be registered here
+// for the Next.js build to work correctly.
