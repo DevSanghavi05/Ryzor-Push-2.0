@@ -4,7 +4,7 @@ import { processPdf } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { FileUp, LoaderCircle, X, File as FileIcon } from 'lucide-react';
-import { useCallback, useRef, useState, useTransition, useActionState } from 'react';
+import { useCallback, useRef, useState, useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 
 const initialState = {
@@ -85,11 +85,18 @@ export function UploadForm() {
     }
   };
 
+  const handleFormAction = (formData: FormData) => {
+    if (file) {
+      formData.set('pdf', file);
+    }
+    formAction(formData);
+  }
+
 
   return (
     <Card className="w-full max-w-xl mx-auto bg-card/50 border-dashed border-2 border-border hover:border-primary transition-all duration-300">
       <CardContent className="p-4 md:p-6">
-        <form action={formAction} className="space-y-6" onDragEnter={handleDrag}>
+        <form action={handleFormAction} className="space-y-6" onDragEnter={handleDrag}>
           <input
             ref={fileInputRef}
             type="file"
@@ -108,6 +115,7 @@ export function UploadForm() {
               onDragLeave={handleDrag}
               onDragOver={handleDrag}
               onDrop={handleDrop}
+              onClick={onButtonClick}
             >
               <div className="flex flex-col items-center justify-center pt-5 pb-6">
                 <FileUp className="w-10 h-10 mb-3 text-muted-foreground" />
