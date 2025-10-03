@@ -2,11 +2,17 @@
 'use server';
 
 import { askQuestionGetAnswer } from '@/ai/flows/ask-question-get-answer';
+import { getChunks } from '@/ai/flows/get-chunks-from-text';
 import { redirect } from 'next/navigation';
+import pdf from 'pdf-parse';
 
 const initialState = {
   error: null as string | null,
 };
+
+// Simple in-memory cache for document text
+const documentCache = new Map<string, string>();
+
 
 export async function processPdf(prevState: typeof initialState, formData: FormData) {
   const file = formData.get('pdf') as File;
@@ -15,15 +21,23 @@ export async function processPdf(prevState: typeof initialState, formData: FormD
     return { error: 'Please select a valid PDF file.' };
   }
 
-  // Simulate upload and processing time
   console.log(`Processing ${file.name}...`);
-  await new Promise(resolve => setTimeout(resolve, 2500));
   
-  const fileId = `doc-${Date.now()}`;
-  console.log(`Processing complete. File ID: ${fileId}`);
-  
-  // Redirect to the chat page for the new document
-  redirect(`/chat/${fileId}`);
+  try {
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+    const pdfData = await pdf(fileBuffer);
+    
+    const fileId = `doc-${Date.now()}`;
+    documentCache.set(fileId, pdfData.text);
+    
+    console.log(`Processing complete. File ID: ${fileId}`);
+    
+    // Redirect to the chat page for the new document
+    redirect(`/chat/${fileId}`);
+  } catch (error) {
+    console.error('Error processing PDF:', error);
+    return { error: 'Failed to process the PDF file. It might be corrupted or protected.' };
+  }
 }
 
 
@@ -34,22 +48,25 @@ export async function askQuestion(fileId: string, question: string): Promise<{ s
   
   console.log(`Asking question about file ${fileId}: "${question}"`);
 
-  // In a real application, you would retrieve chunks from a vector database
-  // based on the fileId and question similarity.
-  // For this MVP, we use mocked chunks.
-  const relevantChunks = [
-    "Ryzor AI is an innovative platform designed to help users interact with their PDF documents through a conversational AI interface.",
-    "The core technology involves parsing PDF documents, splitting them into manageable text chunks, and then using Retrieval-Augmented Generation (RAG) to answer user questions.",
-    "The MVP (Minimum Viable Product) focuses on a single-file upload workflow. A user uploads a PDF, which is then processed on the backend. Once processed, the user can ask questions related to the document's content.",
-    "Future enhancements for Ryzor AI include multi-document chat, user authentication for private document storage, and providing source citations with answers to improve trustworthiness.",
-    "The AI model used is GPT-4o-mini, which offers a good balance of performance, intelligence, and cost-effectiveness for this application."
-  ];
+  const documentText = documentCache.get(fileId);
+
+  if (!documentText) {
+    return { success: false, error: 'Document not found. Please upload it again.' };
+  }
 
   try {
+    // 1. Get relevant chunks from the document
+    const { chunks } = await getChunks({
+      text: documentText,
+      query: question,
+    });
+    
+    // 2. Answer the question based on the chunks
     const result = await askQuestionGetAnswer({
       question: question,
-      relevantChunks: relevantChunks,
+      relevantChunks: chunks,
     });
+
     return { success: true, answer: result.answer };
   } catch (e) {
     console.error('AI Error:', e);
