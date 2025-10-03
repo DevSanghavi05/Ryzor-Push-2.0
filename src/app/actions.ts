@@ -15,15 +15,11 @@ export async function processPdf(prevState: { error: string | null }, formData: 
   if (!file || file.size === 0 || file.type !== 'application/pdf') {
     return { error: 'Please select a valid PDF file.' };
   }
-
-  console.log(`Processing ${file.name}...`);
   
   try {
     const fileBuffer = Buffer.from(await file.arrayBuffer());
-    const pdfBase64 = fileBuffer.toString('base64');
-    const pdfDataUri = `data:application/pdf;base64,${pdfBase64}`;
+    const pdfDataUri = `data:application/pdf;base64,${fileBuffer.toString('base64')}`;
 
-    // Call the reliable Genkit flow to extract text
     const { text } = await extractTextFromPdf(pdfDataUri);
     
     if (!text) {
@@ -33,9 +29,6 @@ export async function processPdf(prevState: { error: string | null }, formData: 
     const fileId = `doc-${Date.now()}`;
     documentCache.set(fileId, text);
     
-    console.log(`Processing complete. File ID: ${fileId}`);
-    
-    // Redirect to the chat page for the new document
     redirect(`/chat/${fileId}`);
   } catch (error) {
     console.error('Error processing PDF:', error);
@@ -49,8 +42,6 @@ export async function askQuestion(fileId: string, question: string): Promise<{ s
     return { success: false, error: 'Question cannot be empty.' };
   }
   
-  console.log(`Asking question about file ${fileId}: "${question}"`);
-
   const documentText = documentCache.get(fileId);
 
   if (!documentText) {

@@ -22,9 +22,6 @@ const GetChunksOutputSchema = z.object({
 });
 export type GetChunksOutput = z.infer<typeof GetChunksOutputSchema>;
 
-export async function getChunks(input: GetChunksInput): Promise<GetChunksOutput> {
-  return getChunksFlow(input);
-}
 
 const getChunksFlow = ai.defineFlow(
   {
@@ -76,3 +73,7 @@ const getChunksFlow = ai.defineFlow(
     return { chunks: relevantChunks };
   }
 );
+
+export async function getChunks(input: GetChunksInput): Promise<GetChunksOutput> {
+  return getChunksFlow(input);
+}

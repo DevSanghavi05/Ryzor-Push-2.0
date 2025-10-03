@@ -11,24 +11,18 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
-const ExtractTextFromPdfInputSchema = z.string().describe("A PDF file, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:application/pdf;base64,<encoded_data>'.");
-export type ExtractTextFromPdfInput = z.infer<typeof ExtractTextFromPdfInputSchema>;
-
-const ExtractTextFromPdfOutputSchema = z.object({
-  text: z.string().describe("The extracted text from the PDF."),
-});
-export type ExtractTextFromPdfOutput = z.infer<typeof ExtractTextFromPdfOutputSchema>;
-
-
-export async function extractTextFromPdf(input: ExtractTextFromPdfInput): Promise<ExtractTextFromPdfOutput> {
-  return extractTextFromPdfFlow(input);
-}
+type ExtractTextFromPdfInput = string;
+export type ExtractTextFromPdfOutput = {
+  text: string;
+};
 
 const extractTextFromPdfFlow = ai.defineFlow(
   {
     name: 'extractTextFromPdfFlow',
-    inputSchema: ExtractTextFromPdfInputSchema,
-    outputSchema: ExtractTextFromPdfOutputSchema,
+    inputSchema: z.string().describe("A PDF file, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:application/pdf;base64,<encoded_data>'."),
+    outputSchema: z.object({
+      text: z.string().describe("The extracted text from the PDF."),
+    }),
   },
   async (pdfDataUri) => {
     const model = ai.getModel('googleai/gemini-2.5-flash');
@@ -44,3 +38,7 @@ const extractTextFromPdfFlow = ai.defineFlow(
     return { text: response.text };
   }
 );
+
+export async function extractTextFromPdf(input: ExtractTextFromPdfInput): Promise<ExtractTextFromPdfOutput> {
+  return extractTextFromPdfFlow(input);
+}

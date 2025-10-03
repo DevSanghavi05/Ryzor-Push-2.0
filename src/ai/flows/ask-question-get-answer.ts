@@ -22,10 +22,6 @@ const AskQuestionGetAnswerOutputSchema = z.object({
 });
 export type AskQuestionGetAnswerOutput = z.infer<typeof AskQuestionGetAnswerOutputSchema>;
 
-export async function askQuestionGetAnswer(input: AskQuestionGetAnswerInput): Promise<AskQuestionGetAnswerOutput> {
-  return askQuestionGetAnswerFlow(input);
-}
-
 const prompt = ai.definePrompt({
   name: 'askQuestionGetAnswerPrompt',
   input: {schema: AskQuestionGetAnswerInputSchema},
@@ -53,3 +49,7 @@ const askQuestionGetAnswerFlow = ai.defineFlow(
     return output!;
   }
 );
+
+export async function askQuestionGetAnswer(input: AskQuestionGetAnswerInput): Promise<AskQuestionGetAnswerOutput> {
+  return askQuestionGetAnswerFlow(input);
+}

@@ -4,12 +4,8 @@ import { processPdf } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { FileUp, LoaderCircle, X, File as FileIcon } from 'lucide-react';
-import { useCallback, useRef, useState, useActionState } from 'react';
+import { useRef, useState, useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
-
-const initialState = {
-  error: null as string | null,
-};
 
 function SubmitButton({ hasFile }: { hasFile: boolean }) {
   const { pending } = useFormStatus();
@@ -29,6 +25,9 @@ function SubmitButton({ hasFile }: { hasFile: boolean }) {
 }
 
 export function UploadForm() {
+  const initialState = {
+    error: null as string | null,
+  };
   const [formState, formAction] = useActionState(processPdf, initialState);
   const [file, setFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
