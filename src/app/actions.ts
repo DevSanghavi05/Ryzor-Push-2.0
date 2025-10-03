@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use server';
 
 import { askQuestionGetAnswer } from '@/ai/flows/ask-question-get-answer';
