@@ -28,6 +28,10 @@ export async function processPdf(prevState: typeof initialState, formData: FormD
 
     const { text } = await extractTextFromPdf({ pdfBase64 });
     
+    if (!text) {
+      throw new Error("Failed to extract text from PDF.");
+    }
+    
     const fileId = `doc-${Date.now()}`;
     documentCache.set(fileId, text);
     
