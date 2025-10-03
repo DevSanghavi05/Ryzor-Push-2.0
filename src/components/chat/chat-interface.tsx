@@ -22,6 +22,7 @@ export function ChatInterface({ fileId }: { fileId: string }) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     // Scroll to the bottom when messages change
@@ -41,8 +42,8 @@ export function ChatInterface({ fileId }: { fileId: string }) {
     }])
   }, [])
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent<HTMLFormElement>) => {
+    e?.preventDefault();
     const question = input.trim();
     if (!question || isLoading) return;
 
@@ -105,7 +106,7 @@ export function ChatInterface({ fileId }: { fileId: string }) {
         </div>
       </ScrollArea>
       <div className="p-4 border-t bg-background">
-        <form onSubmit={handleSubmit} className="max-w-3xl mx-auto flex items-center gap-4">
+        <form ref={formRef} onSubmit={handleSubmit} className="max-w-3xl mx-auto flex items-center gap-4">
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -115,7 +116,7 @@ export function ChatInterface({ fileId }: { fileId: string }) {
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                handleSubmit(e.currentTarget.form as HTMLFormElement);
+                formRef.current?.requestSubmit();
               }
             }}
             disabled={isLoading}
