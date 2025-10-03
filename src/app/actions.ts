@@ -4,7 +4,6 @@
 import { askQuestionGetAnswer } from '@/ai/flows/ask-question-get-answer';
 import { getChunks } from '@/ai/flows/get-chunks-from-text';
 import { redirect } from 'next/navigation';
-import pdf from 'pdf-parse';
 
 const initialState = {
   error: null as string | null,
@@ -24,6 +23,7 @@ export async function processPdf(prevState: typeof initialState, formData: FormD
   console.log(`Processing ${file.name}...`);
   
   try {
+    const pdf = (await import('pdf-parse')).default;
     const fileBuffer = Buffer.from(await file.arrayBuffer());
     const pdfData = await pdf(fileBuffer);
     
