@@ -22,7 +22,6 @@ export async function processPdf(prevState: typeof initialState, formData: FormD
   console.log(`Processing ${file.name}...`);
   
   try {
-    // Correctly import and use the pdf-parse library
     const pdf = (await import('pdf-parse')).default;
     const fileBuffer = Buffer.from(await file.arrayBuffer());
     const pdfData = await pdf(fileBuffer);
