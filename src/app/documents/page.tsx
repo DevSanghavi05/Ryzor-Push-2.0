@@ -1,7 +1,6 @@
 'use client';
 
 import { Header } from '@/components/layout/header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, PlusCircle, Search } from 'lucide-react';
 import Link from 'next/link';
@@ -110,7 +109,7 @@ export default function DocumentsPage() {
                 <p className="text-muted-foreground mb-6 max-w-sm">
                   {searchQuery 
                     ? `Your search for "${searchQuery}" did not return any documents.`
-                    : 'Click the button below to upload your first document.'
+                    : 'Get started by uploading your first document.'
                   }
                 </p>
                 {!searchQuery && (
