@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { Paperclip, Send, BrainCircuit, Bot } from 'lucide-react';
+import { Paperclip, Send, BrainCircuit, Bot, Plus } from 'lucide-react';
 import { UploadForm } from '@/components/upload/upload-form';
 
 type Message = {
@@ -100,6 +100,12 @@ export function ChatInterface() {
             </Button>
           </CardContent>
         </Card>
+        <div className="mt-4 text-center">
+            <Button variant="ghost" onClick={() => setUploadOpen(true)}>
+                <Plus className="mr-2" />
+                Upload File
+            </Button>
+        </div>
       </div>
 
       <UploadForm open={isUploadOpen} onOpenChange={setUploadOpen} />
