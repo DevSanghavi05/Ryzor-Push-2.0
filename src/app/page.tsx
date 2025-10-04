@@ -8,10 +8,10 @@ export default function Home() {
       <main className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-2xl text-center">
           <h1 className="text-4xl md:text-6xl font-bold font-headline bg-clip-text text-transparent bg-gradient-to-br from-foreground to-muted-foreground mb-4 animate-fade-in-down">
-            Unlock Your Documents
+            Upload Your Document
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-12 animate-fade-in-up">
-            Upload a PDF and let Ryzor AI answer your questions. Simple, fast, and intelligent.
+            Start by uploading a PDF file. We will build from here.
           </p>
           <UploadForm />
         </div>
