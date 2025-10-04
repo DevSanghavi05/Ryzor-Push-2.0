@@ -2,18 +2,55 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { FileUp, LoaderCircle, X, File as FileIcon } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { FileUp, LoaderCircle, X, File as FileIcon, CheckCircle2 } from 'lucide-react';
+import { useRef, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Progress } from '@/components/ui/progress';
 
 export function UploadForm() {
   const [file, setFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isSuccess, setIsSuccess] = useState(false);
+
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isUploading) {
+      const startTime = Date.now();
+      const duration = 1000; // 1 second upload simulation
+      const updateProgress = () => {
+        const elapsedTime = Date.now() - startTime;
+        const progress = Math.min((elapsedTime / duration) * 100, 100);
+        setUploadProgress(progress);
+        if (progress < 100) {
+          requestAnimationFrame(updateProgress);
+        } else {
+            setIsUploading(false);
+            setIsSuccess(true);
+        }
+      };
+      requestAnimationFrame(updateProgress);
+    }
+
+    if(isSuccess) {
+        timer = setTimeout(() => {
+            router.push('/documents');
+        }, 1500);
+    }
+
+    return () => clearTimeout(timer);
+  }, [isUploading, isSuccess, router]);
 
   const handleFileChange = (selectedFile: File | null) => {
     setErrorMessage(null);
+    setIsSuccess(false);
+    setUploadProgress(0);
     if (selectedFile) {
       if (selectedFile.type === 'application/pdf') {
         setFile(selectedFile);
@@ -58,6 +95,8 @@ export function UploadForm() {
 
   const clearFile = () => {
     setFile(null);
+    setIsSuccess(false);
+    setUploadProgress(0);
     if (fileInputRef.current) {
         fileInputRef.current.value = "";
     }
@@ -69,13 +108,6 @@ export function UploadForm() {
 
     setIsUploading(true);
     setErrorMessage(null);
-
-    // Placeholder for future functionality
-    setTimeout(() => {
-        setIsUploading(false);
-        // We can add a success message here in the future
-        console.log("File selected:", file.name);
-    }, 1000);
   }
 
   return (
@@ -89,6 +121,7 @@ export function UploadForm() {
             accept="application/pdf"
             className="hidden"
             onChange={handleInputChange}
+            disabled={isUploading || isSuccess}
           />
           {!file ? (
             <div
@@ -114,7 +147,7 @@ export function UploadForm() {
                 <div className="flex items-center p-4 bg-background rounded-lg shadow-inner border max-w-md">
                     <FileIcon className="h-8 w-8 text-primary/80" />
                     <span className="ml-4 text-sm font-medium text-foreground truncate">{file.name}</span>
-                    <Button variant="ghost" size="icon" className="ml-4" onClick={clearFile} type="button">
+                    <Button variant="ghost" size="icon" className="ml-4" onClick={clearFile} type="button" disabled={isUploading || isSuccess}>
                         <X className="h-5 w-5" />
                     </Button>
                 </div>
@@ -122,16 +155,21 @@ export function UploadForm() {
           )}
 
           <div className="flex flex-col items-center gap-4">
-            <Button size="lg" type="submit" disabled={!file || isUploading} className="w-full md:w-auto">
-              {isUploading ? (
-                <>
-                  <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                  Uploading...
-                </>
-              ) : (
-                'Upload PDF'
-              )}
-            </Button>
+             { isUploading || (isSuccess && uploadProgress === 100) ? (
+                <Progress value={uploadProgress} className="w-full h-6 transition-all" />
+             ) : (
+                <Button size="lg" type="submit" disabled={!file || isUploading || isSuccess} className="w-full md:w-auto">
+                    Upload PDF
+                </Button>
+            )}
+
+            {isSuccess && (
+                <div className='flex items-center text-primary'>
+                    <CheckCircle2 className='mr-2' />
+                    <p>Upload successful! Redirecting...</p>
+                </div>
+            )}
+
             {errorMessage && (
               <p className="text-sm text-destructive">{errorMessage}</p>
             )}

@@ -5,7 +5,7 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-dvh bg-background">
       <Header />
-      <main className="flex-1 flex items-center justify-center p-4">
+      <main className="flex-1 flex items-center justify-center p-4 pt-16">
         <div className="w-full max-w-2xl text-center">
           <h1 className="text-4xl md:text-6xl font-bold font-headline bg-clip-text text-transparent bg-gradient-to-br from-foreground to-muted-foreground mb-4 animate-fade-in-down">
             Upload Your Document
