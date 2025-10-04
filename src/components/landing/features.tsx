@@ -26,14 +26,18 @@ export function Features() {
     <section className="container mx-auto py-12 px-4 md:px-6">
       <div className="text-center">
         <h2 className="text-3xl md:text-4xl font-bold font-headline">
-          The world's first AI-powered file storage platform
+          The World's First AI-Powered File Storage Platform
         </h2>
         <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
           Stop searching, start understanding. Ryzor AI transforms your static files into a dynamic knowledge base.
         </p>
       </div>
 
-      <div className="mt-12 grid gap-8 md:grid-cols-3">
+      <div className="w-full max-w-5xl mx-auto px-4 my-12">
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-border to-transparent" />
+      </div>
+
+      <div className="grid gap-8 md:grid-cols-3">
         {features.map((feature, index) => (
           <div key={index} className="animate-fade-in-up" style={{ animationDelay: `${index * 0.2}s`}}>
             <Card className="h-full text-center hover:border-primary/50 hover:shadow-lg transition-all">
