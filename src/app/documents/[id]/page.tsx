@@ -15,7 +15,6 @@ type Document = {
 };
 
 export default function DocumentPage({ params }: { params: { id: string } }) {
-  const { id } = params;
   const [document, setDocument] = useState<Document | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,7 +23,8 @@ export default function DocumentPage({ params }: { params: { id: string } }) {
       const storedDocuments: Document[] = JSON.parse(
         localStorage.getItem('documents') || '[]'
       );
-      const foundDocument = storedDocuments.find((doc) => doc.id === id);
+      // Access params.id directly inside the hook
+      const foundDocument = storedDocuments.find((doc) => doc.id === params.id);
       if (foundDocument) {
         setDocument(foundDocument);
       } else {
@@ -33,7 +33,7 @@ export default function DocumentPage({ params }: { params: { id: string } }) {
     } catch (e) {
       setError('Could not retrieve document from storage.');
     }
-  }, [id]);
+  }, [params.id]);
 
   return (
     <div className="flex flex-col min-h-dvh bg-background">
