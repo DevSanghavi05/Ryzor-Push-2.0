@@ -14,6 +14,7 @@ import {
     TableHeader,
     TableRow,
   } from "@/components/ui/table"
+import { useRouter } from 'next/navigation';
 
 type Document = {
   id: string;
@@ -26,6 +27,7 @@ export default function DocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     // This code now runs only on the client, preventing build errors.
@@ -86,12 +88,12 @@ export default function DocumentsPage() {
                     </TableHeader>
                     <TableBody>
                         {filteredDocuments.map((doc) => (
-                             <TableRow key={doc.id} className="hover:bg-accent/50">
+                             <TableRow key={doc.id} className="hover:bg-accent/50 cursor-pointer" onClick={() => router.push(`/documents/${doc.id}`)}>
                                 <TableCell className="font-medium">
-                                    <Link href={`/documents/${doc.id}`} className="flex items-center gap-3 group cursor-pointer">
+                                    <div className="flex items-center gap-3 group">
                                         <FileText className="w-5 h-5 text-primary" />
                                         <span className="truncate group-hover:underline">{doc.name}</span>
-                                    </Link>
+                                    </div>
                                 </TableCell>
                                 <TableCell className="text-muted-foreground">{getFileType(doc.name)}</TableCell>
                                 <TableCell className="text-muted-foreground">{new Date(doc.uploaded).toLocaleDateString()}</TableCell>
