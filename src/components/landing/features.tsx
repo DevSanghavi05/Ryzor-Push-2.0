@@ -26,7 +26,7 @@ export function Features() {
     <section className="container mx-auto py-12 px-4 md:px-6">
       <div className="text-center">
         <h2 className="text-3xl md:text-4xl font-bold font-headline">
-          The World's First AI-Powered File Holder
+          The world's first AI-powered file storage platform
         </h2>
         <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
           Stop searching, start understanding. Ryzor AI transforms your static files into a dynamic knowledge base.
