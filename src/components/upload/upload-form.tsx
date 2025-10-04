@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { FileUp, LoaderCircle, X, File as FileIcon, CheckCircle2 } from 'lucide-react';
+import { FileUp, X, File as FileIcon, CheckCircle2 } from 'lucide-react';
 import { useRef, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Progress } from '@/components/ui/progress';
@@ -33,6 +33,15 @@ export function UploadForm() {
         } else {
             setIsUploading(false);
             setIsSuccess(true);
+            if (file) {
+              const newDocument = {
+                id: new Date().toISOString(),
+                name: file.name,
+                uploaded: new Date().toISOString(),
+              };
+              const existingDocuments = JSON.parse(localStorage.getItem('documents') || '[]');
+              localStorage.setItem('documents', JSON.stringify([newDocument, ...existingDocuments]));
+            }
         }
       };
       requestAnimationFrame(updateProgress);
@@ -45,7 +54,7 @@ export function UploadForm() {
     }
 
     return () => clearTimeout(timer);
-  }, [isUploading, isSuccess, router]);
+  }, [isUploading, isSuccess, router, file]);
 
   const handleFileChange = (selectedFile: File | null) => {
     setErrorMessage(null);
