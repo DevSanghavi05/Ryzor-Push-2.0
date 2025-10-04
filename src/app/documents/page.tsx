@@ -11,6 +11,7 @@ type Document = {
   id: string;
   name: string;
   uploaded: string;
+  content: string; // Add content to the type
 };
 
 export default function DocumentsPage() {

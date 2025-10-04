@@ -19,9 +19,27 @@ export function UploadForm() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const router = useRouter();
 
+  const handleFileSave = (fileToSave: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const newDocument = {
+        id: new Date().toISOString(),
+        name: fileToSave.name,
+        uploaded: new Date().toISOString(),
+        content: e.target?.result, // This will be the data URI
+      };
+      const existingDocuments = JSON.parse(localStorage.getItem('documents') || '[]');
+      localStorage.setItem('documents', JSON.stringify([newDocument, ...existingDocuments]));
+      
+      setIsUploading(false);
+      setIsSuccess(true);
+    };
+    reader.readAsDataURL(fileToSave);
+  };
+
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    if (isUploading) {
+    if (isUploading && file) {
       const startTime = Date.now();
       const duration = 1000; // 1 second upload simulation
       const updateProgress = () => {
@@ -31,17 +49,7 @@ export function UploadForm() {
         if (progress < 100) {
           requestAnimationFrame(updateProgress);
         } else {
-            setIsUploading(false);
-            setIsSuccess(true);
-            if (file) {
-              const newDocument = {
-                id: new Date().toISOString(),
-                name: file.name,
-                uploaded: new Date().toISOString(),
-              };
-              const existingDocuments = JSON.parse(localStorage.getItem('documents') || '[]');
-              localStorage.setItem('documents', JSON.stringify([newDocument, ...existingDocuments]));
-            }
+            handleFileSave(file);
         }
       };
       requestAnimationFrame(updateProgress);
