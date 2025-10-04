@@ -86,12 +86,12 @@ export default function DocumentsPage() {
                     </TableHeader>
                     <TableBody>
                         {filteredDocuments.map((doc) => (
-                            <TableRow key={doc.id} className="hover:bg-accent/50 cursor-pointer">
+                             <TableRow key={doc.id} className="hover:bg-accent/50">
                                 <TableCell className="font-medium">
-                                    <div className="flex items-center gap-3">
+                                    <Link href={`/documents/${doc.id}`} className="flex items-center gap-3 group cursor-pointer">
                                         <FileText className="w-5 h-5 text-primary" />
-                                        <span className="truncate">{doc.name}</span>
-                                    </div>
+                                        <span className="truncate group-hover:underline">{doc.name}</span>
+                                    </Link>
                                 </TableCell>
                                 <TableCell className="text-muted-foreground">{getFileType(doc.name)}</TableCell>
                                 <TableCell className="text-muted-foreground">{new Date(doc.uploaded).toLocaleDateString()}</TableCell>
