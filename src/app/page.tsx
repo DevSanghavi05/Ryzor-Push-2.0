@@ -6,8 +6,10 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-dvh bg-background">
       <Header />
-      <main className="flex-1 flex flex-col p-4 pt-16 md:p-6 md:pt-20 gap-12">
-        <ChatInterface />
+      <main className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col items-center justify-center p-4 min-h-[calc(100vh-4rem)]">
+          <ChatInterface />
+        </div>
         <Features />
       </main>
     </div>

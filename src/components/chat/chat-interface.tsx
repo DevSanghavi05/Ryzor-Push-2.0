@@ -81,7 +81,7 @@ export function ChatInterface() {
 
       {/* Input Area */}
       <div className="mt-6">
-        <Card className="rounded-full p-2 shadow-lg border-2 border-border/50 focus-within:border-primary transition-all">
+        <Card className="rounded-full p-2 shadow-[0_0_20px_4px_hsl(var(--primary)/0.2)] border-border/50 focus-within:border-primary transition-all">
           <CardContent className="p-0 flex items-center">
             <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setUploadOpen(true)}>
               <Paperclip />
