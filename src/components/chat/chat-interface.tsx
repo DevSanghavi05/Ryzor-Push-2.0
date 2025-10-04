@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { Paperclip, Send, BrainCircuit, Bot, Plus } from 'lucide-react';
+import { Paperclip, Send, Bot, Plus } from 'lucide-react';
 import { UploadForm } from '@/components/upload/upload-form';
 
 type Message = {
@@ -22,7 +22,10 @@ export function ChatInterface() {
     if (inputValue.trim()) {
       setMessages([...messages, { sender: 'user', text: inputValue.trim() }]);
       setInputValue('');
-      // TODO: Add bot response logic
+      // Simulate bot response
+      setTimeout(() => {
+        setMessages(prev => [...prev, { sender: 'bot', text: 'This is a simulated response.'}]);
+      }, 1000)
     }
   };
 
@@ -37,16 +40,17 @@ export function ChatInterface() {
   };
 
   return (
-    <div className="flex flex-col h-full max-w-3xl mx-auto w-full flex-1">
+    <div className="flex flex-col h-full max-w-2xl mx-auto w-full flex-1">
+        <div className="flex flex-col items-center text-center mb-8">
+            <h1 className="text-5xl font-bold font-headline mb-2 bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/70">Ryzor AI</h1>
+            <p className="text-lg text-muted-foreground">Ask your PDFs anything in seconds</p>
+        </div>
+
       {/* Message Display Area */}
-      <div className="flex-1 overflow-y-auto pr-4 -mr-4">
+      <div className="flex-1 overflow-y-auto pr-4 -mr-4 h-64 min-h-64 bg-background/30 backdrop-blur-sm rounded-lg border p-4 shadow-inner">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className='p-4 bg-primary/10 rounded-full mb-4'>
-                <BrainCircuit className="w-12 h-12 text-primary" />
-            </div>
-            <h2 className="text-3xl font-bold font-headline">Ryzor AI</h2>
-            <p className="text-muted-foreground mt-2">
+             <p className="text-muted-foreground">
               Start by asking a question or upload a document to begin.
             </p>
           </div>
@@ -65,10 +69,10 @@ export function ChatInterface() {
                   </div>
                 )}
                 <div
-                  className={`px-4 py-3 rounded-2xl max-w-lg ${
+                  className={`px-4 py-3 rounded-2xl max-w-md ${
                     message.sender === 'user'
                       ? 'bg-primary text-primary-foreground rounded-br-none'
-                      : 'bg-muted text-muted-foreground rounded-bl-none'
+                      : 'bg-card text-card-foreground border rounded-bl-none'
                   }`}
                 >
                   <p className="text-sm">{message.text}</p>
@@ -81,14 +85,14 @@ export function ChatInterface() {
 
       {/* Input Area */}
       <div className="mt-6">
-        <Card className="rounded-full p-2 shadow-[0_0_20px_4px_hsl(var(--primary)/0.2)] border-border/50 focus-within:border-primary transition-all">
+        <Card className="rounded-full p-2 shadow-[0_0_25px_-5px_hsl(var(--primary)/0.3)] border-border/50 focus-within:border-primary transition-all bg-card/80 backdrop-blur-sm">
           <CardContent className="p-0 flex items-center">
             <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setUploadOpen(true)}>
               <Paperclip />
               <span className="sr-only">Upload Document</span>
             </Button>
             <Input
-              placeholder="Ask me anything about your document..."
+              placeholder="Ask me anything..."
               className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 text-base bg-transparent shadow-none"
               value={inputValue}
               onChange={handleInputChange}
