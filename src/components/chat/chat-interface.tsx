@@ -40,51 +40,45 @@ export function ChatInterface() {
   };
 
   return (
-    <div className="flex flex-col h-full max-w-2xl mx-auto w-full flex-1">
+    <div className="flex flex-col h-full max-w-2xl mx-auto w-full flex-1 justify-center">
         <div className="flex flex-col items-center text-center mb-8">
             <h1 className="text-5xl font-bold font-headline mb-2 bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/70">Ryzor AI</h1>
             <p className="text-lg text-muted-foreground">Ask your PDFs anything in seconds</p>
         </div>
 
-      {/* Message Display Area */}
-      <div className="flex-1 overflow-y-auto pr-4 -mr-4 h-64 min-h-64 bg-background/30 backdrop-blur-sm rounded-lg border p-4 shadow-inner">
-        {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-             <p className="text-muted-foreground">
-              Start by asking a question or upload a document to begin.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex items-start gap-3 ${
-                  message.sender === 'user' ? 'justify-end' : ''
-                }`}
-              >
-                {message.sender === 'bot' && (
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                    <Bot className="w-5 h-5 text-primary" />
-                  </div>
-                )}
+      {messages.length > 0 && (
+          <div className="flex-1 overflow-y-auto pr-4 -mr-4 h-64 min-h-64 bg-background/30 backdrop-blur-sm rounded-lg border p-4 shadow-inner mb-6">
+            <div className="space-y-6">
+              {messages.map((message, index) => (
                 <div
-                  className={`px-4 py-3 rounded-2xl max-w-md ${
-                    message.sender === 'user'
-                      ? 'bg-primary text-primary-foreground rounded-br-none'
-                      : 'bg-card text-card-foreground border rounded-bl-none'
+                  key={index}
+                  className={`flex items-start gap-3 ${
+                    message.sender === 'user' ? 'justify-end' : ''
                   }`}
                 >
-                  <p className="text-sm">{message.text}</p>
+                  {message.sender === 'bot' && (
+                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                      <Bot className="w-5 h-5 text-primary" />
+                    </div>
+                  )}
+                  <div
+                    className={`px-4 py-3 rounded-2xl max-w-md ${
+                      message.sender === 'user'
+                        ? 'bg-primary text-primary-foreground rounded-br-none'
+                        : 'bg-card text-card-foreground border rounded-bl-none'
+                    }`}
+                  >
+                    <p className="text-sm">{message.text}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+        </div>
+      )}
+
 
       {/* Input Area */}
-      <div className="mt-6">
+      <div className="mt-auto">
         <Card className="rounded-full p-2 shadow-[0_0_25px_-5px_hsl(var(--primary)/0.3)] border-border/50 focus-within:border-primary transition-all bg-card/80 backdrop-blur-sm">
           <CardContent className="p-0 flex items-center">
             <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setUploadOpen(true)}>
