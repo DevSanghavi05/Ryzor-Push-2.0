@@ -3,7 +3,6 @@
 import { Header } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
 import { ArrowLeft, ExternalLink } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { useParams } from 'next/navigation';
@@ -18,25 +17,23 @@ type Document = {
 export default function DocumentPage() {
   const params = useParams();
   const id = params.id as string;
-  const [document, setDocument] = useState<Document | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  let document: Document | null = null;
+  let error: string | null = null;
 
-  useEffect(() => {
-    if (!id) return;
-    try {
-      const storedDocuments: Document[] = JSON.parse(
-        localStorage.getItem('documents') || '[]'
-      );
-      const foundDocument = storedDocuments.find((doc) => doc.id === id);
-      if (foundDocument) {
-        setDocument(foundDocument);
-      } else {
-        setError('Document not found.');
-      }
-    } catch (e) {
-      setError('Could not retrieve document from storage.');
+  try {
+    const storedDocuments: Document[] = JSON.parse(
+      localStorage.getItem('documents') || '[]'
+    );
+    const foundDocument = storedDocuments.find((doc) => doc.id === id);
+    if (foundDocument) {
+      document = foundDocument;
+    } else {
+      error = 'Document not found.';
     }
-  }, [id]);
+  } catch (e) {
+    error = 'Could not retrieve document from storage.';
+  }
+
 
   return (
     <div className="flex flex-col min-h-dvh bg-background">
