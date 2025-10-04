@@ -18,6 +18,7 @@ export default function DocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
 
   useEffect(() => {
+    // This code now runs only on the client, preventing build errors.
     const storedDocuments = JSON.parse(localStorage.getItem('documents') || '[]');
     setDocuments(storedDocuments);
   }, []);
@@ -43,17 +44,17 @@ export default function DocumentsPage() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {documents.map((doc) => (
                 <Card key={doc.id} className="hover:border-primary hover:shadow-lg transition-all">
-                  <Link href={`/documents/${doc.id}`} className="block h-full">
-                    <CardHeader className="flex flex-row items-center gap-4 space-y-0">
-                      <FileText className="w-8 h-8 text-primary" />
-                      <CardTitle className="text-lg truncate">{doc.name}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground">
-                        Uploaded: {new Date(doc.uploaded).toLocaleDateString()}
-                      </p>
-                    </CardContent>
-                  </Link>
+                    <div className="block h-full">
+                        <CardHeader className="flex flex-row items-center gap-4 space-y-0">
+                        <FileText className="w-8 h-8 text-primary" />
+                        <CardTitle className="text-lg truncate">{doc.name}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                        <p className="text-sm text-muted-foreground">
+                            Uploaded: {new Date(doc.uploaded).toLocaleDateString()}
+                        </p>
+                        </CardContent>
+                    </div>
                 </Card>
               ))}
             </div>

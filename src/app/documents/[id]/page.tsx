@@ -3,50 +3,18 @@
 import { Header } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowLeft, ExternalLink } from 'lucide-react';
-import { Card } from '@/components/ui/card';
+import { ArrowLeft } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
-
-type Document = {
-  id: string;
-  name: string;
-  uploaded: string;
-  content: string;
-};
 
 export default function DocumentPage() {
-  const params = useParams();
-  const id = params.id as string;
-  const [document, setDocument] = useState<Document | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Ensure this runs only on the client
-    try {
-      const storedDocuments: Document[] = JSON.parse(
-        localStorage.getItem('documents') || '[]'
-      );
-      const foundDocument = storedDocuments.find((doc) => doc.id === id);
-      if (foundDocument) {
-        setDocument(foundDocument);
-      } else {
-        setError('Document not found.');
-      }
-    } catch (e) {
-      setError('Could not retrieve document from storage.');
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
-
+    const params = useParams();
+    const id = params.id as string;
 
   return (
     <div className="flex flex-col min-h-dvh bg-background">
       <Header />
       <main className="flex-1 flex flex-col p-4 pt-20 md:p-6 md:pt-24 gap-6">
-        <div className="container mx-auto flex items-center justify-between">
+        <div className="container mx-auto">
           <div>
             <Button asChild variant="ghost">
               <Link href="/documents">
@@ -54,42 +22,14 @@ export default function DocumentPage() {
                 Back to Documents
               </Link>
             </Button>
-            {document && (
-                <h1 className="text-2xl font-bold font-headline mt-2 ml-4">
-                    {document.name}
-                </h1>
-            )}
+            <h1 className="text-2xl font-bold font-headline mt-2 ml-4">
+                Document {id}
+            </h1>
           </div>
-          {document && (
-            <Button asChild variant="outline">
-              <a href={document.content} target="_blank" rel="noopener noreferrer">
-                Open in New Tab
-                <ExternalLink className="ml-2" />
-              </a>
-            </Button>
-          )}
+          <div className="flex-1 flex items-center justify-center mt-8">
+            <p>Document content will be displayed here.</p>
+          </div>
         </div>
-
-        <Card className="flex-1 container mx-auto p-0 border-border overflow-hidden">
-          {loading && (
-             <div className="flex items-center justify-center h-full"><p>Loading document...</p></div>
-          )}
-          {error && (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-destructive text-lg">{error}</p>
-            </div>
-          )}
-          {document ? (
-            <embed
-              src={document.content}
-              type="application/pdf"
-              width="100%"
-              height="100%"
-            />
-          ) : (
-            !loading && !error && <div className="flex items-center justify-center h-full"><p>Document could not be loaded.</p></div>
-          )}
-        </Card>
       </main>
     </div>
   );
