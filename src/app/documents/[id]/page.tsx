@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, ExternalLink } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 type Document = {
   id: string;
@@ -17,22 +18,28 @@ type Document = {
 export default function DocumentPage() {
   const params = useParams();
   const id = params.id as string;
-  let document: Document | null = null;
-  let error: string | null = null;
+  const [document, setDocument] = useState<Document | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  try {
-    const storedDocuments: Document[] = JSON.parse(
-      localStorage.getItem('documents') || '[]'
-    );
-    const foundDocument = storedDocuments.find((doc) => doc.id === id);
-    if (foundDocument) {
-      document = foundDocument;
-    } else {
-      error = 'Document not found.';
+  useEffect(() => {
+    // Ensure this runs only on the client
+    try {
+      const storedDocuments: Document[] = JSON.parse(
+        localStorage.getItem('documents') || '[]'
+      );
+      const foundDocument = storedDocuments.find((doc) => doc.id === id);
+      if (foundDocument) {
+        setDocument(foundDocument);
+      } else {
+        setError('Document not found.');
+      }
+    } catch (e) {
+      setError('Could not retrieve document from storage.');
+    } finally {
+      setLoading(false);
     }
-  } catch (e) {
-    error = 'Could not retrieve document from storage.';
-  }
+  }, [id]);
 
 
   return (
@@ -64,6 +71,9 @@ export default function DocumentPage() {
         </div>
 
         <Card className="flex-1 container mx-auto p-0 border-border overflow-hidden">
+          {loading && (
+             <div className="flex items-center justify-center h-full"><p>Loading document...</p></div>
+          )}
           {error && (
             <div className="flex items-center justify-center h-full">
               <p className="text-destructive text-lg">{error}</p>
@@ -77,7 +87,7 @@ export default function DocumentPage() {
               height="100%"
             />
           ) : (
-            !error && <div className="flex items-center justify-center h-full"><p>Loading document...</p></div>
+            !loading && !error && <div className="flex items-center justify-center h-full"><p>Document could not be loaded.</p></div>
           )}
         </Card>
       </main>
