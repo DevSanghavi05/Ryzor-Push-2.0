@@ -7,6 +7,14 @@ import { FileText, PlusCircle, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+  } from "@/components/ui/table"
 
 type Document = {
   id: string;
@@ -32,6 +40,11 @@ export default function DocumentsPage() {
     );
     setFilteredDocuments(results);
   }, [searchQuery, documents]);
+
+  const getFileType = (fileName: string) => {
+    const extension = fileName.split('.').pop()?.toUpperCase();
+    return extension ? `${extension} Document` : 'Document';
+  }
 
   return (
     <div className="flex flex-col min-h-dvh bg-background">
@@ -63,22 +76,30 @@ export default function DocumentsPage() {
           </div>
 
           {filteredDocuments.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {filteredDocuments.map((doc) => (
-                <Card key={doc.id} className="hover:border-primary/50 hover:shadow-lg transition-all">
-                    <div className="block h-full">
-                        <CardHeader className="flex flex-row items-center gap-4 space-y-0">
-                        <FileText className="w-8 h-8 text-primary" />
-                        <CardTitle className="text-lg truncate">{doc.name}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                        <p className="text-sm text-muted-foreground">
-                            Uploaded: {new Date(doc.uploaded).toLocaleDateString()}
-                        </p>
-                        </CardContent>
-                    </div>
-                </Card>
-              ))}
+            <div className="border rounded-lg">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="w-[50%]">Name</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Date Uploaded</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {filteredDocuments.map((doc) => (
+                            <TableRow key={doc.id} className="hover:bg-accent/50 cursor-pointer">
+                                <TableCell className="font-medium">
+                                    <div className="flex items-center gap-3">
+                                        <FileText className="w-5 h-5 text-primary" />
+                                        <span className="truncate">{doc.name}</span>
+                                    </div>
+                                </TableCell>
+                                <TableCell className="text-muted-foreground">{getFileType(doc.name)}</TableCell>
+                                <TableCell className="text-muted-foreground">{new Date(doc.uploaded).toLocaleDateString()}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center text-center py-24 border-2 border-dashed border-border rounded-lg">
