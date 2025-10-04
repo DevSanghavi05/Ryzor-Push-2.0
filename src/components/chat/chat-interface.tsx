@@ -37,7 +37,7 @@ export function ChatInterface() {
   };
 
   return (
-    <div className="flex flex-col h-full max-w-4xl mx-auto w-full">
+    <div className="flex flex-col h-full max-w-3xl mx-auto w-full flex-1">
       {/* Message Display Area */}
       <div className="flex-1 overflow-y-auto pr-4 -mr-4">
         {messages.length === 0 ? (

@@ -7,7 +7,7 @@ export default function Home() {
     <div className="flex flex-col min-h-dvh bg-background">
       <Header />
       <main className="flex-1 flex flex-col">
-        <div className="flex-1 flex flex-col items-center justify-center p-4 min-h-[calc(100vh-4rem)]">
+        <div className="flex flex-col items-center p-4 pt-20 min-h-[calc(100vh-4rem)]">
           <ChatInterface />
         </div>
         <Features />
