@@ -41,9 +41,8 @@ export function ChatInterface() {
 
   return (
     <div className="flex flex-col h-full max-w-2xl mx-auto w-full flex-1">
-        <div className="flex flex-col items-center text-center mb-8">
-            <h1 className="text-5xl font-bold font-headline mb-2 bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/70">Ryzor AI</h1>
-            <p className="text-lg text-muted-foreground">Ask your PDFs anything in seconds</p>
+        <div className="flex flex-col items-center text-center">
+            <h1 className="text-5xl font-bold font-headline mb-8 bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/70">Ryzor AI</h1>
         </div>
 
       <div className="flex-1 flex flex-col justify-end min-h-[300px]">
@@ -104,7 +103,8 @@ export function ChatInterface() {
             </Button>
           </CardContent>
         </Card>
-        <div className="mt-4 text-center">
+        <p className="text-lg text-muted-foreground mt-4 text-center">Ask your PDFs anything in seconds</p>
+        <div className="mt-2 text-center">
             <Button variant="ghost" onClick={() => setUploadOpen(true)}>
                 <Plus className="mr-2" />
                 Upload File
