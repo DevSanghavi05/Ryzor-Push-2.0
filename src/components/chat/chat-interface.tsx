@@ -75,9 +75,7 @@ export function ChatInterface() {
             </div>
           </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <p className="text-muted-foreground animate-fade-in-up">Start a conversation or upload a document to begin.</p>
-          </div>
+          <div className="flex-1" />
         )}
       </div>
 
