@@ -20,12 +20,12 @@ export default function Home() {
   const featuresTranslateY = useTransform(scrollYProgress, [0.5, 0.9], [20, 0]);
 
   return (
-    <div className="flex flex-col min-h-[200dvh] bg-background">
+    <div className="flex flex-col min-h-[200dvh] bg-transparent">
       <Header />
       <main ref={targetRef} className="flex-1 flex flex-col pt-16">
         <div className="sticky top-16 h-dvh-minus-header">
           <motion.div
-            className="flex flex-col items-center justify-center h-full p-4"
+            className="flex flex-col items-center h-full p-4 pt-16"
             style={{ opacity: heroOpacity, y: heroTranslateY }}
           >
             <ChatInterface />

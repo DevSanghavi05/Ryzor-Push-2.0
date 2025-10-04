@@ -113,7 +113,7 @@ export default {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'fade-in-down': 'fade-in-down 0.5s ease-out',
-        'fade-in-up': 'fade-in-up 0.5s ease-out backwards',
+        'fade-in-up': 'fade-in-up 0.5s ease-out',
       },
     },
   },

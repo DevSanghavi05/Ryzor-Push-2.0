@@ -40,14 +40,15 @@ export function ChatInterface() {
   };
 
   return (
-    <div className="flex flex-col h-full max-w-2xl mx-auto w-full flex-1 justify-center">
+    <div className="flex flex-col h-full max-w-2xl mx-auto w-full flex-1">
         <div className="flex flex-col items-center text-center mb-8">
             <h1 className="text-5xl font-bold font-headline mb-2 bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/70">Ryzor AI</h1>
             <p className="text-lg text-muted-foreground">Ask your PDFs anything in seconds</p>
         </div>
 
-      {messages.length > 0 && (
-          <div className="flex-1 overflow-y-auto pr-4 -mr-4 h-64 min-h-64 bg-background/30 backdrop-blur-sm rounded-lg border p-4 shadow-inner mb-6">
+      <div className="flex-1 flex flex-col justify-end min-h-[300px]">
+        {messages.length > 0 ? (
+          <div className="overflow-y-auto pr-4 -mr-4 h-full bg-background/30 backdrop-blur-sm rounded-lg border p-4 shadow-inner">
             <div className="space-y-6">
               {messages.map((message, index) => (
                 <div
@@ -73,12 +74,17 @@ export function ChatInterface() {
                 </div>
               ))}
             </div>
-        </div>
-      )}
+          </div>
+        ) : (
+          <div className="flex-1 flex items-center justify-center">
+            <p className="text-muted-foreground animate-fade-in-up">Start a conversation or upload a document to begin.</p>
+          </div>
+        )}
+      </div>
 
 
       {/* Input Area */}
-      <div className="mt-auto">
+      <div className="mt-6">
         <Card className="rounded-full p-2 shadow-[0_0_25px_-5px_hsl(var(--primary)/0.3)] border-border/50 focus-within:border-primary transition-all bg-card/80 backdrop-blur-sm">
           <CardContent className="p-0 flex items-center">
             <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setUploadOpen(true)}>
