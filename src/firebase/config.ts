@@ -9,11 +9,10 @@
 // 5. Copy the entire 'firebaseConfig' object and paste it below, replacing the placeholder object.
 
 export const firebaseConfig = {
-  // PASTE YOUR FIREBASE CONFIG OBJECT HERE
-  apiKey: "PASTE_YOUR_API_KEY_HERE",
-  authDomain: "PASTE_YOUR_AUTH_DOMAIN_HERE",
-  projectId: "PASTE_YOUR_PROJECT_ID_HERE",
-  storageBucket: "PASTE_YOUR_STORAGE_BUCKET_HERE",
-  messagingSenderId: "PASTE_YOUR_MESSAGING_SENDER_ID_HERE",
-  appId: "PASTE_YOUR_APP_ID_HERE",
+  apiKey: "AIzaSyCwtETs6EjN8yorraGHR6YH7Ygw75jlZso",
+  authDomain: "studio-2148148002-bc8ae.firebaseapp.com",
+  projectId: "studio-2148148002-bc8ae",
+  storageBucket: "studio-2148148002-bc8ae.appspot.com",
+  messagingSenderId: "933070063389",
+  appId: "1:933070063389:web:2e222a284ecf4422cfc3f4"
 };
