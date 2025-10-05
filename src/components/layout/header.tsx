@@ -1,8 +1,31 @@
-import { BrainCircuit, BookCopy } from 'lucide-react';
+import { BrainCircuit, BookCopy, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { useUser } from '@/firebase';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
+function UserAvatar() {
+  const { user, signOut } = useUser();
+  if (!user) return null;
+
+  return (
+    <div className="flex items-center gap-4">
+       <Avatar className="h-8 w-8">
+        {user.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'User'} />}
+        <AvatarFallback>{user.displayName?.[0] || 'U'}</AvatarFallback>
+      </Avatar>
+      <Button onClick={signOut} variant="ghost" size="sm">
+        <LogOut className="mr-2" />
+        Sign Out
+      </Button>
+    </div>
+  );
+}
+
 
 export function Header() {
+  const { user, signInWithGoogle } = useUser();
+
   return (
     <header className="px-4 lg:px-6 h-16 flex items-center border-b border-border/40 fixed top-0 left-0 right-0 bg-background/80 backdrop-blur-sm z-50">
       <div className="container mx-auto flex items-center gap-4">
@@ -13,12 +36,13 @@ export function Header() {
           </span>
         </Link>
         <nav className="flex items-center gap-2">
-           <Button asChild variant="ghost">
+           <Button asChild variant="ghost" onClick={(e) => { if (!user) { e.preventDefault(); signInWithGoogle(); }}}>
               <Link href="/documents">
                 <BookCopy />
                 My Documents
               </Link>
             </Button>
+            {user && <UserAvatar />}
         </nav>
       </div>
     </header>

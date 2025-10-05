@@ -9,6 +9,7 @@ import { Paperclip, Send } from 'lucide-react';
 import { UploadForm } from '@/components/upload/upload-form';
 import Image from 'next/image';
 import { placeholderImages } from '@/lib/placeholder-images';
+import { useUser } from '@/firebase';
 
 const GoogleIcon = () => (
     <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2">
@@ -35,6 +36,14 @@ const GoogleIcon = () => (
 
 export function ChatInterface() {
   const [isUploadOpen, setUploadOpen] = useState(false);
+  const { user, signInWithGoogle } = useUser();
+
+  const handleInteraction = () => {
+    if (!user) {
+      signInWithGoogle();
+    }
+  };
+
 
   return (
     <div className="flex flex-col h-full max-w-4xl mx-auto w-full flex-1">
@@ -54,18 +63,20 @@ export function ChatInterface() {
               placeholder="Ask me anything..."
               className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 text-base bg-transparent shadow-none px-2 py-1 h-auto"
             />
-            <Button size="icon" className="rounded-full">
+            <Button size="icon" className="rounded-full" onClick={handleInteraction}>
               <Send />
               <span className="sr-only">Send Message</span>
             </Button>
           </CardContent>
         </Card>
-        <div className="mt-4 text-center">
-            <Button variant="outline" className="rounded-full text-foreground/80 hover:text-foreground hover:bg-card/90">
-                <GoogleIcon />
-                Sign in with Google
-            </Button>
-        </div>
+        {!user && (
+          <div className="mt-4 text-center">
+              <Button variant="outline" className="rounded-full text-foreground/80 hover:text-foreground hover:bg-card/90" onClick={signInWithGoogle}>
+                  <GoogleIcon />
+                  Sign in with Google
+              </Button>
+          </div>
+        )}
       </div>
 
       <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl mx-auto">

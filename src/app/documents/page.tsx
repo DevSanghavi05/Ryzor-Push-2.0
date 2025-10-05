@@ -15,6 +15,7 @@ import {
     TableRow,
   } from "@/components/ui/table"
 import { useRouter } from 'next/navigation';
+import withAuth from '@/firebase/auth/with-auth';
 
 type Document = {
   id: string;
@@ -23,7 +24,7 @@ type Document = {
   content: string; // Add content to the type
 };
 
-export default function DocumentsPage() {
+function DocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
@@ -129,3 +130,5 @@ export default function DocumentsPage() {
     </div>
   );
 }
+
+export default withAuth(DocumentsPage);
