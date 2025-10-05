@@ -43,8 +43,8 @@ export function ChatInterface() {
         </div>
 
       {/* Input Area */}
-      <div className="mt-6 px-4">
-        <Card className="rounded-full p-2 shadow-[0_0_25px_-5px_hsl(var(--primary)/0.3)] border-border/50 focus-within:border-primary transition-all bg-card/80 backdrop-blur-sm">
+      <div className="mt-6 px-12">
+        <Card className="rounded-full p-1 shadow-[0_0_25px_-5px_hsl(var(--primary)/0.3)] border-border/50 focus-within:border-primary transition-all bg-card/80 backdrop-blur-sm">
           <CardContent className="p-0 flex items-center">
             <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setUploadOpen(true)}>
               <Paperclip />
@@ -73,12 +73,12 @@ export function ChatInterface() {
           <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-accent rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
           <div className="relative bg-card rounded-lg overflow-hidden transition-transform duration-300 group-hover:scale-105 h-64">
             <Image
-              src={placeholderImages[0].imageUrl}
-              alt={placeholderImages[0].description}
+              src={placeholderImages[1].imageUrl}
+              alt={placeholderImages[1].description}
               width={600}
               height={400}
               className="object-cover w-full h-full"
-              data-ai-hint={placeholderImages[0].imageHint}
+              data-ai-hint={placeholderImages[1].imageHint}
             />
           </div>
         </div>
