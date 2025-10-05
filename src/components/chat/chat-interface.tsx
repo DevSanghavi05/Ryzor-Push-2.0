@@ -52,7 +52,7 @@ export function ChatInterface() {
             </Button>
             <Input
               placeholder="Ask me anything..."
-              className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 text-base bg-transparent shadow-none"
+              className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 text-base bg-transparent shadow-none px-2 py-1 h-auto"
             />
             <Button size="icon" className="rounded-full">
               <Send />
@@ -73,12 +73,12 @@ export function ChatInterface() {
           <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-accent rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
           <div className="relative bg-card rounded-lg overflow-hidden transition-transform duration-300 group-hover:scale-105 h-64">
             <Image
-              src={placeholderImages[1].imageUrl}
-              alt={placeholderImages[1].description}
+              src={placeholderImages[0].imageUrl}
+              alt={placeholderImages[0].description}
               width={600}
               height={400}
               className="object-cover w-full h-full"
-              data-ai-hint={placeholderImages[1].imageHint}
+              data-ai-hint={placeholderImages[0].imageHint}
             />
           </div>
         </div>
