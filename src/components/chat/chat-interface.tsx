@@ -71,7 +71,7 @@ export function ChatInterface() {
       <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl mx-auto">
         <div className="relative group">
           <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-accent rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
-          <div className="relative bg-card rounded-lg overflow-hidden transition-transform duration-300 group-hover:scale-105">
+          <div className="relative bg-card rounded-lg overflow-hidden transition-transform duration-300 group-hover:scale-105 h-64">
             <Image
               src={placeholderImages[0].imageUrl}
               alt={placeholderImages[0].description}
@@ -84,7 +84,7 @@ export function ChatInterface() {
         </div>
         <div className="relative group">
           <div className="absolute -inset-0.5 bg-gradient-to-r from-accent to-primary rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200 animate-tilt-delay"></div>
-           <div className="relative bg-card rounded-lg overflow-hidden transition-transform duration-300 group-hover:scale-105">
+           <div className="relative bg-card rounded-lg overflow-hidden transition-transform duration-300 group-hover:scale-105 h-64">
             <Image
               src={placeholderImages[2].imageUrl}
               alt={placeholderImages[2].description}

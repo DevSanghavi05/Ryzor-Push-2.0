@@ -3,37 +3,37 @@
     {
       "id": "1",
       "description": "Abstract AI visualization",
-      "imageUrl": "https://images.unsplash.com/photo-1676411237170-ddca6e4c158a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxhaSUyMGFic3RyYWN0fGVufDB8fHx8MTc1OTY3Mzg0NHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1636690513351-0af1763f6237?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxhaSUyMGFic3RyYWN0fGVufDB8fHx8MTc1OTY3Mzg0NHww&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "ai abstract"
     },
     {
       "id": "2",
       "description": "Modern architecture",
-      "imageUrl": "https://images.unsplash.com/photo-1574848296471-28f79a036f79?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxtb2Rlcm4lMjBhcmNoaXRlY3R1cmV8ZW58MHx8fHwxNzU5NjYwNzMxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1518436127045-3367819540bf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxtb2Rlcm4lMjBhcmNoaXRlY3R1cmV8ZW58MHx8fHwxNzU5NjYwNzMxfDA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "modern architecture"
     },
     {
       "id": "3",
-      "description": "City skyline",
-      "imageUrl": "https://images.unsplash.com/photo-1534298261662-f8fdd25317db?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxjaXR5JTIwc2t5bGluZXxlbnwwfHx8fDE3NTk2MDUyNDd8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "city skyline"
+      "description": "A person reviewing a document with charts.",
+      "imageUrl": "https://images.unsplash.com/photo-1616861771635-49063a4636ed?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxkb2N1bWVudCUyMGFuYWx5dGljc3xlbnwwfHx8fDE3NTk2NzM5OTN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "document analytics"
     },
     {
       "id": "4",
       "description": "Forest path",
-      "imageUrl": "https://images.unsplash.com/photo-1531756716853-09a60d38d820?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxmb3Jlc3QlMjBwYXRofGVufDB8fHx8MTc1OTU4MTk4Nnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1592859600972-1b0834d83747?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxmb3Jlc3QlMjBwYXRofGVufDB8fHx8MTc1OTU4MTk4Nnww&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "forest path"
     },
     {
       "id": "5",
       "description": "Ocean waves",
-      "imageUrl": "https://images.unsplash.com/photo-1514747975201-4715db583da9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxvY2VhbiUyMHdhdmVzfGVufDB8fHx8MTc1OTY2MDczMXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1505142468610-359e7d316be0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8b2NlYW4lMjB3YXZlc3xlbnwwfHx8fDE3NTk2NjA3MzF8MA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "ocean waves"
     },
     {
       "id": "6",
       "description": "Desert dunes",
-      "imageUrl": "https://images.unsplash.com/photo-1553796661-17b7fa359f49?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxkZXNlcnQlMjBkdW5lc3xlbnwwfHx8fDE3NTk2MzIzODF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1520440718111-45fe694b330a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxkZXNlcnQlMjBkdW5lc3xlbnwwfHx8fDE3NTk2MzIzODF8MA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "desert dunes"
     }
   ]
