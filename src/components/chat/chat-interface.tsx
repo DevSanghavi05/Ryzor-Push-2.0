@@ -43,7 +43,7 @@ export function ChatInterface() {
         </div>
 
       {/* Input Area */}
-      <div className="mt-6">
+      <div className="mt-6 px-4">
         <Card className="rounded-full p-2 shadow-[0_0_25px_-5px_hsl(var(--primary)/0.3)] border-border/50 focus-within:border-primary transition-all bg-card/80 backdrop-blur-sm">
           <CardContent className="p-0 flex items-center">
             <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setUploadOpen(true)}>
