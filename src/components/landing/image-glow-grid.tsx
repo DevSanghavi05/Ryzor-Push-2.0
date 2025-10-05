@@ -23,7 +23,7 @@ export function ImageGlowGrid() {
   
     return (
       <div
-        className="relative grid w-full grid-cols-2 md:grid-cols-3 gap-4"
+        className="group relative grid w-full grid-cols-1 md:grid-cols-3 gap-4"
         onMouseMove={handleMouseMove}
       >
         <motion.div
@@ -36,10 +36,10 @@ export function ImageGlowGrid() {
             ),
           }}
         />
-        {placeholderImages.map((image) => (
+        {placeholderImages.map((image, index) => (
           <div
             key={image.id}
-            className="relative overflow-hidden rounded-xl border border-border/20 bg-card/50"
+            className={`relative overflow-hidden rounded-xl border border-border/20 bg-card/50 ${ index === 0 ? 'md:col-span-3' : 'md:col-span-1'}`}
           >
             <Image
               src={image.imageUrl}
@@ -48,6 +48,7 @@ export function ImageGlowGrid() {
               height={400}
               className="object-cover w-full h-full"
               data-ai-hint={image.imageHint}
+              priority={index === 0}
             />
              <div className="pointer-events-none absolute -inset-px rounded-xl"
                 style={{

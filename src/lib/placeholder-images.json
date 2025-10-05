@@ -2,9 +2,9 @@
   "placeholderImages": [
     {
       "id": "1",
-      "description": "Abstract shapes",
-      "imageUrl": "https://images.unsplash.com/photo-1595411425732-e69c1abe2763?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMHNoYXBlc3xlbnwwfHx8fDE3NTk2MTAxMDN8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "abstract shapes"
+      "description": "AI transforming a document",
+      "imageUrl": "https://storage.googleapis.com/aai-web-template-images-genai-llm/ai-glow.png",
+      "imageHint": "ai document"
     },
     {
       "id": "2",
@@ -35,24 +35,6 @@
       "description": "Desert dunes",
       "imageUrl": "https://images.unsplash.com/photo-1541256123332-c1c9d0a59dee?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8ZGVzZXJ0JTIwZHVuZXN8ZW58MHx8fHwxNzU5NjMyMzgxfDA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "desert dunes"
-    },
-    {
-      "id": "7",
-      "description": "Modern architecture",
-      "imageUrl": "https://images.unsplash.com/photo-1461695008884-244cb4543d74?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxtb2Rlcm4lMjBhcmNoaXRlY3R1cmV8ZW58MHx8fHwxNzU5NjYwNzMxfDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "modern architecture"
-    },
-    {
-      "id": "8",
-      "description": "Night sky",
-      "imageUrl": "https://images.unsplash.com/photo-1472552944129-b035e9ea3744?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxuaWdodCUyMHNreXxlbnwwfHx8fDE3NTk2NzEyODJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "night sky"
-    },
-    {
-      "id": "9",
-      "description": "Wildlife animal",
-      "imageUrl": "https://images.unsplash.com/photo-1675919989856-7b6a38f8da9d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHx3aWxkbGlmZSUyMGFuaW1hbHxlbnwwfHx8fDE3NTk1NjY5ODh8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "wildlife animal"
     }
   ]
 }
