@@ -19,6 +19,7 @@ export interface UserContextValue {
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  accessToken: string | null;
 }
 
 const UserContext = createContext<UserContextValue | undefined>(undefined);
@@ -35,6 +36,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const auth = useAuth();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
 
   useEffect(() => {
     if (!auth) {
@@ -43,6 +45,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
     const unsubscribe = onFirebaseAuthStateChanged(auth, (user) => {
       setUser(user);
+      if (user) {
+        // You might want to handle token refresh logic here
+      } else {
+        setAccessToken(null);
+      }
       setLoading(false);
     });
 
@@ -52,8 +59,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = async () => {
     if (!auth) return;
     const provider = new GoogleAuthProvider();
+    provider.addScope('https://www.googleapis.com/auth/drive.readonly');
     try {
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (credential) {
+        setAccessToken(credential.accessToken || null);
+      }
     } catch (error) {
       console.error('Error signing in with Google', error);
     }
@@ -63,6 +75,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (!auth) return;
     try {
       await auth.signOut();
+      setUser(null);
+      setAccessToken(null);
     } catch (error) {
       console.error('Error signing out', error);
     }
@@ -73,6 +87,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     loading,
     signInWithGoogle,
     signOut,
+    accessToken,
   };
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
