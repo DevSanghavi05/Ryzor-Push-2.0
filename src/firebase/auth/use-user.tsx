@@ -1,3 +1,4 @@
+
 'use client';
 import {
   useState,
@@ -9,6 +10,7 @@ import {
 import type { User, Auth } from 'firebase/auth';
 import {
   GoogleAuthProvider,
+  OAuthProvider,
   signInWithPopup,
   onAuthStateChanged as onFirebaseAuthStateChanged,
 } from 'firebase/auth';
@@ -18,6 +20,7 @@ export interface UserContextValue {
   user: User | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
+  signInWithMicrosoft: () => Promise<void>;
   signOut: () => Promise<void>;
   accessToken: string | null;
 }
@@ -46,7 +49,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onFirebaseAuthStateChanged(auth, (user) => {
       setUser(user);
       if (user) {
-        // You might want to handle token refresh logic here
+        user.getIdToken().then(setAccessToken);
       } else {
         setAccessToken(null);
       }
@@ -71,6 +74,21 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const signInWithMicrosoft = async () => {
+    if (!auth) return;
+    const provider = new OAuthProvider('microsoft.com');
+    provider.addScope('Files.ReadWrite');
+    try {
+        const result = await signInWithPopup(auth, provider);
+        const credential = OAuthProvider.credentialFromResult(result);
+        if (credential) {
+            setAccessToken(credential.accessToken || null);
+        }
+    } catch (error) {
+        console.error('Error signing in with Microsoft', error);
+    }
+  };
+
   const signOut = async () => {
     if (!auth) return;
     try {
@@ -86,6 +104,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     user,
     loading,
     signInWithGoogle,
+    signInWithMicrosoft,
     signOut,
     accessToken,
   };

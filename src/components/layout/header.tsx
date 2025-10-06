@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { AuthProviderDropdown } from '../auth/auth-provider-dropdown';
 
 function UserAvatar() {
   const { user, signOut } = useUser();
@@ -24,7 +25,7 @@ function UserAvatar() {
 
 
 export function Header() {
-  const { user, signInWithGoogle } = useUser();
+  const { user } = useUser();
 
   return (
     <header className="px-4 lg:px-6 h-16 flex items-center border-b border-border/40 fixed top-0 left-0 right-0 bg-background/80 backdrop-blur-sm z-50">
@@ -36,13 +37,13 @@ export function Header() {
           </span>
         </Link>
         <nav className="flex items-center gap-2">
-           <Button asChild variant="ghost" onClick={(e) => { if (!user) { e.preventDefault(); signInWithGoogle(); }}}>
-              <Link href="/documents">
-                <BookCopy />
-                My Documents
-              </Link>
+            <Button asChild variant="ghost" >
+                <Link href={user ? "/documents" : "#"}>
+                    <BookCopy />
+                    My Documents
+                </Link>
             </Button>
-            {user && <UserAvatar />}
+            {user ? <UserAvatar /> : <AuthProviderDropdown isHeader={true} />}
         </nav>
       </div>
     </header>
