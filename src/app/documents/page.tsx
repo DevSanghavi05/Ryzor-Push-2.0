@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Header } from '@/components/layout/header';
@@ -17,7 +18,7 @@ import {
 import { useRouter } from 'next/navigation';
 import withAuth from '@/firebase/auth/with-auth';
 import { useUser } from '@/firebase/auth/use-user';
-import { gapi } from 'gapi-script';
+import type { gapi as Gapi } from 'gapi-script';
 
 type Document = {
   id: string;
@@ -32,14 +33,15 @@ function DocumentsPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
+  const [gapi, setGapi] = useState<typeof Gapi | null>(null);
 
-  const fetchFiles = useCallback(() => {
-    if (!gapi.client.drive) {
+  const fetchFiles = useCallback((gapiInstance: typeof Gapi) => {
+    if (!gapiInstance.client.drive) {
         console.error("Drive API client not loaded.");
         setLoading(false);
         return;
     }
-    gapi.client.drive.files.list({
+    gapiInstance.client.drive.files.list({
       'pageSize': 20,
       'fields': "nextPageToken, files(id, name, mimeType, modifiedTime)"
     }).then((response: any) => {
@@ -64,18 +66,27 @@ function DocumentsPage() {
         return;
     };
 
-    const initGapiClient = () => {
-      gapi.load('client', () => {
-        gapi.client.init({
-          discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
-        }).then(() => {
-          gapi.auth.setToken({ access_token: accessToken });
-          fetchFiles();
-        }).catch(err => {
-            console.error("Error initializing GAPI client", err);
-            setLoading(false);
+    const initGapiClient = async () => {
+      try {
+        const gapiScript = await import('gapi-script');
+        const gapiInstance = gapiScript.gapi;
+        setGapi(gapiInstance);
+
+        gapiInstance.load('client', () => {
+          gapiInstance.client.init({
+            discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
+          }).then(() => {
+            gapiInstance.auth.setToken({ access_token: accessToken });
+            fetchFiles(gapiInstance);
+          }).catch(err => {
+              console.error("Error initializing GAPI client", err);
+              setLoading(false);
+          });
         });
-      });
+      } catch (e) {
+        console.error("Error loading GAPI script", e);
+        setLoading(false);
+      }
     };
 
     initGapiClient();
