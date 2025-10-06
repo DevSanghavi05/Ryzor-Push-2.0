@@ -54,7 +54,13 @@ function DocumentsPage() {
       setDocuments(formattedFiles);
       setLoading(false);
     }).catch((error: any) => {
-        console.error("Error fetching files: ", error);
+        // More detailed error logging for GAPI
+        const errorDetails = error.result?.error;
+        if (errorDetails) {
+          console.error("Error fetching files from Google Drive API:", JSON.stringify(errorDetails, null, 2));
+        } else {
+          console.error("Error fetching files: ", error);
+        }
         setLoading(false);
     });
   }, []);
