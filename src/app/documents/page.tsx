@@ -28,15 +28,14 @@ type Document = {
 };
 
 function DocumentsPage() {
-  const { accessToken } = useUser();
+  const { accessToken, loading: userLoading } = useUser();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
-  const [gapi, setGapi] = useState<typeof Gapi | null>(null);
 
   const fetchFiles = useCallback((gapiInstance: typeof Gapi) => {
-    if (!gapiInstance.client.drive) {
+    if (!gapiInstance.client?.drive) {
         console.error("Drive API client not loaded.");
         setLoading(false);
         return;
@@ -61,17 +60,20 @@ function DocumentsPage() {
   }, []);
 
   useEffect(() => {
+    if (userLoading) {
+      setLoading(true);
+      return;
+    }
     if (!accessToken) {
-        if (!loading) setLoading(true);
-        return;
+      setLoading(false);
+      return;
     };
 
     const initGapiClient = async () => {
       try {
         const gapiScript = await import('gapi-script');
         const gapiInstance = gapiScript.gapi;
-        setGapi(gapiInstance);
-
+        
         gapiInstance.load('client', () => {
           gapiInstance.client.init({
             discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
@@ -91,7 +93,7 @@ function DocumentsPage() {
 
     initGapiClient();
 
-  }, [accessToken, fetchFiles, loading]);
+  }, [accessToken, userLoading, fetchFiles]);
 
 
   const filteredDocuments = documents.filter(doc =>
