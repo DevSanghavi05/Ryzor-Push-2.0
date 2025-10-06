@@ -4,7 +4,7 @@ import { Header } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import { FileText, PlusCircle, Search, Loader } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import {
     Table,
@@ -33,42 +33,54 @@ function DocumentsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
 
-  useEffect(() => {
-    if (!accessToken) return;
+  const fetchFiles = useCallback(() => {
+    if (!gapi.client.drive) {
+        console.error("Drive API client not loaded.");
+        setLoading(false);
+        return;
+    }
+    gapi.client.drive.files.list({
+      'pageSize': 20,
+      'fields': "nextPageToken, files(id, name, mimeType, modifiedTime)"
+    }).then((response: any) => {
+      const files = response.result.files as any[];
+      const formattedFiles = files.map(file => ({
+        id: file.id,
+        name: file.name,
+        modifiedTime: file.modifiedTime,
+        mimeType: file.mimeType,
+      }));
+      setDocuments(formattedFiles);
+      setLoading(false);
+    }).catch((error: any) => {
+        console.error("Error fetching files: ", error);
+        setLoading(false);
+    });
+  }, []);
 
-    const initClient = () => {
-      gapi.client.init({
-        apiKey: process.env.NEXT_PUBLIC_GOOGLE_API_KEY,
-        discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
-      }).then(() => {
-        gapi.auth.setToken({ access_token: accessToken });
-        fetchFiles();
+  useEffect(() => {
+    if (!accessToken) {
+        if (!loading) setLoading(true);
+        return;
+    };
+
+    const initGapiClient = () => {
+      gapi.load('client', () => {
+        gapi.client.init({
+          discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
+        }).then(() => {
+          gapi.auth.setToken({ access_token: accessToken });
+          fetchFiles();
+        }).catch(err => {
+            console.error("Error initializing GAPI client", err);
+            setLoading(false);
+        });
       });
     };
 
-    const fetchFiles = () => {
-        gapi.client.drive.files.list({
-          'pageSize': 20,
-          'fields': "nextPageToken, files(id, name, mimeType, modifiedTime)"
-        }).then((response: any) => {
-          const files = response.result.files as any[];
-          const formattedFiles = files.map(file => ({
-            id: file.id,
-            name: file.name,
-            modifiedTime: file.modifiedTime,
-            mimeType: file.mimeType,
-          }));
-          setDocuments(formattedFiles);
-          setLoading(false);
-        }).catch((error: any) => {
-            console.error("Error fetching files: ", error);
-            setLoading(false);
-        });
-    }
+    initGapiClient();
 
-    gapi.load('client:auth2', initClient);
-
-  }, [accessToken]);
+  }, [accessToken, fetchFiles, loading]);
 
 
   const filteredDocuments = documents.filter(doc =>
@@ -112,7 +124,7 @@ function DocumentsPage() {
             </div>
           </div>
           {loading ? (
-             <div className="flex items-center justify-center text-center py-24 border-2 border-dashed border-border rounded-lg">
+             <div className="flex flex-col items-center justify-center text-center py-24 border-2 border-dashed border-border rounded-lg">
                 <Loader className="w-16 h-16 text-muted-foreground animate-spin mb-4" />
                 <h2 className="text-2xl font-bold font-headline mb-2">
                     Fetching Files...
@@ -131,7 +143,7 @@ function DocumentsPage() {
                     </TableHeader>
                     <TableBody>
                         {filteredDocuments.map((doc) => (
-                             <TableRow key={doc.id} className="hover:bg-accent/50 cursor-pointer" onClick={() => console.log(`Navigating to doc ${doc.id}`)}>
+                             <TableRow key={doc.id} className="hover:bg-accent/50 cursor-pointer" onClick={() => router.push(`/documents/${doc.id}`)}>
                                 <TableCell className="font-medium">
                                     <div className="flex items-center gap-3 group">
                                         <FileText className="w-5 h-5 text-primary" />
