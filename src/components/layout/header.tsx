@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AuthProviderDropdown } from '../auth/auth-provider-dropdown';
+import { Separator } from '../ui/separator';
 
 export function Header() {
   const { user } = useUser();
@@ -21,32 +22,38 @@ export function Header() {
     <div className="fixed top-0 left-0 right-0 z-50 p-4">
         <header className="container mx-auto px-4 lg:px-6 h-16 flex items-center justify-between border border-border/40 bg-background/80 backdrop-blur-sm rounded-xl shadow-lg">
             <Link href="/" className="flex items-center gap-2 group">
-            <BrainCircuit className="h-7 w-7 text-accent group-hover:text-primary transition-colors" />
-            <span className="text-xl font-bold font-headline text-foreground">
-                Ryzor AI
-            </span>
+                <BrainCircuit className="h-7 w-7 text-accent group-hover:text-primary transition-colors" />
+                <span className="text-xl font-bold font-headline text-foreground">
+                    Ryzor AI
+                </span>
             </Link>
-            
-            <nav className="hidden md:flex items-center gap-2">
-            {navLinks.map((link) => (
-                <Button asChild variant="ghost" key={link.label}>
-                <Link href={link.href}>{link.label}</Link>
+
+            <div className="flex items-center gap-4">
+                <nav className="hidden md:flex items-center gap-2">
+                    {navLinks.map((link) => (
+                        <Button asChild variant="ghost" key={link.label}>
+                        <Link href={link.href}>{link.label}</Link>
+                        </Button>
+                    ))}
+                </nav>
+
+                <Separator orientation="vertical" className="h-6" />
+                
+                <Button asChild variant="ghost" className="hidden md:flex" >
+                    <Link href="/documents">
+                        <BookCopy />
+                        My Documents
+                    </Link>
                 </Button>
-            ))}
-            </nav>
-            
-            <Button asChild variant="ghost" className="hidden md:flex" >
-                <Link href="/documents">
-                    <BookCopy />
-                    My Documents
-                </Link>
-            </Button>
-            
-            {user ? (
-                <UserAvatar />
-            ) : (
-                <AuthProviderDropdown isHeader={true} />
-            )}
+
+                <Separator orientation="vertical" className="h-6" />
+                
+                {user ? (
+                    <UserAvatar />
+                ) : (
+                    <AuthProviderDropdown isHeader={true} />
+                )}
+            </div>
         </header>
     </div>
   );
