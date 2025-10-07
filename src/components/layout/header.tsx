@@ -13,33 +13,28 @@ import { BookCopy } from 'lucide-react';
 export function Header({ onUploadClick }: { onUploadClick: () => void }) {
   const { user } = useUser();
 
-  const navLinks = [
-    { href: '/', label: 'Home' },
-    { href: '#', label: 'About' },
-  ];
-
   return (
     <div className="fixed top-0 left-0 right-0 z-50 p-4">
-        <header className="container mx-auto px-4 lg:px-6 h-16 flex items-center justify-between border border-border/40 bg-red-900/80 backdrop-blur-sm rounded-xl shadow-lg">
-            <nav className="flex items-center gap-2">
-                <Button asChild variant="ghost">
-                  <Link href="/">Home</Link>
-                </Button>
-                <Button variant="ghost" onClick={onUploadClick}>
-                  Upload
-                </Button>
-                <Button asChild variant="ghost">
-                  <Link href="#">About</Link>
-                </Button>
-            </nav>
-
+        <header className="container mx-auto px-4 lg:px-6 h-14 flex items-center justify-between border border-border/40 bg-red-900/80 backdrop-blur-sm rounded-xl shadow-lg">
+            <Button asChild variant="ghost">
+              <Link href="/">Home</Link>
+            </Button>
+            <Separator orientation="vertical" className="h-6" />
+            <Button variant="ghost" onClick={onUploadClick}>
+              Upload
+            </Button>
+            <Separator orientation="vertical" className="h-6" />
+            <Button asChild variant="ghost">
+              <Link href="#">About</Link>
+            </Button>
+            <Separator orientation="vertical" className="h-6" />
             <Button asChild variant="ghost" >
                 <Link href="/documents">
                     <BookCopy />
                     My Documents
                 </Link>
             </Button>
-            
+            <Separator orientation="vertical" className="h-6" />
             {user ? (
                 <UserAvatar />
             ) : (
