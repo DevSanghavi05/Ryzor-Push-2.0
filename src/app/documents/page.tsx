@@ -208,7 +208,7 @@ function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
 
   return (
     <div className="flex flex-col min-h-dvh bg-background">
-      <main className="flex-1 p-4 pt-20 md:p-6 md:pt-24">
+      <main className="flex-1 p-4 md:p-6">
         <div className="container mx-auto">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
             <h1 className="text-3xl md:text-4xl font-bold font-headline">
@@ -294,7 +294,7 @@ function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
               </ul>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center text-center py-24 border-2 border-dashed border-border rounded-lg">
+            <div className="flex flex-col items-center justify-center text-center py-16 border-2 border-dashed border-border rounded-lg">
                 <FileText className="w-16 h-16 text-muted-foreground mb-4" />
                 <h2 className="text-2xl font-bold font-headline mb-2">
                   {searchQuery || filterType !== 'all' ? 'No Results Found' : 'No Documents Found'}
@@ -305,10 +305,12 @@ function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
                     : 'Upload a document or connect a cloud account to get started.'
                   }
                 </p>
-                <Button onClick={onUploadClick}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Upload Your First Document
-                </Button>
+                <div className="flex justify-center">
+                    <Button onClick={onUploadClick}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Upload Your First Document
+                    </Button>
+                </div>
             </div>
           )}
         </div>
