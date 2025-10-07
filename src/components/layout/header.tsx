@@ -26,27 +26,25 @@ export function Header() {
                 Ryzor AI
             </span>
             </Link>
-            <div className="flex items-center gap-4">
-                <nav className="hidden md:flex items-center gap-2">
-                {navLinks.map((link) => (
-                    <Button asChild variant="ghost" key={link.label}>
-                    <Link href={link.href}>{link.label}</Link>
-                    </Button>
-                ))}
-                </nav>
-                <div className="flex items-center gap-2">
-                    <Button asChild variant="ghost" >
-                        <Link href="/documents">
-                            <BookCopy />
-                            My Documents
-                        </Link>
-                    </Button>
-                    {user ? (
-                        <UserAvatar />
-                    ) : (
-                        <AuthProviderDropdown isHeader={true} />
-                    )}
-                </div>
+            <nav className="hidden md:flex items-center gap-2">
+            {navLinks.map((link) => (
+                <Button asChild variant="ghost" key={link.label}>
+                <Link href={link.href}>{link.label}</Link>
+                </Button>
+            ))}
+            </nav>
+            <div className="flex items-center gap-2">
+                <Button asChild variant="ghost" >
+                    <Link href="/documents">
+                        <BookCopy />
+                        My Documents
+                    </Link>
+                </Button>
+                {user ? (
+                    <UserAvatar />
+                ) : (
+                    <AuthProviderDropdown isHeader={true} />
+                )}
             </div>
         </header>
     </div>
