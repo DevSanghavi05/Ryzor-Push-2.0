@@ -1,9 +1,56 @@
+'use client';
+
 import { BrainCircuit, BookCopy, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AuthProviderDropdown } from '../auth/auth-provider-dropdown';
+
+export function Header() {
+  const { user } = useUser();
+
+  const navLinks = [
+    { href: '/', label: 'Home' },
+    { href: '#', label: 'Upload' },
+    { href: '#', label: 'Chat' },
+    { href: '#', label: 'About' },
+    { href: '#', label: 'Contact' },
+  ];
+
+  return (
+    <header className="px-4 lg:px-6 h-16 flex items-center border-b border-border/40 fixed top-0 left-0 right-0 bg-background/80 backdrop-blur-sm z-50">
+      <div className="container mx-auto flex items-center gap-4">
+        <Link href="/" className="flex items-center gap-2 group mr-auto">
+          <BrainCircuit className="h-7 w-7 text-accent group-hover:text-primary transition-colors" />
+          <span className="text-xl font-bold font-headline text-foreground">
+            Ryzor AI
+          </span>
+        </Link>
+        <nav className="hidden md:flex items-center gap-2">
+          {navLinks.map((link) => (
+            <Button asChild variant="ghost" key={link.label}>
+              <Link href={link.href}>{link.label}</Link>
+            </Button>
+          ))}
+        </nav>
+        <div className="flex items-center gap-2">
+            {user ? (
+                <div className="flex items-center gap-4">
+                    <Button asChild variant="ghost" >
+                        <Link href={user ? "/documents" : "#"}>
+                            <BookCopy />
+                            My Documents
+                        </Link>
+                    </Button>
+                    <UserAvatar />
+                </div>
+            ) : <AuthProviderDropdown isHeader={true} />}
+        </div>
+      </div>
+    </header>
+  );
+}
 
 function UserAvatar() {
   const { user, signOut } = useUser();
@@ -20,32 +67,5 @@ function UserAvatar() {
         Sign Out
       </Button>
     </div>
-  );
-}
-
-
-export function Header() {
-  const { user } = useUser();
-
-  return (
-    <header className="px-4 lg:px-6 h-16 flex items-center border-b border-border/40 fixed top-0 left-0 right-0 bg-background/80 backdrop-blur-sm z-50">
-      <div className="container mx-auto flex items-center gap-4">
-        <Link href="/" className="flex items-center gap-2 group mr-auto">
-          <BrainCircuit className="h-7 w-7 text-accent group-hover:text-primary transition-colors" />
-          <span className="text-xl font-bold font-headline text-foreground">
-            Ryzor AI
-          </span>
-        </Link>
-        <nav className="flex items-center gap-2">
-            <Button asChild variant="ghost" >
-                <Link href={user ? "/documents" : "#"}>
-                    <BookCopy />
-                    My Documents
-                </Link>
-            </Button>
-            {user ? <UserAvatar /> : <AuthProviderDropdown isHeader={true} />}
-        </nav>
-      </div>
-    </header>
   );
 }
