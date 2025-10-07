@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AuthProviderDropdown } from '../auth/auth-provider-dropdown';
 
 export function Header() {
-  const { user, signInWithGoogle } = useUser();
+  const { user } = useUser();
 
   const navLinks = [
     { href: '/', label: 'Home' },
@@ -26,20 +26,20 @@ export function Header() {
                 Ryzor AI
             </span>
             </Link>
-            <nav className="hidden md:flex items-center gap-2">
-            {navLinks.map((link) => (
-                <Button asChild variant="ghost" key={link.label}>
-                <Link href={link.href}>{link.label}</Link>
-                </Button>
-            ))}
-            </nav>
             <div className="flex items-center gap-2">
+                <nav className="hidden md:flex items-center gap-2">
+                {navLinks.map((link) => (
+                    <Button asChild variant="ghost" key={link.label}>
+                    <Link href={link.href}>{link.label}</Link>
+                    </Button>
+                ))}
                 <Button asChild variant="ghost" >
                     <Link href="/documents">
                         <BookCopy />
                         My Documents
                     </Link>
                 </Button>
+                </nav>
                 {user ? (
                     <UserAvatar />
                 ) : (
