@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AuthProviderDropdown } from '../auth/auth-provider-dropdown';
 
 export function Header() {
-  const { user } = useUser();
+  const { user, signInWithGoogle } = useUser();
 
   const navLinks = [
     { href: '/', label: 'Home' },
@@ -35,17 +35,17 @@ export function Header() {
                 ))}
                 </nav>
                 <div className="flex items-center gap-2">
+                    <Button asChild variant="ghost" >
+                        <Link href="/documents">
+                            <BookCopy />
+                            My Documents
+                        </Link>
+                    </Button>
                     {user ? (
-                        <div className="flex items-center gap-4">
-                            <Button asChild variant="ghost" >
-                                <Link href={user ? "/documents" : "#"}>
-                                    <BookCopy />
-                                    My Documents
-                                </Link>
-                            </Button>
-                            <UserAvatar />
-                        </div>
-                    ) : <AuthProviderDropdown isHeader={true} />}
+                        <UserAvatar />
+                    ) : (
+                        <AuthProviderDropdown isHeader={true} />
+                    )}
                 </div>
             </div>
         </header>
