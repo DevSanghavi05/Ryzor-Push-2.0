@@ -12,7 +12,7 @@ import { useUser } from '@/firebase';
 import { LogIn } from 'lucide-react';
 
 const GoogleIcon = () => (
-    <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2">
+    <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2">
         <title>Google</title>
         <path
             fill="currentColor"
@@ -34,7 +34,7 @@ const GoogleIcon = () => (
 );
 
 const MicrosoftIcon = () => (
-    <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2">
+    <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2">
         <title>Microsoft</title>
         <path fill="#f25022" d="M11.4 11.4H0V0h11.4z"/>
         <path fill="#00a4ef" d="M11.4 24H0V12.6h11.4z"/>
@@ -52,11 +52,11 @@ export function AuthProviderDropdown({ isHeader = false }: { isHeader?: boolean 
       <DropdownMenuTrigger asChild>
         {isHeader ? (
              <Button variant="outline" size="sm">
-                <LogIn className="mr-2" />
+                <LogIn className="mr-2 h-4 w-4" />
                 Sign In
             </Button>
         ) : (
-            <Button variant="outline" className="rounded-full text-foreground/80 hover:text-foreground hover:bg-card/90">
+            <Button variant="link" className="text-muted-foreground hover:text-primary p-0 h-auto">
                 Sign In
             </Button>
         )}
@@ -74,3 +74,5 @@ export function AuthProviderDropdown({ isHeader = false }: { isHeader?: boolean 
     </DropdownMenu>
   );
 }
+
+    

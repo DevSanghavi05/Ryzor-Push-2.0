@@ -6,20 +6,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Paperclip, Send } from 'lucide-react';
-import { UploadForm } from '@/components/upload/upload-form';
 import Image from 'next/image';
 import { placeholderImages } from '@/lib/placeholder-images';
 import { useUser } from '@/firebase';
 import { AuthProviderDropdown } from '@/components/auth/auth-provider-dropdown';
 
 
-export function ChatInterface() {
-  const [isUploadOpen, setUploadOpen] = useState(false);
-  const { user, signInWithGoogle, signInWithMicrosoft } = useUser();
+export function ChatInterface({ onUploadClick }: { onUploadClick: () => void; }) {
+  const { user, signInWithGoogle } = useUser();
 
   const handleInteraction = () => {
     if (!user) {
-      // This can be changed to open a dialog or dropdown
+      // This could be improved to show the auth dropdown
       signInWithGoogle();
     }
   };
@@ -35,13 +33,14 @@ export function ChatInterface() {
       <div className="mt-6 px-12">
         <Card className="rounded-full p-1 shadow-[0_0_25px_-5px_hsl(var(--primary)/0.3)] border-border/50 focus-within:border-primary transition-all bg-card/80 backdrop-blur-sm">
           <CardContent className="p-0 flex items-center">
-            <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setUploadOpen(true)}>
+            <Button variant="ghost" size="icon" className="rounded-full" onClick={onUploadClick}>
               <Paperclip />
               <span className="sr-only">Upload Document</span>
             </Button>
             <Input
               placeholder="Ask me anything..."
               className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 text-base bg-transparent shadow-none px-2 py-1 h-auto"
+              onFocus={handleInteraction}
             />
             <Button size="icon" className="rounded-full" onClick={handleInteraction}>
               <Send />
@@ -50,8 +49,8 @@ export function ChatInterface() {
           </CardContent>
         </Card>
         {!user && (
-          <div className="mt-4 text-center">
-             <AuthProviderDropdown />
+          <div className="mt-4 text-center text-sm text-muted-foreground">
+             <AuthProviderDropdown /> to save and sync your documents.
           </div>
         )}
       </div>
@@ -84,9 +83,8 @@ export function ChatInterface() {
           </div>
         </div>
       </div>
-
-
-      <UploadForm open={isUploadOpen} onOpenChange={setUploadOpen} />
     </div>
   );
 }
+
+    

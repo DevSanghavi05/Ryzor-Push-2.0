@@ -49,6 +49,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { UploadForm } from '@/components/upload/upload-form';
 
 type Document = {
   id: string;
@@ -74,6 +75,7 @@ function DocumentsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [showTrashConfirm, setShowTrashConfirm] = useState<Document | null>(null);
+  const [isUploadOpen, setUploadOpen] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -162,8 +164,11 @@ function DocumentsPage() {
   }
 
   const handleCopyLink = (link: string) => {
-    navigator.clipboard.writeText(link);
-    toast({ title: 'Link copied to clipboard!' });
+    navigator.clipboard.writeText(link).then(() => {
+      toast({ title: 'Link copied to clipboard!' });
+    }).catch(err => {
+      toast({ variant: 'destructive', title: 'Failed to copy link.' });
+    });
   };
 
   const handleShare = async (doc: Document) => {
@@ -176,9 +181,11 @@ function DocumentsPage() {
         });
       } catch (error) {
         console.error('Error sharing:', error);
+        toast({ variant: 'destructive', title: 'Could not share document.' });
       }
     } else {
-      toast({ variant: 'destructive', title: 'Web Share API not supported in your browser.' });
+      // Fallback for browsers that do not support the Web Share API
+      handleCopyLink(doc.webViewLink);
     }
   };
 
@@ -189,13 +196,13 @@ function DocumentsPage() {
   const confirmTrash = () => {
     if (showTrashConfirm) {
         // Here you would call the API to move the file to trash
+        // For now, we just remove it from the local state
+        setDocuments(documents.filter(d => d.id !== showTrashConfirm.id));
         toast({
             title: "Moved to Trash",
             description: `${showTrashConfirm.name} has been moved to trash.`
         });
         setShowTrashConfirm(null);
-        // We would also remove it from the list here, e.g.:
-        // setDocuments(documents.filter(d => d.id !== showTrashConfirm.id));
     }
   }
 
@@ -207,7 +214,7 @@ function DocumentsPage() {
         <div className="container mx-auto">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
             <h1 className="text-3xl md:text-4xl font-bold font-headline">
-              My Drive
+              My Documents
             </h1>
             <div className="flex w-full md:w-auto items-center gap-2">
                 <div className="relative w-full md:w-auto flex-1 md:flex-none">
@@ -222,7 +229,7 @@ function DocumentsPage() {
                 </div>
                  <Select value={filterType} onValueChange={setFilterType}>
                     <SelectTrigger className="w-[180px]">
-                        <Filter className="mr-2" />
+                        <Filter className="mr-2 h-4 w-4" />
                         <SelectValue placeholder="Filter by type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -233,11 +240,9 @@ function DocumentsPage() {
                         <SelectItem value="pdf">PDFs</SelectItem>
                     </SelectContent>
                 </Select>
-                <Button asChild>
-                    <Link href="/">
-                        <PlusCircle className="mr-2" />
-                        Upload
-                    </Link>
+                <Button onClick={() => setUploadOpen(true)}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Upload
                 </Button>
             </div>
           </div>
@@ -245,9 +250,9 @@ function DocumentsPage() {
              <div className="flex flex-col items-center justify-center text-center py-24 border-2 border-dashed border-border rounded-lg">
                 <Loader className="w-16 h-16 text-muted-foreground animate-spin mb-4" />
                 <h2 className="text-2xl font-bold font-headline mb-2">
-                    Fetching Files...
+                    Fetching Documents...
                 </h2>
-                <p className="text-muted-foreground">Please wait while we connect to your Google Drive.</p>
+                <p className="text-muted-foreground">Please wait while we connect to your accounts.</p>
              </div>
           ) : filteredDocuments.length > 0 ? (
             <div className="border rounded-lg overflow-hidden">
@@ -272,16 +277,16 @@ function DocumentsPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem onSelect={() => window.open(doc.webViewLink, '_blank')}>
-                                    <ExternalLink className="mr-2" /> Open
+                                    <ExternalLink className="mr-2 h-4 w-4" /> Open
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => handleShare(doc)}>
-                                    <Share2 className="mr-2" /> Share
+                                    <Share2 className="mr-2 h-4 w-4" /> Share
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => handleCopyLink(doc.webViewLink)}>
-                                    <Link2 className="mr-2" /> Copy Link
+                                    <Link2 className="mr-2 h-4 w-4" /> Copy Link
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => handleTrash(doc)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                                    <Trash2 className="mr-2" /> Trash
+                                    <Trash2 className="mr-2 h-4 w-4" /> Trash
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -299,9 +304,13 @@ function DocumentsPage() {
                 <p className="text-muted-foreground mb-6 max-w-sm">
                   {searchQuery || filterType !== 'all'
                     ? `Your search and filter criteria did not return any documents.`
-                    : 'We couldn’t find any documents in your Google Drive.'
+                    : 'Upload a document or connect a cloud account to get started.'
                   }
                 </p>
+                <Button onClick={() => setUploadOpen(true)}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Upload Your First Document
+                </Button>
             </div>
           )}
         </div>
@@ -310,7 +319,7 @@ function DocumentsPage() {
                 <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This will move the document "{showTrashConfirm?.name}" to the trash in your Google Drive. This action cannot be undone from this application.
+                        This will move the document "{showTrashConfirm?.name}" to the trash. This action can be undone later.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -321,9 +330,12 @@ function DocumentsPage() {
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+        <UploadForm open={isUploadOpen} onOpenChange={setUploadOpen} />
       </main>
     </div>
   );
 }
 
 export default withAuth(DocumentsPage);
+
+    
