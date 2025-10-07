@@ -12,7 +12,7 @@ import { useUser } from '@/firebase';
 import { AuthProviderDropdown } from '@/components/auth/auth-provider-dropdown';
 
 
-export function ChatInterface({ onUploadClick }: { onUploadClick: () => void; }) {
+export function ChatInterface({ onUploadClick }: { onUploadClick?: () => void; }) {
   const { user, signInWithGoogle } = useUser();
 
   const handleInteraction = () => {
@@ -24,8 +24,8 @@ export function ChatInterface({ onUploadClick }: { onUploadClick: () => void; })
 
 
   return (
-    <div className="flex flex-col h-full max-w-4xl mx-auto w-full flex-1">
-        <div className="flex flex-col items-center text-center mt-8">
+    <div className="flex flex-col h-full max-w-4xl mx-auto w-full flex-1 justify-center">
+        <div className="flex flex-col items-center text-center">
             <h1 className="text-5xl font-bold font-headline mb-8 bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/70">Ryzor AI</h1>
         </div>
 

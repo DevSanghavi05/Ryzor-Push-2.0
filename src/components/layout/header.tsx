@@ -1,20 +1,20 @@
 
 'use client';
 
-import { BookCopy, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AuthProviderDropdown } from '../auth/auth-provider-dropdown';
 import { Separator } from '../ui/separator';
+import { BookCopy } from 'lucide-react';
 
-export function Header() {
+export function Header({ onUploadClick }: { onUploadClick: () => void }) {
   const { user } = useUser();
 
   const navLinks = [
     { href: '/', label: 'Home' },
-    { href: '#', label: 'Upload' },
     { href: '#', label: 'About' },
   ];
 
@@ -29,11 +29,15 @@ export function Header() {
                 <Separator orientation="vertical" className="h-6" />
 
                 <nav className="hidden md:flex items-center gap-2">
-                    {navLinks.map((link) => (
-                        <Button asChild variant="ghost" key={link.label}>
-                        <Link href={link.href}>{link.label}</Link>
-                        </Button>
-                    ))}
+                    <Button asChild variant="ghost">
+                      <Link href="/">Home</Link>
+                    </Button>
+                    <Button variant="ghost" onClick={onUploadClick}>
+                      Upload
+                    </Button>
+                    <Button asChild variant="ghost">
+                      <Link href="#">About</Link>
+                    </Button>
                 </nav>
 
                 <Separator orientation="vertical" className="h-6" />

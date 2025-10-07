@@ -50,7 +50,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { UploadForm } from '@/components/upload/upload-form';
 
 type Document = {
   id: string;
@@ -69,14 +68,13 @@ const getFileIcon = (mimeType: string) => {
     return <File className="w-5 h-5 text-gray-500" />;
 }
 
-function DocumentsPage() {
+function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
   const { accessToken, user, loading: userLoading } = useUser();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [showTrashConfirm, setShowTrashConfirm] = useState<Document | null>(null);
-  const [isUploadOpen, setUploadOpen] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -210,7 +208,6 @@ function DocumentsPage() {
 
   return (
     <div className="flex flex-col min-h-dvh bg-background">
-      <Header />
       <main className="flex-1 p-4 pt-20 md:p-6 md:pt-24">
         <div className="container mx-auto">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
@@ -241,7 +238,7 @@ function DocumentsPage() {
                         <SelectItem value="pdf">PDFs</SelectItem>
                     </SelectContent>
                 </Select>
-                <Button onClick={() => setUploadOpen(true)}>
+                <Button onClick={onUploadClick}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Upload
                 </Button>
@@ -308,7 +305,7 @@ function DocumentsPage() {
                     : 'Upload a document or connect a cloud account to get started.'
                   }
                 </p>
-                <Button onClick={() => setUploadOpen(true)}>
+                <Button onClick={onUploadClick}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Upload Your First Document
                 </Button>
@@ -331,7 +328,6 @@ function DocumentsPage() {
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
-        <UploadForm open={isUploadOpen} onOpenChange={setUploadOpen} />
       </main>
     </div>
   );
