@@ -25,7 +25,7 @@ export function ChatInterface({ onUploadClick }: { onUploadClick: () => void; })
 
   return (
     <div className="flex flex-col h-full max-w-4xl mx-auto w-full flex-1">
-        <div className="flex flex-col items-center text-center">
+        <div className="flex flex-col items-center text-center mt-8">
             <h1 className="text-5xl font-bold font-headline mb-8 bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/70">Ryzor AI</h1>
         </div>
 
