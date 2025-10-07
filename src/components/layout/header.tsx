@@ -19,14 +19,14 @@ export function Header() {
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50 p-4">
-        <header className="container mx-auto px-4 lg:px-6 h-16 flex items-center border border-border/40 bg-background/80 backdrop-blur-sm rounded-xl shadow-lg">
-            <div className="flex items-center gap-4 w-full">
-                <Link href="/" className="flex items-center gap-2 group mr-auto">
-                <BrainCircuit className="h-7 w-7 text-accent group-hover:text-primary transition-colors" />
-                <span className="text-xl font-bold font-headline text-foreground">
-                    Ryzor AI
-                </span>
-                </Link>
+        <header className="container mx-auto px-4 lg:px-6 h-16 flex items-center justify-between border border-border/40 bg-background/80 backdrop-blur-sm rounded-xl shadow-lg">
+            <Link href="/" className="flex items-center gap-2 group">
+            <BrainCircuit className="h-7 w-7 text-accent group-hover:text-primary transition-colors" />
+            <span className="text-xl font-bold font-headline text-foreground">
+                Ryzor AI
+            </span>
+            </Link>
+            <div className="flex items-center gap-4">
                 <nav className="hidden md:flex items-center gap-2">
                 {navLinks.map((link) => (
                     <Button asChild variant="ghost" key={link.label}>
