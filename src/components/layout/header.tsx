@@ -1,3 +1,4 @@
+
 'use client';
 
 import { BrainCircuit, BookCopy, LogOut } from 'lucide-react';
@@ -13,9 +14,7 @@ export function Header() {
   const navLinks = [
     { href: '/', label: 'Home' },
     { href: '#', label: 'Upload' },
-    { href: '#', label: 'Chat' },
     { href: '#', label: 'About' },
-    { href: '#', label: 'Contact' },
   ];
 
   return (
