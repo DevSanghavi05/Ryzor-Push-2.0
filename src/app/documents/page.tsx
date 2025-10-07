@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Header } from '@/components/layout/header';
@@ -157,9 +158,9 @@ function DocumentsPage() {
 
   const getFileType = (mimeType: string) => {
     if (mimeType.includes('pdf')) return 'PDF';
-    if (mimeType.includes('document')) return 'Google Doc';
-    if (mimeType.includes('spreadsheet')) return 'Google Sheet';
-    if (mimeType.includes('presentation')) return 'Google Slides';
+    if (mimeType.includes('document')) return 'Doc';
+    if (mimeType.includes('spreadsheet')) return 'Sheet';
+    if (mimeType.includes('presentation')) return 'Slides';
     return 'File';
   }
 
@@ -234,9 +235,9 @@ function DocumentsPage() {
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All Types</SelectItem>
-                        <SelectItem value="document">Google Docs</SelectItem>
-                        <SelectItem value="spreadsheet">Google Sheets</SelectItem>
-                        <SelectItem value="presentation">Google Slides</SelectItem>
+                        <SelectItem value="document">Docs</SelectItem>
+                        <SelectItem value="spreadsheet">Sheets</SelectItem>
+                        <SelectItem value="presentation">Slides</SelectItem>
                         <SelectItem value="pdf">PDFs</SelectItem>
                     </SelectContent>
                 </Select>
