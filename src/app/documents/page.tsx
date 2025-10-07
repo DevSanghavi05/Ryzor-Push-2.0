@@ -305,12 +305,10 @@ function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
                     : 'Upload a document or connect a cloud account to get started.'
                   }
                 </p>
-                <div className="flex justify-center">
-                    <Button onClick={onUploadClick}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Upload Your First Document
-                    </Button>
-                </div>
+                <Button onClick={onUploadClick}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Upload Your First Document
+                </Button>
             </div>
           )}
         </div>
@@ -336,5 +334,3 @@ function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
 }
 
 export default withAuth(DocumentsPage);
-
-    
