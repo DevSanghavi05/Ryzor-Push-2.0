@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Header } from '@/components/layout/header';
@@ -89,7 +90,7 @@ function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
         name: doc.name,
         modifiedTime: doc.uploaded,
         mimeType: 'application/pdf',
-        webViewLink: `/documents/${doc.id}`, // Placeholder link for local files
+        webViewLink: `/documents/${doc.id}`, // Correct link for local files
         icon: getFileIcon('application/pdf', 'local'),
         source: 'local' as const,
     }));
