@@ -52,7 +52,7 @@ export function TypingAnimation({
 
   return (
     <div className={cn("flex items-center justify-center", className)}>
-      <p className="text-lg md:text-xl text-muted-foreground relative">
+      <p className="text-lg md:text-xl relative">
         {text}
         <span className="animate-pulse">|</span>
       </p>
