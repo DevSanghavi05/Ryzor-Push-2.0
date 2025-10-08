@@ -15,14 +15,14 @@ import { TypingAnimation } from './typing-animation';
 import { ask, Message } from '@/app/actions';
 
 export function ChatInterface() {
-  const { user, signInWithGoogle } = useUser();
+  const { user } = useUser();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleInteraction = async () => {
     if (!user) {
       // This could be improved to show the auth dropdown
-      signInWithGoogle();
       return;
     }
     if (!input.trim()) return;
@@ -30,13 +30,34 @@ export function ChatInterface() {
     const userMessage: Message = { role: 'user', content: input };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
+    setLoading(true);
 
     const storageKey = `documents_${user.uid}`;
-    const documents = JSON.parse(localStorage.getItem(storageKey) || '[]');
-    const context = documents.map((doc: any) => `Document: ${doc.name}\nContent: ${atob(doc.content.split(',')[1])}`).join('\n\n');
+    const documentsString = localStorage.getItem(storageKey);
+    const documents = documentsString ? JSON.parse(documentsString) : [];
     
-    const aiResponse = await ask(input, context);
-    setMessages(prev => [...prev, { role: 'model', content: aiResponse }]);
+    // Naively decode base64 content for text extraction. This is not robust for real PDFs.
+    const context = documents.map((doc: any) => {
+      try {
+        if (doc.content && doc.content.startsWith('data:application/pdf;base64,')) {
+           return `Document: ${doc.name}\nContent: ${atob(doc.content.split(',')[1])}`;
+        }
+        return `Document: ${doc.name}\nContent: Could not decode content.`;
+      } catch (e) {
+        console.error(`Failed to decode content for ${doc.name}:`, e);
+        return `Document: ${doc.name}\nContent: Could not decode content.`;
+      }
+    }).join('\n\n');
+    
+    try {
+      const aiResponse = await ask(input, context);
+      setMessages(prev => [...prev, { role: 'model', content: aiResponse }]);
+    } catch (error) {
+      console.error("Error asking AI:", error);
+      setMessages(prev => [...prev, { role: 'model', content: "Sorry, I ran into an error. Please try again." }]);
+    } finally {
+      setLoading(false);
+    }
   };
   
   const aboutLines = [
@@ -51,6 +72,28 @@ export function ChatInterface() {
             <h1 className="text-5xl font-bold font-headline mb-4 text-primary">Ryzor AI</h1>
             <TypingAnimation lines={aboutLines} className="mb-12 h-8 text-foreground/80" />
         </div>
+      
+      {messages.length > 0 && (
+        <Card className="mb-6 p-4 bg-card/80 backdrop-blur-sm max-h-[40vh] overflow-y-auto">
+          <CardContent className="space-y-4 p-2">
+            {messages.map((msg, index) => (
+              <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`p-3 rounded-lg max-w-[80%] ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
+                  <p className="text-sm">{msg.content}</p>
+                </div>
+              </div>
+            ))}
+            {loading && (
+              <div className="flex justify-start">
+                  <div className="p-3 rounded-lg bg-secondary">
+                      <TypingAnimation lines={["..."]} typingSpeed={150} />
+                  </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
 
       {/* Input Area */}
       <div className="mt-6 px-12">
@@ -68,9 +111,8 @@ export function ChatInterface() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleInteraction()}
-              onFocus={!user ? signInWithGoogle : undefined}
             />
-            <Button size="icon" className="rounded-full" onClick={handleInteraction}>
+            <Button size="icon" className="rounded-full" onClick={handleInteraction} disabled={loading}>
               <Send />
               <span className="sr-only">Send Message</span>
             </Button>
@@ -83,22 +125,24 @@ export function ChatInterface() {
         )}
       </div>
 
-      <div className="mt-16 w-full max-w-6xl mx-auto px-4" style={{ perspective: '1000px' }}>
-        <div className="relative group transition-all duration-500" style={{ transform: 'rotateY(-20deg) rotateX(10deg)' }}>
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-accent rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
-          <div className="relative bg-card rounded-lg overflow-hidden transition-transform duration-300 group-hover:scale-105 border border-primary/20 shadow-2xl shadow-primary/20">
-            <Image
-              src={placeholderImages[2].imageUrl}
-              alt={placeholderImages[2].description}
-              width={1200}
-              height={800}
-              className="object-cover w-full h-full"
-              data-ai-hint={placeholderImages[2].imageHint}
-              priority
-            />
-          </div>
+      {messages.length === 0 && (
+        <div className="mt-16 w-full max-w-6xl mx-auto px-4" style={{ perspective: '1000px' }}>
+            <div className="relative group transition-all duration-500" style={{ transform: 'rotateY(-20deg) rotateX(10deg)' }}>
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-accent rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
+            <div className="relative bg-card rounded-lg overflow-hidden transition-transform duration-300 group-hover:scale-105 border border-primary/20 shadow-2xl shadow-primary/20">
+                <Image
+                src={placeholderImages[2].imageUrl}
+                alt={placeholderImages[2].description}
+                width={1200}
+                height={800}
+                className="object-cover w-full h-full"
+                data-ai-hint={placeholderImages[2].imageHint}
+                priority
+                />
+            </div>
+            </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
