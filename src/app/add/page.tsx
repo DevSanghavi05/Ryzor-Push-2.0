@@ -5,14 +5,33 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, Sheet, Presentation, UploadCloud } from 'lucide-react';
 import withAuth from '@/firebase/auth/with-auth';
+import { useRouter } from 'next/navigation';
 
-function AddDocumentPage() {
-  const sources = [
-    { name: 'Google Docs', icon: <FileText className="w-8 h-8 text-blue-500" />, description: 'Sync documents from your Google Drive.' },
-    { name: 'Google Sheets', icon: <Sheet className="w-8 h-8 text-green-500" />, description: 'Connect spreadsheets for data analysis.' },
-    { name: 'Google Slides', icon: <Presentation className="w-8 h-8 text-yellow-500" />, description: 'Import presentations and slide decks.' },
-    { name: 'Upload File', icon: <UploadCloud className="w-8 h-8 text-purple-500" />, description: 'Upload PDF files from your computer.' },
-  ];
+type Source = {
+  name: string;
+  icon: React.ReactNode;
+  description: string;
+  action: 'filter' | 'upload';
+  value: string;
+};
+
+const sources: Source[] = [
+  { name: 'Google Docs', icon: <FileText className="w-8 h-8 text-blue-500" />, description: 'Sync documents from your Google Drive.', action: 'filter', value: 'document' },
+  { name: 'Google Sheets', icon: <Sheet className="w-8 h-8 text-green-500" />, description: 'Connect spreadsheets for data analysis.', action: 'filter', value: 'spreadsheet' },
+  { name: 'Google Slides', icon: <Presentation className="w-8 h-8 text-yellow-500" />, description: 'Import presentations and slide decks.', action: 'filter', value: 'presentation' },
+  { name: 'Upload File', icon: <UploadCloud className="w-8 h-8 text-purple-500" />, description: 'Upload PDF files from your computer.', action: 'upload', value: 'local' },
+];
+
+function AddDocumentPage({ onUploadClick }: { onUploadClick?: () => void }) {
+  const router = useRouter();
+
+  const handleConnect = (source: Source) => {
+    if (source.action === 'upload' && onUploadClick) {
+      onUploadClick();
+    } else if (source.action === 'filter') {
+      router.push(`/documents?filter=${source.value}`);
+    }
+  };
 
   return (
     <div className="container mx-auto py-12">
@@ -29,7 +48,7 @@ function AddDocumentPage() {
             </CardHeader>
             <CardContent className="flex-1 flex flex-col text-center">
               <CardDescription className="flex-1">{source.description}</CardDescription>
-              <Button className="mt-6 w-full">Connect</Button>
+              <Button className="mt-6 w-full" onClick={() => handleConnect(source)}>Connect</Button>
             </CardContent>
           </Card>
         ))}

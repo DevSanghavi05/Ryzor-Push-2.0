@@ -20,9 +20,9 @@ import {
     HardDriveUpload
 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import { Input } from '@/components/ui/input';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import withAuth from '@/firebase/auth/with-auth';
 import { useUser } from '@/firebase/auth/use-user';
 import type { gapi as Gapi } from 'gapi-script';
@@ -70,14 +70,18 @@ const getFileIcon = (mimeType: string, source: 'drive' | 'local') => {
     return <File className="w-5 h-5 text-gray-500" />;
 }
 
-function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
+function DocumentsPageContent({ onUploadClick }: { onUploadClick?: () => void }) {
   const { accessToken, user, loading: userLoading } = useUser();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState('all');
-  const [showTrashConfirm, setShowTrashConfirm] = useState<Document | null>(null);
+  
+  const searchParams = useSearchParams();
   const router = useRouter();
+  const initialFilter = searchParams.get('filter') || 'all';
+  const [filterType, setFilterType] = useState(initialFilter);
+
+  const [showTrashConfirm, setShowTrashConfirm] = useState<Document | null>(null);
   const { toast } = useToast();
 
   const fetchFiles = useCallback((gapiInstance: typeof Gapi) => {
@@ -370,6 +374,13 @@ function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
   );
 }
 
-export default withAuth(DocumentsPage);
 
-    
+function DocumentsPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DocumentsPageContent />
+    </Suspense>
+  )
+}
+
+export default withAuth(DocumentsPage);
