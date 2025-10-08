@@ -2,7 +2,6 @@
 'use server';
 
 import { ai } from '@/ai/genkit';
-import { generate } from 'genkit';
 
 export interface Message {
   role: 'user' | 'model';
@@ -22,7 +21,7 @@ export async function ask(question: string, context: string): Promise<string> {
     ${question}
   `;
 
-  const llmResponse = await generate({
+  const llmResponse = await ai.generate({
     model: ai.model,
     prompt: prompt,
   });
