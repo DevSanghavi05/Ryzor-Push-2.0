@@ -33,8 +33,8 @@ export function ChatInterface() {
   return (
     <div className="flex flex-col h-full max-w-6xl mx-auto w-full flex-1 justify-center">
         <div className="flex flex-col items-center text-center">
-            <h1 className="text-5xl font-bold font-headline mb-4 bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/70">Ryzor AI</h1>
-            <TypingAnimation lines={aboutLines} className="mb-8 h-8 text-foreground/80" />
+            <h1 className="text-5xl font-bold font-headline mb-4 bg-clip-text text-transparent bg-gradient-to-b from-primary/80 to-foreground">Ryzor AI</h1>
+            <TypingAnimation lines={aboutLines} className="mb-12 h-8 text-foreground/80" />
         </div>
 
       {/* Input Area */}
