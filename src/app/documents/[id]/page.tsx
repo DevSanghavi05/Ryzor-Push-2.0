@@ -3,13 +3,34 @@
 import { Header } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
+type LocalDocument = {
+    id: string;
+    name: string;
+    content: string; // Assuming content is a data URL for the PDF
+    uploaded: string;
+}
 
 export default function DocumentPage() {
     const params = useParams();
     const router = useRouter();
     const id = params.id as string;
+    const [doc, setDoc] = useState<LocalDocument | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (id) {
+            const existingDocuments = JSON.parse(localStorage.getItem('documents') || '[]');
+            const foundDoc = existingDocuments.find((d: LocalDocument) => d.id === id);
+            if (foundDoc) {
+                setDoc(foundDoc);
+            }
+            setLoading(false);
+        }
+    }, [id]);
 
   return (
     <div className="flex flex-col min-h-dvh bg-background">
@@ -23,14 +44,22 @@ export default function DocumentPage() {
               </Link>
             </Button>
             <h1 className="text-2xl font-bold font-headline mt-2 ml-4">
-                Document {id}
+                {loading ? "Loading..." : doc?.name || "Document not found"}
             </h1>
           </div>
           <div className="flex-1 flex items-center justify-center mt-8">
-            <p>Document content will be displayed here.</p>
+            {loading ? (
+                <Loader className="animate-spin" />
+            ) : doc ? (
+                <iframe src={doc.content} className="w-full h-[70vh] border rounded-lg" title={doc.name}></iframe>
+            ) : (
+                <p>Document content could not be loaded or found.</p>
+            )}
           </div>
         </div>
       </main>
     </div>
   );
 }
+
+    

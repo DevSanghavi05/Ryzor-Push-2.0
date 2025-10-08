@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { Header } from '@/components/layout/header';
@@ -17,7 +15,8 @@ import {
     Share2,
     Link2,
     Trash2,
-    Filter
+    Filter,
+    HardDriveUpload
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState, useCallback } from 'react';
@@ -58,9 +57,11 @@ type Document = {
   mimeType: string;
   webViewLink: string;
   icon: React.ReactNode;
+  source: 'drive' | 'local';
 };
 
-const getFileIcon = (mimeType: string) => {
+const getFileIcon = (mimeType: string, source: 'drive' | 'local') => {
+    if (source === 'local') return <HardDriveUpload className="w-5 h-5 text-purple-500" />;
     if (mimeType.includes('document')) return <FileText className="w-5 h-5 text-blue-500" />;
     if (mimeType.includes('spreadsheet')) return <Sheet className="w-5 h-5 text-green-500" />;
     if (mimeType.includes('presentation')) return <Presentation className="w-5 h-5 text-yellow-500" />;
@@ -79,25 +80,41 @@ function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
   const { toast } = useToast();
 
   const fetchFiles = useCallback((gapiInstance: typeof Gapi) => {
-    if (!gapiInstance.client?.drive) {
-        console.error("Drive API client not loaded.");
+    setLoading(true);
+
+    const localDocsString = localStorage.getItem('documents');
+    const localDocs = localDocsString ? JSON.parse(localDocsString) : [];
+    const formattedLocalDocs: Document[] = localDocs.map((doc: any) => ({
+        id: doc.id,
+        name: doc.name,
+        modifiedTime: doc.uploaded,
+        mimeType: 'application/pdf',
+        webViewLink: `/documents/${doc.id}`, // Placeholder link for local files
+        icon: getFileIcon('application/pdf', 'local'),
+        source: 'local' as const,
+    }));
+
+    if (!gapiInstance.client?.drive || !accessToken) {
+        setDocuments(formattedLocalDocs);
         setLoading(false);
         return;
     }
+
     gapiInstance.client.drive.files.list({
       'pageSize': 20,
       'fields': "nextPageToken, files(id, name, mimeType, modifiedTime, webViewLink)"
     }).then((response: any) => {
       const files = response.result.files as any[];
-      const formattedFiles = files.map(file => ({
+      const formattedDriveFiles: Document[] = files.map(file => ({
         id: file.id,
         name: file.name,
         modifiedTime: file.modifiedTime,
         mimeType: file.mimeType,
         webViewLink: file.webViewLink,
-        icon: getFileIcon(file.mimeType),
+        icon: getFileIcon(file.mimeType, 'drive'),
+        source: 'drive' as const,
       }));
-      setDocuments(formattedFiles);
+      setDocuments([...formattedDriveFiles, ...formattedLocalDocs]);
       setLoading(false);
     }).catch((error: any) => {
         const errorDetails = error.result?.error;
@@ -106,20 +123,17 @@ function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
         } else {
           console.error("Error fetching files: ", error);
         }
+        setDocuments(formattedLocalDocs);
         setLoading(false);
     });
-  }, []);
+  }, [accessToken]);
 
   useEffect(() => {
     if (userLoading) {
       setLoading(true);
       return;
     }
-    if (!accessToken) {
-      setLoading(false);
-      return;
-    };
-
+    
     const initGapiClient = async () => {
       try {
         const gapiScript = await import('gapi-script');
@@ -129,15 +143,29 @@ function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
           gapiInstance.client.init({
             discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
           }).then(() => {
-            gapiInstance.auth.setToken({ access_token: accessToken });
+            if (accessToken) {
+                gapiInstance.auth.setToken({ access_token: accessToken });
+            }
             fetchFiles(gapiInstance);
           }).catch(err => {
               console.error("Error initializing GAPI client", err);
-              setLoading(false);
+              fetchFiles(gapiInstance); // Fetch local files even if GAPI fails
           });
         });
       } catch (e) {
         console.error("Error loading GAPI script", e);
+        const localDocsString = localStorage.getItem('documents');
+        const localDocs = localDocsString ? JSON.parse(localDocsString) : [];
+        const formattedLocalDocs: Document[] = localDocs.map((doc: any) => ({
+            id: doc.id,
+            name: doc.name,
+            modifiedTime: doc.uploaded,
+            mimeType: 'application/pdf',
+            webViewLink: `/documents/${doc.id}`,
+            icon: getFileIcon('application/pdf', 'local'),
+            source: 'local' as const,
+        }));
+        setDocuments(formattedLocalDocs);
         setLoading(false);
       }
     };
@@ -151,10 +179,12 @@ function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
     .filter(doc => doc.name.toLowerCase().includes(searchQuery.toLowerCase()))
     .filter(doc => {
         if (filterType === 'all') return true;
+        if (filterType === 'local') return doc.source === 'local';
         return doc.mimeType.includes(filterType);
     });
 
-  const getFileType = (mimeType: string) => {
+  const getFileType = (mimeType: string, source: 'drive' | 'local') => {
+    if (source === 'local') return 'Local PDF';
     if (mimeType.includes('pdf')) return 'PDF';
     if (mimeType.includes('document')) return 'Doc';
     if (mimeType.includes('spreadsheet')) return 'Sheet';
@@ -176,8 +206,13 @@ function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
 
   const confirmTrash = () => {
     if (showTrashConfirm) {
-        // Here you would call the API to move the file to trash
-        // For now, we just remove it from the local state
+        if (showTrashConfirm.source === 'local') {
+             const existingDocuments = JSON.parse(localStorage.getItem('documents') || '[]');
+             const updatedDocuments = existingDocuments.filter((d: any) => d.id !== showTrashConfirm.id);
+             localStorage.setItem('documents', JSON.stringify(updatedDocuments));
+        } else {
+            // Here you would call the API to move the Drive file to trash
+        }
         setDocuments(documents.filter(d => d.id !== showTrashConfirm.id));
         toast({
             title: "Moved to Trash",
@@ -214,6 +249,7 @@ function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All Types</SelectItem>
+                        <SelectItem value="local">Local Files</SelectItem>
                         <SelectItem value="document">Docs</SelectItem>
                         <SelectItem value="spreadsheet">Sheets</SelectItem>
                         <SelectItem value="presentation">Slides</SelectItem>
@@ -238,9 +274,9 @@ function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
                     <div className="flex items-center gap-4 truncate">
                         {doc.icon}
                         <div className="truncate">
-                            <p className="font-medium truncate">{doc.name}</p>
+                            <Link href={doc.source === 'drive' ? doc.webViewLink : `/documents/${doc.id}`} target={doc.source === 'drive' ? '_blank' : '_self'} className="font-medium truncate hover:underline">{doc.name}</Link>
                             <p className="text-sm text-muted-foreground">
-                                Modified: {new Date(doc.modifiedTime).toLocaleDateString()} &middot; {getFileType(doc.mimeType)}
+                                Modified: {new Date(doc.modifiedTime).toLocaleDateString()} &middot; {getFileType(doc.mimeType, doc.source)}
                             </p>
                         </div>
                     </div>
@@ -252,14 +288,14 @@ function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem onSelect={() => window.open(doc.webViewLink, '_blank')}>
+                                <DropdownMenuItem onSelect={() => doc.source === 'drive' ? window.open(doc.webViewLink, '_blank') : router.push(`/documents/${doc.id}`)}>
                                     <ExternalLink className="mr-2 h-4 w-4" /> Open
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
                                   <button
                                     className="flex items-center w-full"
                                     onClick={() => {
-                                      if (navigator.share) {
+                                      if (navigator.share && doc.source === 'drive') {
                                         navigator.share({
                                           title: doc.name,
                                           text: `Check out this document: ${doc.name}`,
@@ -275,11 +311,12 @@ function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
                                         handleCopyLink(doc.webViewLink);
                                       }
                                     }}
+                                    disabled={doc.source === 'local'}
                                   >
                                     <Share2 className="mr-2 h-4 w-4" /> Share
                                   </button>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => handleCopyLink(doc.webViewLink)}>
+                                <DropdownMenuItem onSelect={() => handleCopyLink(doc.webViewLink)} disabled={doc.source === 'local'}>
                                     <Link2 className="mr-2 h-4 w-4" /> Copy Link
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => handleTrash(doc)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
@@ -316,7 +353,7 @@ function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
                 <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This will move the document "{showTrashConfirm?.name}" to the trash. This action can be undone later.
+                        This will move the document "{showTrashConfirm?.name}" to the trash. This action can be undone later for local files, but is permanent for Drive files in this app.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -333,3 +370,5 @@ function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
 }
 
 export default withAuth(DocumentsPage);
+
+    
