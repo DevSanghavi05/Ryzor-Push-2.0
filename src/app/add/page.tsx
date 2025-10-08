@@ -9,6 +9,11 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { useRef } from 'react';
 import { useUser } from '@/firebase';
+import * as pdfjs from 'pdfjs-dist';
+
+// Required for pdfjs-dist
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.mjs`;
+
 
 type Source = {
   name: string;
@@ -33,24 +38,45 @@ function AddDocumentPage() {
   const folderInputRef = useRef<HTMLInputElement>(null);
   const { user } = useUser();
 
+  const extractTextFromPdf = async (file: File): Promise<string> => {
+    const arrayBuffer = await file.arrayBuffer();
+    const loadingTask = pdfjs.getDocument(arrayBuffer);
+    const pdf = await loadingTask.promise;
+    let textContent = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const text = await page.getTextContent();
+      textContent += text.items.map(item => ('str' in item ? item.str : '')).join(' ') + '\n';
+    }
+    return textContent;
+  };
+
   const handleFileSave = (fileToSave: File) => {
     return new Promise<void>((resolve, reject) => {
       if (!user) {
         reject(new Error("User not authenticated."));
         return;
       }
+      
       const reader = new FileReader();
-      reader.onload = (e) => {
-        const newDocument = {
-          id: new Date().toISOString() + Math.random(),
-          name: fileToSave.name,
-          uploaded: new Date().toISOString(),
-          content: e.target?.result,
-        };
-        const storageKey = `documents_${user.uid}`;
-        const existingDocuments = JSON.parse(localStorage.getItem(storageKey) || '[]');
-        localStorage.setItem(storageKey, JSON.stringify([newDocument, ...existingDocuments]));
-        resolve();
+      reader.onload = async (e) => {
+        try {
+          const textContent = await extractTextFromPdf(fileToSave);
+          const newDocument = {
+            id: new Date().toISOString() + Math.random(),
+            name: fileToSave.name,
+            uploaded: new Date().toISOString(),
+            content: e.target?.result, // This is the data URL for viewing
+            textContent: textContent,   // This is the extracted text for analysis
+          };
+          const storageKey = `documents_${user.uid}`;
+          const existingDocuments = JSON.parse(localStorage.getItem(storageKey) || '[]');
+          localStorage.setItem(storageKey, JSON.stringify([newDocument, ...existingDocuments]));
+          resolve();
+        } catch (error) {
+          console.error("Error processing file:", error);
+          reject(new Error(`Could not process the file ${fileToSave.name}.`));
+        }
       };
       reader.onerror = (error) => {
         console.error("FileReader error:", error);

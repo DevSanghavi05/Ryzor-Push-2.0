@@ -22,7 +22,6 @@ export function ChatInterface() {
 
   const handleInteraction = async () => {
     if (!user) {
-      // This could be improved to show the auth dropdown
       return;
     }
     if (!input.trim()) return;
@@ -36,17 +35,9 @@ export function ChatInterface() {
     const documentsString = localStorage.getItem(storageKey);
     const documents = documentsString ? JSON.parse(documentsString) : [];
     
-    // Naively decode base64 content for text extraction. This is not robust for real PDFs.
+    // Use the pre-extracted textContent for analysis
     const context = documents.map((doc: any) => {
-      try {
-        if (doc.content && doc.content.startsWith('data:application/pdf;base64,')) {
-           return `Document: ${doc.name}\nContent: ${atob(doc.content.split(',')[1])}`;
-        }
-        return `Document: ${doc.name}\nContent: Could not decode content.`;
-      } catch (e) {
-        console.error(`Failed to decode content for ${doc.name}:`, e);
-        return `Document: ${doc.name}\nContent: Could not decode content.`;
-      }
+      return `Document: ${doc.name}\nContent: ${doc.textContent || 'No text content available.'}`;
     }).join('\n\n');
     
     try {
