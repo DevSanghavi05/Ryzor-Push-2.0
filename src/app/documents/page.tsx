@@ -170,27 +170,26 @@ function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
     });
   };
 
-  const handleShare = async (doc: Document) => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: doc.name,
-          text: `Check out this document: ${doc.name}`,
-          url: doc.webViewLink,
-        });
-      } catch (error) {
-        // Fallback to copy link if sharing is not allowed or fails
-        if (error instanceof DOMException && (error.name === 'NotAllowedError' || error.name === 'AbortError')) {
-          handleCopyLink(doc.webViewLink);
-        } else {
-          console.error('Error sharing:', error);
-          toast({ variant: 'destructive', title: 'Could not share document.' });
-        }
-      }
-    } else {
-      // Fallback for browsers that do not support the Web Share API
+  const handleShare = (doc: Document) => {
+    if (!navigator.share) {
       handleCopyLink(doc.webViewLink);
+      return;
     }
+
+    navigator.share({
+      title: doc.name,
+      text: `Check out this document: ${doc.name}`,
+      url: doc.webViewLink,
+    }).catch((error) => {
+      // Fallback to copy link if sharing is not allowed or fails
+      if (error.name === 'AbortError') {
+        // This is fine, user cancelled the share sheet
+        return;
+      }
+      console.error('Error sharing:', error);
+      // Fallback for other errors
+      handleCopyLink(doc.webViewLink);
+    });
   };
 
   const handleTrash = (doc: Document) => {
