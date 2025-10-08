@@ -12,18 +12,32 @@ import { useUser } from '@/firebase';
 import { AuthProviderDropdown } from '@/components/auth/auth-provider-dropdown';
 import Link from 'next/link';
 import { TypingAnimation } from './typing-animation';
-
+import { ask, Message } from '@/app/actions';
 
 export function ChatInterface() {
   const { user, signInWithGoogle } = useUser();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
 
-  const handleInteraction = () => {
+  const handleInteraction = async () => {
     if (!user) {
       // This could be improved to show the auth dropdown
       signInWithGoogle();
+      return;
     }
-  };
+    if (!input.trim()) return;
 
+    const userMessage: Message = { role: 'user', content: input };
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+
+    const documents = JSON.parse(localStorage.getItem('documents') || '[]');
+    const context = documents.map((doc: any) => `Document: ${doc.name}\nContent: ${atob(doc.content.split(',')[1])}`).join('\n\n');
+    
+    const aiResponse = await ask(input, context);
+    setMessages(prev => [...prev, { role: 'model', content: aiResponse }]);
+  };
+  
   const aboutLines = [
     "Ask. Analyze. Understand. Instantly.",
     "Where your documents evolve into intelligence.",
@@ -33,7 +47,7 @@ export function ChatInterface() {
   return (
     <div className="flex flex-col h-full max-w-6xl mx-auto w-full flex-1 justify-center">
         <div className="flex flex-col items-center text-center">
-            <h1 className="text-5xl font-bold font-headline mb-4 text-destructive">Ryzor AI</h1>
+            <h1 className="text-5xl font-bold font-headline mb-4 text-primary">Ryzor AI</h1>
             <TypingAnimation lines={aboutLines} className="mb-12 h-8 text-foreground/80" />
         </div>
 
@@ -50,7 +64,10 @@ export function ChatInterface() {
             <Input
               placeholder="Ask me anything..."
               className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 text-base bg-transparent shadow-none px-2 py-1 h-auto"
-              onFocus={handleInteraction}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleInteraction()}
+              onFocus={!user ? signInWithGoogle : undefined}
             />
             <Button size="icon" className="rounded-full" onClick={handleInteraction}>
               <Send />
