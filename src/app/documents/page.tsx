@@ -179,8 +179,13 @@ function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
           url: doc.webViewLink,
         });
       } catch (error) {
-        console.error('Error sharing:', error);
-        toast({ variant: 'destructive', title: 'Could not share document.' });
+        // Fallback to copy link if sharing is not allowed or fails
+        if (error instanceof DOMException && (error.name === 'NotAllowedError' || error.name === 'AbortError')) {
+          handleCopyLink(doc.webViewLink);
+        } else {
+          console.error('Error sharing:', error);
+          toast({ variant: 'destructive', title: 'Could not share document.' });
+        }
       }
     } else {
       // Fallback for browsers that do not support the Web Share API
