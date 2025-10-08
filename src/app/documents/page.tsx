@@ -65,7 +65,7 @@ const getFileIcon = (mimeType: string, source: 'drive' | 'local') => {
     if (source === 'local') return <HardDriveUpload className="w-5 h-5 text-purple-500" />;
     if (mimeType.includes('document')) return <FileText className="w-5 h-5 text-blue-500" />;
     if (mimeType.includes('spreadsheet')) return <Sheet className="w-5 h-5 text-green-500" />;
-    if (mimeType.includes('presentation')) return <Presentation className="w-5 h-5 text-yellow-500" />;
+    if (mimeType.includes('presentation')) return <Presentation className="w-5 h_5 text-yellow-500" />;
     if (mimeType.includes('pdf')) return <FileText className="w-5 h-5 text-red-500" />;
     return <File className="w-5 h-5 text-gray-500" />;
 }
@@ -238,6 +238,14 @@ function DocumentsPageContent() {
     }
   }
 
+  const handleDocumentClick = (e: React.MouseEvent, doc: Document) => {
+    if (doc.source === 'drive') {
+        window.open(doc.webViewLink, '_blank');
+    } else {
+        router.push(doc.webViewLink);
+    }
+  };
+
 
   return (
     <div className="flex flex-col min-h-dvh bg-background">
@@ -290,7 +298,7 @@ function DocumentsPageContent() {
                     <div className="flex items-center gap-4 truncate">
                         {doc.icon}
                         <div className="truncate">
-                            <Link href={doc.source === 'drive' ? doc.webViewLink : `/documents/${doc.id}`} target={doc.source === 'drive' ? '_blank' : '_self'} className="font-medium truncate hover:underline">{doc.name}</Link>
+                            <a href={doc.webViewLink} onClick={(e) => { e.preventDefault(); handleDocumentClick(e, doc); }} className="font-medium truncate hover:underline cursor-pointer">{doc.name}</a>
                             <p className="text-sm text-muted-foreground">
                                 Modified: {new Date(doc.modifiedTime).toLocaleDateString()} &middot; {getFileType(doc.mimeType, doc.source)}
                             </p>
@@ -304,7 +312,7 @@ function DocumentsPageContent() {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem onSelect={() => doc.source === 'drive' ? window.open(doc.webViewLink, '_blank') : router.push(`/documents/${doc.id}`)}>
+                                <DropdownMenuItem onSelect={() => handleDocumentClick(new MouseEvent('click') as any, doc)}>
                                     <ExternalLink className="mr-2 h-4 w-4" /> Open
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>

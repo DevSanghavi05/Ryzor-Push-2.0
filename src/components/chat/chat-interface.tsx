@@ -35,11 +35,20 @@ export function ChatInterface() {
     const documentsString = localStorage.getItem(storageKey);
     const documents = documentsString ? JSON.parse(documentsString) : [];
     
-    // Use the pre-extracted textContent for analysis
-    const context = documents.map((doc: any) => {
-      return `Document: ${doc.name}\nContent: ${doc.textContent || 'No text content available.'}`;
-    }).join('\n\n');
+    // Filter documents to only include those with textContent, then map to context string
+    const context = documents
+      .filter((doc: any) => doc.textContent && doc.textContent.trim().length > 0)
+      .map((doc: any) => {
+        return `Document: ${doc.name}\nContent: ${doc.textContent}`;
+      }).join('\n\n');
     
+    // If there's no context, inform the user and stop.
+    if (!context) {
+        setMessages(prev => [...prev, { role: 'model', content: "I don't have any documents to analyze. Please upload a PDF first." }]);
+        setLoading(false);
+        return;
+    }
+
     try {
       const aiResponse = await ask(input, context);
       setMessages(prev => [...prev, { role: 'model', content: aiResponse }]);
