@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Header } from '@/components/layout/header';
@@ -6,6 +7,7 @@ import Link from 'next/link';
 import { ArrowLeft, Loader } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useUser } from '@/firebase';
 
 type LocalDocument = {
     id: string;
@@ -17,20 +19,25 @@ type LocalDocument = {
 export default function DocumentPage() {
     const params = useParams();
     const router = useRouter();
+    const { user } = useUser();
     const id = params.id as string;
     const [doc, setDoc] = useState<LocalDocument | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (id) {
-            const existingDocuments = JSON.parse(localStorage.getItem('documents') || '[]');
+        if (id && user) {
+            const storageKey = `documents_${user.uid}`;
+            const existingDocuments = JSON.parse(localStorage.getItem(storageKey) || '[]');
             const foundDoc = existingDocuments.find((d: LocalDocument) => d.id === id);
             if (foundDoc) {
                 setDoc(foundDoc);
             }
             setLoading(false);
+        } else if (!user) {
+            // Wait for user to be available
+            setLoading(true);
         }
-    }, [id]);
+    }, [id, user]);
 
   return (
     <div className="flex flex-col min-h-dvh bg-background">
@@ -61,5 +68,3 @@ export default function DocumentPage() {
     </div>
   );
 }
-
-    

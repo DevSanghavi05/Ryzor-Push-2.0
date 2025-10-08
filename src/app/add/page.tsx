@@ -8,6 +8,7 @@ import withAuth from '@/firebase/auth/with-auth';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { useRef } from 'react';
+import { useUser } from '@/firebase';
 
 type Source = {
   name: string;
@@ -30,9 +31,14 @@ function AddDocumentPage() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useUser();
 
   const handleFileSave = (fileToSave: File) => {
     return new Promise<void>((resolve, reject) => {
+      if (!user) {
+        reject(new Error("User not authenticated."));
+        return;
+      }
       const reader = new FileReader();
       reader.onload = (e) => {
         const newDocument = {
@@ -41,8 +47,9 @@ function AddDocumentPage() {
           uploaded: new Date().toISOString(),
           content: e.target?.result,
         };
-        const existingDocuments = JSON.parse(localStorage.getItem('documents') || '[]');
-        localStorage.setItem('documents', JSON.stringify([newDocument, ...existingDocuments]));
+        const storageKey = `documents_${user.uid}`;
+        const existingDocuments = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        localStorage.setItem(storageKey, JSON.stringify([newDocument, ...existingDocuments]));
         resolve();
       };
       reader.onerror = (error) => {

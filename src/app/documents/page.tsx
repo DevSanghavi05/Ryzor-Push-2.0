@@ -85,9 +85,14 @@ function DocumentsPageContent() {
   const { toast } = useToast();
 
   const fetchFiles = useCallback((gapiInstance: typeof Gapi) => {
+    if (!user) {
+        setLoading(false);
+        return;
+    }
     setLoading(true);
-
-    const localDocsString = localStorage.getItem('documents');
+    
+    const storageKey = `documents_${user.uid}`;
+    const localDocsString = localStorage.getItem(storageKey);
     const localDocs = localDocsString ? JSON.parse(localDocsString) : [];
     const formattedLocalDocs: Document[] = localDocs.map((doc: any) => ({
         id: doc.id,
@@ -131,7 +136,7 @@ function DocumentsPageContent() {
         setDocuments(formattedLocalDocs);
         setLoading(false);
     });
-  }, [accessToken]);
+  }, [accessToken, user]);
 
   useEffect(() => {
     if (userLoading) {
@@ -159,25 +164,30 @@ function DocumentsPageContent() {
         });
       } catch (e) {
         console.error("Error loading GAPI script", e);
-        const localDocsString = localStorage.getItem('documents');
-        const localDocs = localDocsString ? JSON.parse(localDocsString) : [];
-        const formattedLocalDocs: Document[] = localDocs.map((doc: any) => ({
-            id: doc.id,
-            name: doc.name,
-            modifiedTime: doc.uploaded,
-            mimeType: 'application/pdf',
-            webViewLink: `/documents/${doc.id}`,
-            icon: getFileIcon('application/pdf', 'local'),
-            source: 'local' as const,
-        }));
-        setDocuments(formattedLocalDocs);
+        if (user) {
+            const storageKey = `documents_${user.uid}`;
+            const localDocsString = localStorage.getItem(storageKey);
+            const localDocs = localDocsString ? JSON.parse(localDocsString) : [];
+            const formattedLocalDocs: Document[] = localDocs.map((doc: any) => ({
+                id: doc.id,
+                name: doc.name,
+                modifiedTime: doc.uploaded,
+                mimeType: 'application/pdf',
+                webViewLink: `/documents/${doc.id}`,
+                icon: getFileIcon('application/pdf', 'local'),
+                source: 'local' as const,
+            }));
+            setDocuments(formattedLocalDocs);
+        } else {
+            setDocuments([]);
+        }
         setLoading(false);
       }
     };
 
     initGapiClient();
 
-  }, [accessToken, userLoading, fetchFiles]);
+  }, [accessToken, userLoading, fetchFiles, user]);
 
 
   const filteredDocuments = documents
@@ -210,11 +220,12 @@ function DocumentsPageContent() {
   }
 
   const confirmTrash = () => {
-    if (showTrashConfirm) {
+    if (showTrashConfirm && user) {
         if (showTrashConfirm.source === 'local') {
-             const existingDocuments = JSON.parse(localStorage.getItem('documents') || '[]');
+             const storageKey = `documents_${user.uid}`;
+             const existingDocuments = JSON.parse(localStorage.getItem(storageKey) || '[]');
              const updatedDocuments = existingDocuments.filter((d: any) => d.id !== showTrashConfirm.id);
-             localStorage.setItem('documents', JSON.stringify(updatedDocuments));
+             localStorage.setItem(storageKey, JSON.stringify(updatedDocuments));
         } else {
             // Here you would call the API to move the Drive file to trash
         }

@@ -31,7 +31,8 @@ export function ChatInterface() {
     setMessages(prev => [...prev, userMessage]);
     setInput('');
 
-    const documents = JSON.parse(localStorage.getItem('documents') || '[]');
+    const storageKey = `documents_${user.uid}`;
+    const documents = JSON.parse(localStorage.getItem(storageKey) || '[]');
     const context = documents.map((doc: any) => `Document: ${doc.name}\nContent: ${atob(doc.content.split(',')[1])}`).join('\n\n');
     
     const aiResponse = await ask(input, context);
