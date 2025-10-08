@@ -10,9 +10,10 @@ import Image from 'next/image';
 import { placeholderImages } from '@/lib/placeholder-images';
 import { useUser } from '@/firebase';
 import { AuthProviderDropdown } from '@/components/auth/auth-provider-dropdown';
+import Link from 'next/link';
 
 
-export function ChatInterface({ onUploadClick }: { onUploadClick?: () => void; }) {
+export function ChatInterface() {
   const { user, signInWithGoogle } = useUser();
 
   const handleInteraction = () => {
@@ -33,9 +34,11 @@ export function ChatInterface({ onUploadClick }: { onUploadClick?: () => void; }
       <div className="mt-6 px-12">
         <Card className="rounded-full p-1 shadow-[0_0_25px_-5px_hsl(var(--primary)/0.3)] border-border/50 focus-within:border-primary transition-all bg-card/80 backdrop-blur-sm">
           <CardContent className="p-0 flex items-center">
-            <Button variant="ghost" size="icon" className="rounded-full" onClick={onUploadClick}>
-              <Paperclip />
-              <span className="sr-only">Upload Document</span>
+            <Button asChild variant="ghost" size="icon" className="rounded-full">
+              <Link href="/add">
+                <Paperclip />
+                <span className="sr-only">Upload Document</span>
+              </Link>
             </Button>
             <Input
               placeholder="Ask me anything..."

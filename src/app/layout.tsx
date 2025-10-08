@@ -1,3 +1,4 @@
+
 'use client';
 
 import './globals.css';
@@ -5,8 +6,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
-import { useState } from 'react';
-import { UploadForm } from '@/components/upload/upload-form';
 import * as React from 'react';
 
 // Metadata needs to be exported from a server component, so we can't have it here anymore.
@@ -21,16 +20,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [isUploadOpen, setUploadOpen] = useState(false);
-
-  // We need to clone the children to pass down the onUploadClick prop
-  const childrenWithProps = React.Children.map(children, child => {
-    if (React.isValidElement(child)) {
-      // @ts-expect-error - injecting prop
-      return React.cloneElement(child, { onUploadClick: () => setUploadOpen(true) });
-    }
-    return child;
-  });
 
   return (
     <html lang="en" className="dark">
@@ -43,12 +32,11 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased flex flex-col min-h-dvh">
         <FirebaseClientProvider>
-          <Header onUploadClick={() => setUploadOpen(true)} />
-          <main className="flex-1 flex flex-col pt-24">{childrenWithProps}</main>
+          <Header />
+          <main className="flex-1 flex flex-col pt-24">{children}</main>
           <Footer />
         </FirebaseClientProvider>
         <Toaster />
-        <UploadForm open={isUploadOpen} onOpenChange={setUploadOpen} />
       </body>
     </html>
   );

@@ -70,7 +70,7 @@ const getFileIcon = (mimeType: string, source: 'drive' | 'local') => {
     return <File className="w-5 h-5 text-gray-500" />;
 }
 
-function DocumentsPageContent({ onUploadClick }: { onUploadClick?: () => void }) {
+function DocumentsPageContent() {
   const { accessToken, user, loading: userLoading } = useUser();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
@@ -346,9 +346,11 @@ function DocumentsPageContent({ onUploadClick }: { onUploadClick?: () => void })
                     : 'Upload a document or connect a cloud account to get started.'
                   }
                 </p>
-                <Button onClick={onUploadClick}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Upload Your First Document
+                <Button asChild>
+                    <Link href="/add">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add Your First Document
+                    </Link>
                 </Button>
             </div>
           )}

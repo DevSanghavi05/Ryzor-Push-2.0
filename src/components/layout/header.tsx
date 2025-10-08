@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AuthProviderDropdown } from '../auth/auth-provider-dropdown';
 import { BookCopy } from 'lucide-react';
 
-export function Header({ onUploadClick }: { onUploadClick: () => void }) {
+export function Header() {
   const { user } = useUser();
 
   return (
