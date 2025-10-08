@@ -2,8 +2,8 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, Sheet, Presentation, UploadCloud, FolderUp } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { FileText, Sheet, Presentation, UploadCloud, FolderUp, ChevronRight } from 'lucide-react';
 import withAuth from '@/firebase/auth/with-auth';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
@@ -18,11 +18,11 @@ type Source = {
 };
 
 const sources: Source[] = [
-  { name: 'Google Docs', icon: <FileText className="w-8 h-8 text-blue-500" />, description: 'Create a new document in Google Docs.', action: 'create', url: 'https://docs.google.com/document/create' },
-  { name: 'Google Sheets', icon: <Sheet className="w-8 h-8 text-green-500" />, description: 'Create a new spreadsheet for data analysis.', action: 'create', url: 'https://docs.google.com/spreadsheets/create' },
-  { name: 'Google Slides', icon: <Presentation className="w-8 h-8 text-yellow-500" />, description: 'Create a new presentation or slide deck.', action: 'create', url: 'https://docs.google.com/presentation/create' },
-  { name: 'Upload File', icon: <UploadCloud className="w-8 h-8 text-purple-500" />, description: 'Upload a single PDF file from your computer.', action: 'upload' },
-  { name: 'Upload Folder', icon: <FolderUp className="w-8 h-8 text-orange-500" />, description: 'Upload all PDFs from a selected folder.', action: 'upload-folder' },
+  { name: 'Google Docs', icon: <FileText className="w-6 h-6 text-blue-500" />, description: 'Create a new document in Google Docs.', action: 'create', url: 'https://docs.google.com/document/create' },
+  { name: 'Google Sheets', icon: <Sheet className="w-6 h-6 text-green-500" />, description: 'Create a new spreadsheet for data analysis.', action: 'create', url: 'https://docs.google.com/spreadsheets/create' },
+  { name: 'Google Slides', icon: <Presentation className="w-6 h-6 text-yellow-500" />, description: 'Create a new presentation or slide deck.', action: 'create', url: 'https://docs.google.com/presentation/create' },
+  { name: 'Upload File', icon: <UploadCloud className="w-6 h-6 text-purple-500" />, description: 'Upload a single PDF file from your computer.', action: 'upload' },
+  { name: 'Upload Folder', icon: <FolderUp className="w-6 h-6 text-orange-500" />, description: 'Upload all PDFs from a selected folder.', action: 'upload-folder' },
 ];
 
 function AddDocumentPage() {
@@ -135,14 +135,14 @@ function AddDocumentPage() {
 
   return (
     <div className="container mx-auto py-12">
-       <input
+      <input
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
         accept="application/pdf"
         className="hidden"
       />
-       <input
+      <input
         type="file"
         ref={folderInputRef}
         onChange={handleFolderChange}
@@ -155,20 +155,30 @@ function AddDocumentPage() {
         <h1 className="text-4xl font-bold font-headline">Add a New Source</h1>
         <p className="text-muted-foreground mt-2">Create a new document or upload existing files to get started.</p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
-        {sources.map(source => (
-          <Card key={source.name} className="flex flex-col">
-            <CardHeader className="flex flex-col items-center text-center">
-              {source.icon}
-              <CardTitle className="mt-4">{source.name}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col text-center">
-              <CardDescription className="flex-1">{source.description}</CardDescription>
-              <Button className="mt-6 w-full" onClick={() => handleConnect(source)}>Connect</Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          <ul className="divide-y divide-border">
+            {sources.map(source => (
+              <li key={source.name} className="group hover:bg-accent/50 transition-colors">
+                <button
+                  className="flex items-center w-full text-left p-4"
+                  onClick={() => handleConnect(source)}
+                >
+                  <div className="flex items-center gap-4 flex-1">
+                    {source.icon}
+                    <div className="flex-1">
+                      <p className="font-medium">{source.name}</p>
+                      <p className="text-sm text-muted-foreground">{source.description}</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground ml-4 transform transition-transform group-hover:translate-x-1" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
     </div>
   );
 }
