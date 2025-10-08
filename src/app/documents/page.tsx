@@ -170,24 +170,6 @@ function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
     });
   };
 
-  const handleShare = (doc: Document) => {
-    if (!navigator.share) {
-      handleCopyLink(doc.webViewLink);
-      return;
-    }
-
-    navigator.share({
-      title: doc.name,
-      text: `Check out this document: ${doc.name}`,
-      url: doc.webViewLink,
-    }).catch((error) => {
-      if (error.name !== 'AbortError') {
-        console.error('Error sharing:', error);
-        handleCopyLink(doc.webViewLink);
-      }
-    });
-  };
-
   const handleTrash = (doc: Document) => {
     setShowTrashConfirm(doc);
   }
@@ -273,8 +255,27 @@ function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
                                 <DropdownMenuItem onSelect={() => window.open(doc.webViewLink, '_blank')}>
                                     <ExternalLink className="mr-2 h-4 w-4" /> Open
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                  <button onClick={() => handleShare(doc)} className="flex items-center w-full">
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
+                                  <button
+                                    className="flex items-center w-full"
+                                    onClick={() => {
+                                      if (navigator.share) {
+                                        navigator.share({
+                                          title: doc.name,
+                                          text: `Check out this document: ${doc.name}`,
+                                          url: doc.webViewLink,
+                                        })
+                                        .catch((error) => {
+                                          if (error.name !== 'AbortError') {
+                                            console.error('Share failed, falling back to copy link:', error);
+                                            handleCopyLink(doc.webViewLink);
+                                          }
+                                        });
+                                      } else {
+                                        handleCopyLink(doc.webViewLink);
+                                      }
+                                    }}
+                                  >
                                     <Share2 className="mr-2 h-4 w-4" /> Share
                                   </button>
                                 </DropdownMenuItem>
