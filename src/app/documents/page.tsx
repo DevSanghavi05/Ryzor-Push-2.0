@@ -238,10 +238,6 @@ function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
                         <SelectItem value="pdf">PDFs</SelectItem>
                     </SelectContent>
                 </Select>
-                <Button onClick={onUploadClick}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Upload
-                </Button>
             </div>
           </div>
           {loading ? (
@@ -294,7 +290,7 @@ function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
               </ul>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center text-center py-16 border-2 border-dashed border-border rounded-lg">
+            <div className="flex flex-col items-center justify-center text-center py-8 border-2 border-dashed border-border rounded-lg">
                 <FileText className="w-16 h-16 text-muted-foreground mb-4" />
                 <h2 className="text-2xl font-bold font-headline mb-2">
                   {searchQuery || filterType !== 'all' ? 'No Results Found' : 'No Documents Found'}
