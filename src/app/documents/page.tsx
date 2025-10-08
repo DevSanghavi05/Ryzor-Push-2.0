@@ -181,14 +181,10 @@ function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
       text: `Check out this document: ${doc.name}`,
       url: doc.webViewLink,
     }).catch((error) => {
-      // Fallback to copy link if sharing is not allowed or fails
-      if (error.name === 'AbortError') {
-        // This is fine, user cancelled the share sheet
-        return;
+      if (error.name !== 'AbortError') {
+        console.error('Error sharing:', error);
+        handleCopyLink(doc.webViewLink);
       }
-      console.error('Error sharing:', error);
-      // Fallback for other errors
-      handleCopyLink(doc.webViewLink);
     });
   };
 
@@ -277,8 +273,10 @@ function DocumentsPage({ onUploadClick }: { onUploadClick?: () => void }) {
                                 <DropdownMenuItem onSelect={() => window.open(doc.webViewLink, '_blank')}>
                                     <ExternalLink className="mr-2 h-4 w-4" /> Open
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => handleShare(doc)}>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                  <button onClick={() => handleShare(doc)} className="flex items-center w-full">
                                     <Share2 className="mr-2 h-4 w-4" /> Share
+                                  </button>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => handleCopyLink(doc.webViewLink)}>
                                     <Link2 className="mr-2 h-4 w-4" /> Copy Link
