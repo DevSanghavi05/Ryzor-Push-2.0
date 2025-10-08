@@ -24,7 +24,7 @@ export function ChatInterface({ onUploadClick }: { onUploadClick?: () => void; }
 
 
   return (
-    <div className="flex flex-col h-full max-w-4xl mx-auto w-full flex-1 justify-center">
+    <div className="flex flex-col h-full max-w-6xl mx-auto w-full flex-1 justify-center">
         <div className="flex flex-col items-center text-center">
             <h1 className="text-5xl font-bold font-headline mb-8 bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/70">Ryzor AI</h1>
         </div>
@@ -55,30 +55,18 @@ export function ChatInterface({ onUploadClick }: { onUploadClick?: () => void; }
         )}
       </div>
 
-      <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl mx-auto">
-        <div className="relative group">
+      <div className="mt-16 w-full max-w-6xl mx-auto px-4" style={{ perspective: '1000px' }}>
+        <div className="relative group transition-all duration-500" style={{ transform: 'rotateY(-20deg) rotateX(10deg)' }}>
           <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-accent rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
-          <div className="relative bg-card rounded-lg overflow-hidden transition-transform duration-300 group-hover:scale-105 h-64">
-            <Image
-              src={placeholderImages[0].imageUrl}
-              alt={placeholderImages[0].description}
-              width={600}
-              height={400}
-              className="object-cover w-full h-full"
-              data-ai-hint={placeholderImages[0].imageHint}
-            />
-          </div>
-        </div>
-        <div className="relative group">
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-accent to-primary rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200 animate-tilt-delay"></div>
-           <div className="relative bg-card rounded-lg overflow-hidden transition-transform duration-300 group-hover:scale-105 h-64">
+          <div className="relative bg-card rounded-lg overflow-hidden transition-transform duration-300 group-hover:scale-105 border border-primary/20 shadow-2xl shadow-primary/20">
             <Image
               src={placeholderImages[2].imageUrl}
               alt={placeholderImages[2].description}
-              width={600}
-              height={400}
+              width={1200}
+              height={800}
               className="object-cover w-full h-full"
               data-ai-hint={placeholderImages[2].imageHint}
+              priority
             />
           </div>
         </div>
@@ -86,5 +74,3 @@ export function ChatInterface({ onUploadClick }: { onUploadClick?: () => void; }
     </div>
   );
 }
-
-    
