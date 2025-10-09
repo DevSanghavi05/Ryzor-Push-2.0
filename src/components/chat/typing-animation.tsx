@@ -1,61 +1,48 @@
+
 'use client';
 
-import { useState, useEffect } from 'react';
-import { cn } from '@/lib/utils';
+import { useState, useEffect } from "react";
 
-interface TypingAnimationProps {
-  lines: string[];
-  className?: string;
-  typingSpeed?: number;
-  deletingSpeed?: number;
-  delayBetweenLines?: number;
-}
-
-export function TypingAnimation({
-  lines,
-  className,
-  typingSpeed = 100,
-  deletingSpeed = 50,
-  delayBetweenLines = 2000,
-}: TypingAnimationProps) {
-  const [lineIndex, setLineIndex] = useState(0);
-  const [text, setText] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
+export function TypingAnimation({ text, speed = 30 }: { text: string, speed?: number}) {
+  const [displayedText, setDisplayedText] = useState("");
 
   useEffect(() => {
-    let typingTimeout: NodeJS.Timeout;
-
-    const handleTyping = () => {
-      const currentLine = lines[lineIndex];
-      if (isDeleting) {
-        if (text.length > 0) {
-          setText(currentLine.substring(0, text.length - 1));
-          typingTimeout = setTimeout(handleTyping, deletingSpeed);
-        } else {
-          setIsDeleting(false);
-          setLineIndex((prev) => (prev + 1) % lines.length);
-        }
+    if (!text) return;
+    let i = 0;
+    setDisplayedText(''); // Reset on new text
+    const interval = setInterval(() => {
+      if (i < text.length) {
+        setDisplayedText(prev => prev + text.charAt(i));
+        i++;
       } else {
-        if (text.length < currentLine.length) {
-          setText(currentLine.substring(0, text.length + 1));
-          typingTimeout = setTimeout(handleTyping, typingSpeed);
-        } else {
-          typingTimeout = setTimeout(() => setIsDeleting(true), delayBetweenLines);
-        }
+        clearInterval(interval);
       }
-    };
+    }, speed);
+    return () => clearInterval(interval);
+  }, [text, speed]);
 
-    typingTimeout = setTimeout(handleTyping, isDeleting ? deletingSpeed : typingSpeed);
+  // A simple markdown to HTML converter for the typewriter
+  const toHtml = (markdown: string): string => {
+    let html = markdown
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/^\s*\*[ \t]+(.+)/gm, '<li>$1</li>')
+        .replace(/(<li>(?:.|\n)*?<\/li>)/g, '<ul>$1</ul>')
+        .replace(/\n/g, '<br />')
+        .replace(/<br \/><ul>/g, '<ul>')
+        .replace(/<\/ul><br \/>/g, '</ul>')
+        .replace(/<li><br \/>/g, '<li>');
+    return html;
+  };
 
-    return () => clearTimeout(typingTimeout);
-  }, [text, isDeleting, lineIndex, lines, typingSpeed, deletingSpeed, delayBetweenLines]);
+  const htmlContent = toHtml(displayedText);
 
   return (
-    <div className={cn("flex items-center justify-center", className)}>
-      <p className="text-lg md:text-xl relative">
-        {text}
-        <span className="animate-pulse">|</span>
-      </p>
-    </div>
+    <p className="text-lg leading-relaxed whitespace-pre-line">
+        <span dangerouslySetInnerHTML={{ __html: htmlContent }} />
+        <span className="border-r-2 border-primary animate-pulse"></span>
+    </p>
   );
 }
+
+    

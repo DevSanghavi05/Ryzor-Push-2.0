@@ -4,7 +4,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
 import { Paperclip, Send, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { placeholderImages } from '@/lib/placeholder-images';
@@ -14,7 +13,6 @@ import Link from 'next/link';
 import { TypingAnimation } from './typing-animation';
 import { Message } from '@/app/chat/page';
 import { ask } from '@/app/actions';
-import { MarkdownContent } from './markdown-content';
 
 export function ChatInterface() {
   const { user } = useUser();
@@ -91,7 +89,7 @@ export function ChatInterface() {
                    {msg.role === 'model' && msg.content === '' && loading ? (
                      <Loader2 className="animate-spin" />
                    ) : (
-                     <MarkdownContent content={msg.content} />
+                     <TypingAnimation text={msg.content} />
                    )}
                 </div>
               </div>
@@ -102,8 +100,8 @@ export function ChatInterface() {
 
       {/* Input Area */}
       <div className="mt-6 px-12">
-        <Card className="rounded-full p-1 shadow-[0_0_25px_-5px_hsl(var(--primary)/0.3)] border-border/50 focus-within:border-primary transition-all bg-card/80 backdrop-blur-sm">
-          <CardContent className="p-0 flex items-center">
+        <div className="rounded-full p-1 shadow-[0_0_25px_-5px_hsl(var(--primary)/0.3)] border-border/50 focus-within:border-primary transition-all bg-card/80 backdrop-blur-sm">
+          <div className="p-0 flex items-center">
             <Button asChild variant="ghost" size="icon" className="rounded-full">
               <Link href="/add">
                 <Paperclip />
@@ -122,8 +120,8 @@ export function ChatInterface() {
               {loading ? <Loader2 className="animate-spin" /> : <Send />}
               <span className="sr-only">Send Message</span>
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
         {!user && (
           <div className="mt-4 text-center text-sm text-muted-foreground">
              <AuthProviderDropdown /> to save and sync your documents.
@@ -152,3 +150,5 @@ export function ChatInterface() {
     </div>
   );
 }
+
+    
