@@ -62,29 +62,27 @@ function AddDocumentPage() {
       fileReader.onload = async (e) => {
         try {
           const textContent = await extractTextFromPdf(fileToSave);
-          const newDocument = {
-            id: new Date().toISOString() + Math.random(),
+          const docId = new Date().toISOString() + Math.random();
+
+          const docForList = {
+            id: docId,
             name: fileToSave.name,
             uploaded: new Date().toISOString(),
-            content: e.target?.result, // This is the data URL for viewing
-            textContent: textContent,   // This is the extracted text for analysis
+            textContent: textContent,
           };
+          
+          const viewableContent = e.target?.result;
+
+          if (!viewableContent) {
+            reject(new Error('Could not read file content.'));
+            return;
+          }
+
           const storageKey = `documents_${user.uid}`;
           const existingDocuments = JSON.parse(localStorage.getItem(storageKey) || '[]');
           
-          // Separate content from metadata for analysis
-          const docForList = {
-            id: newDocument.id,
-            name: newDocument.name,
-            uploaded: newDocument.uploaded,
-            textContent: newDocument.textContent,
-          };
-
-          // Store full content separately for viewing, if needed, or handle viewing differently
-          // For this app, the content is the DataURL for the PDF viewer iframe.
-          const contentKey = `document_content_${newDocument.id}`;
-          localStorage.setItem(contentKey, newDocument.content as string);
-
+          const contentKey = `document_content_${docId}`;
+          localStorage.setItem(contentKey, viewableContent as string);
 
           localStorage.setItem(storageKey, JSON.stringify([docForList, ...existingDocuments]));
           resolve();
