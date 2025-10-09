@@ -12,7 +12,8 @@ import { useUser } from '@/firebase';
 import { AuthProviderDropdown } from '@/components/auth/auth-provider-dropdown';
 import Link from 'next/link';
 import { TypingAnimation } from './typing-animation';
-import { ask, Message } from '@/app/actions';
+import { Message } from '@/app/chat/page';
+import { ask } from '@/app/actions';
 import { MarkdownContent } from './markdown-content';
 
 export function ChatInterface() {
@@ -28,32 +29,44 @@ export function ChatInterface() {
     if (!input.trim()) return;
 
     const userMessage: Message = { role: 'user', content: input };
+    const newMessages: Message[] = [...messages, userMessage];
+    setMessages(newMessages);
     const currentInput = input;
-    setMessages(prev => [...prev, userMessage]);
     setInput('');
     setLoading(true);
 
-    const storageKey = `documents_${user.uid}`;
-    const documentsString = localStorage.getItem(storageKey);
-    const documents = documentsString ? JSON.parse(documentsString) : [];
-    
-    // Filter documents to only include those with textContent, then map to context string
-    const context = documents
-      .filter((doc: any) => doc.textContent && doc.textContent.trim().length > 0)
-      .map((doc: any) => {
-        return `Document: ${doc.name}\nContent: ${doc.textContent}`;
-      }).join('\n\n');
-    
-    // If there's no context, inform the user and stop.
-    if (!context) {
+    try {
+      const storageKey = `documents_${user.uid}`;
+      const documentsString = localStorage.getItem(storageKey);
+      const documents = documentsString ? JSON.parse(documentsString) : [];
+
+      const context = documents
+        .filter((doc: any) => doc.textContent && doc.textContent.trim().length > 0)
+        .map((doc: any) => `Document: ${doc.name}\nContent: ${doc.textContent}`)
+        .join('\n\n');
+
+      if (!context) {
         setMessages(prev => [...prev, { role: 'model', content: "I don't have any documents to analyze. Please upload a PDF first." }]);
         setLoading(false);
         return;
-    }
+      }
+      
+      const stream = await ask(currentInput, context, messages);
+      let fullResponse = '';
+      setMessages(prev => [...prev, { role: 'model', content: '' }]);
 
-    try {
-      const aiResponse = await ask(currentInput, context);
-      setMessages(prev => [...prev, { role: 'model', content: aiResponse }]);
+      for await (const chunk of stream) {
+        fullResponse += chunk;
+        setMessages(prev => {
+          const lastMessage = prev[prev.length - 1];
+          if (lastMessage.role === 'model') {
+            lastMessage.content = fullResponse;
+            return [...prev.slice(0, -1), lastMessage];
+          }
+          return prev;
+        });
+      }
+
     } catch (error) {
       console.error("Error asking AI:", error);
       setMessages(prev => [...prev, { role: 'model', content: "Sorry, I ran into an error. Please try again." }]);
@@ -89,7 +102,7 @@ export function ChatInterface() {
                 </div>
               </div>
             ))}
-            {loading && (
+            {loading && messages[messages.length-1]?.role !== 'model' && (
               <div className="flex justify-start">
                   <div className="p-3 rounded-lg bg-secondary">
                       <TypingAnimation lines={["..."]} typingSpeed={150} />
@@ -112,7 +125,7 @@ export function ChatInterface() {
               </Link>
             </Button>
             <Input
-              placeholder="Ask me anything..."
+              placeholder="Ask anything about your documents..."
               className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 text-base bg-transparent shadow-none px-2 py-1 h-auto"
               value={input}
               onChange={(e) => setInput(e.target.value)}
