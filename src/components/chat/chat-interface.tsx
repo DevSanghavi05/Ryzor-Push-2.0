@@ -28,12 +28,10 @@ export function ChatInterface() {
     }
     if (!input.trim()) return;
 
-    const userMessage: Message = { role: 'user', content: input };
-    const newMessages: Message[] = [...messages, userMessage];
-    setMessages(newMessages);
     const currentInput = input;
     setInput('');
     setLoading(true);
+    setMessages([]); // Clear previous messages
 
     try {
       const storageKey = `documents_${user.uid}`;
@@ -46,14 +44,14 @@ export function ChatInterface() {
         .join('\n\n');
 
       if (!context) {
-        setMessages(prev => [...prev, { role: 'model', content: "I don't have any documents to analyze. Please upload a PDF or import a Google Doc first." }]);
+        setMessages([{ role: 'model', content: "I don't have any documents to analyze. Please upload a PDF or import a Google Doc first." }]);
         setLoading(false);
         return;
       }
       
-      const stream = await ask(currentInput, context, messages);
+      const stream = await ask(currentInput, context, []);
       let fullResponse = '';
-      setMessages(prev => [...prev, { role: 'model', content: '' }]);
+      setMessages([{ role: 'model', content: '' }]);
 
       const reader = stream.getReader();
 
@@ -61,19 +59,12 @@ export function ChatInterface() {
         const { done, value } = await reader.read();
         if (done) break;
         fullResponse += value;
-        setMessages(prev => {
-          const lastMessage = prev[prev.length - 1];
-          if (lastMessage.role === 'model') {
-            lastMessage.content = fullResponse;
-            return [...prev.slice(0, -1), lastMessage];
-          }
-          return prev;
-        });
+        setMessages([{ role: 'model', content: fullResponse }]);
       }
 
     } catch (error) {
       console.error("Error asking AI:", error);
-      setMessages(prev => [...prev, { role: 'model', content: "Sorry, I ran into an error. Please try again." }]);
+      setMessages([{ role: 'model', content: "Sorry, I ran into an error. Please try again." }]);
     } finally {
       setLoading(false);
     }
@@ -95,8 +86,8 @@ export function ChatInterface() {
       {messages.length > 0 && (
         <div className="mb-6 p-4 max-h-[40vh] overflow-y-auto space-y-4">
             {messages.map((msg, index) => (
-              <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`p-3 rounded-lg max-w-[80%] ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : ''}`}>
+              <div key={index} className={`flex items-start gap-3 justify-start`}>
+                <div className={`p-3 rounded-lg max-w-[80%]`}>
                    {msg.role === 'model' && msg.content === '' && loading ? (
                      <Loader2 className="animate-spin" />
                    ) : (
@@ -140,7 +131,7 @@ export function ChatInterface() {
         )}
       </div>
 
-      {messages.length === 0 && (
+      {messages.length === 0 && !loading && (
         <div className="mt-16 w-full max-w-6xl mx-auto px-4" style={{ perspective: '1000px' }}>
             <div className="relative group transition-all duration-500" style={{ transform: 'rotateY(-20deg) rotateX(10deg)' }}>
             <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-accent rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
