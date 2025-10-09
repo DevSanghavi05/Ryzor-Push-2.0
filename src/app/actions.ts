@@ -23,13 +23,12 @@ export async function ask(
     ${question}
   `;
 
-  const response = await ai.generate({
+  const { stream } = ai.generateStream({
     model: ai.model,
     prompt: prompt,
     history,
   });
 
-  const stream = response.stream();
   const reader = stream.getReader();
   const readableStream = new ReadableStream<string>({
     async start(controller) {
