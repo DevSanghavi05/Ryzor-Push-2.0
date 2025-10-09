@@ -94,7 +94,7 @@ function ChatPage() {
                 </div>
             )}
             {messages.map((msg, index) => (
-              <div key={index} className={`flex items-start gap-3 justify-start`}>
+              <div key={index} className={`flex items-start gap-3 justify-center text-center`}>
                  <div className={`p-3 rounded-lg max-w-[80%]`}>
                    {msg.role === 'model' && msg.content === '' && loading ? (
                      <Loader2 className="animate-spin" />
