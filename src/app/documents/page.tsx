@@ -17,7 +17,8 @@ import {
     Link2,
     Trash2,
     Filter,
-    HardDriveUpload
+    HardDriveUpload,
+    Download
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState, useCallback, Suspense } from 'react';
@@ -75,6 +76,8 @@ function DocumentsPageContent() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [gapiInstance, setGapiInstance] = useState<typeof Gapi | null>(null);
+
   
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -84,7 +87,7 @@ function DocumentsPageContent() {
   const [showTrashConfirm, setShowTrashConfirm] = useState<Document | null>(null);
   const { toast } = useToast();
 
-  const fetchFiles = useCallback((gapiInstance: typeof Gapi) => {
+  const fetchFiles = useCallback((gapi: typeof Gapi) => {
     if (!user) {
         setLoading(false);
         return;
@@ -104,13 +107,13 @@ function DocumentsPageContent() {
         source: 'local' as const,
     }));
 
-    if (!gapiInstance.client?.drive || !accessToken) {
+    if (!gapi.client?.drive || !accessToken) {
         setDocuments(formattedLocalDocs);
         setLoading(false);
         return;
     }
 
-    gapiInstance.client.drive.files.list({
+    gapi.client.drive.files.list({
       'pageSize': 20,
       'fields': "nextPageToken, files(id, name, mimeType, modifiedTime, webViewLink)"
     }).then((response: any) => {
@@ -147,19 +150,20 @@ function DocumentsPageContent() {
     const initGapiClient = async () => {
       try {
         const gapiScript = await import('gapi-script');
-        const gapiInstance = gapiScript.gapi;
+        const gapi = gapiScript.gapi;
+        setGapiInstance(gapi);
         
-        gapiInstance.load('client', () => {
-          gapiInstance.client.init({
+        gapi.load('client', () => {
+          gapi.client.init({
             discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
           }).then(() => {
             if (accessToken) {
-                gapiInstance.auth.setToken({ access_token: accessToken });
+                gapi.auth.setToken({ access_token: accessToken });
             }
-            fetchFiles(gapiInstance);
+            fetchFiles(gapi);
           }).catch(err => {
               console.error("Error initializing GAPI client", err);
-              fetchFiles(gapiInstance); // Fetch local files even if GAPI fails
+              fetchFiles(gapi); // Fetch local files even if GAPI fails
           });
         });
       } catch (e) {
@@ -246,6 +250,57 @@ function DocumentsPageContent() {
     }
   };
 
+  const handleImport = async (doc: Document) => {
+    if (!gapiInstance || !user) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Google API not initialized or user not logged in.' });
+        return;
+    }
+
+    try {
+        const response = await gapiInstance.client.drive.files.export({
+            fileId: doc.id,
+            mimeType: 'text/plain',
+        });
+
+        const textContent = response.body;
+        
+        const newDocument = {
+            id: doc.id,
+            name: `${doc.name} (Imported)`,
+            uploaded: new Date().toISOString(),
+            textContent: textContent,
+            source: 'local-gdoc', // special type to denote imported gdoc
+        };
+
+        const storageKey = `documents_${user.uid}`;
+        const existingDocuments = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        
+        // Prevent re-importing
+        if (existingDocuments.some((d: any) => d.id === doc.id)) {
+            toast({ title: 'Already Imported', description: `${doc.name} is already in your local documents.` });
+            return;
+        }
+
+        localStorage.setItem(storageKey, JSON.stringify([newDocument, ...existingDocuments]));
+
+        toast({
+            title: "Import Successful",
+            description: `${doc.name} has been imported and its content is ready for analysis.`,
+        });
+
+        // Re-fetch files to update the UI
+        if(gapiInstance) fetchFiles(gapiInstance);
+
+    } catch (error: any) {
+        console.error("Error importing Google Doc:", error);
+        toast({
+            variant: 'destructive',
+            title: "Import Failed",
+            description: error.result?.error?.message || "Could not import the document.",
+        });
+    }
+  };
+
 
   return (
     <div className="flex flex-col min-h-dvh bg-background">
@@ -314,6 +369,9 @@ function DocumentsPageContent() {
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem onSelect={() => handleDocumentClick(new MouseEvent('click') as any, doc)}>
                                     <ExternalLink className="mr-2 h-4 w-4" /> Open
+                                </DropdownMenuItem>
+                                 <DropdownMenuItem onSelect={() => handleImport(doc)} disabled={doc.source === 'local' || !doc.mimeType.includes('document')}>
+                                    <Download className="mr-2 h-4 w-4" /> Import for Analysis
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
                                   <button
