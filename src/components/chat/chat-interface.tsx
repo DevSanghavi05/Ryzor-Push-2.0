@@ -93,8 +93,7 @@ export function ChatInterface() {
         </div>
       
       {messages.length > 0 && (
-        <Card className="mb-6 p-4 bg-card/80 backdrop-blur-sm max-h-[40vh] overflow-y-auto">
-          <CardContent className="space-y-4 p-2">
+        <div className="mb-6 p-4 max-h-[40vh] overflow-y-auto space-y-4">
             {messages.map((msg, index) => (
               <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`p-3 rounded-lg max-w-[80%] ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
@@ -106,8 +105,7 @@ export function ChatInterface() {
                 </div>
               </div>
             ))}
-          </CardContent>
-        </Card>
+        </div>
       )}
 
 

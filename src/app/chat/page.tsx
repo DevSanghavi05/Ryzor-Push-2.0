@@ -97,8 +97,7 @@ function ChatPage() {
             <h1 className="text-2xl font-bold font-headline text-primary">Chat with your Documents</h1>
         </div>
 
-        <Card ref={chatContainerRef} className="flex-1 mb-6 p-4 bg-card/80 backdrop-blur-sm overflow-y-auto">
-          <CardContent className="space-y-4 p-2">
+        <div ref={chatContainerRef} className="flex-1 mb-6 p-4 overflow-y-auto space-y-4">
             {messages.length === 0 && (
                 <div className="text-center text-muted-foreground">
                     Start a conversation by asking a question about your documents.
@@ -115,8 +114,7 @@ function ChatPage() {
                 </div>
               </div>
             ))}
-          </CardContent>
-        </Card>
+        </div>
 
       <div className="mt-auto">
         <Card className="rounded-full p-1 shadow-[0_0_25px_-5px_hsl(var(--primary)/0.3)] border-border/50 focus-within:border-primary transition-all bg-card/80 backdrop-blur-sm">
