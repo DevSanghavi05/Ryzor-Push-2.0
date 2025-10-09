@@ -74,10 +74,22 @@ export function ChatInterface() {
     "No more folders—just answers."
   ];
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
+  
+  const userName = user?.displayName?.split(' ')[0] || '';
+
+
   return (
     <div className="flex flex-col h-full max-w-6xl mx-auto w-full flex-1 justify-center">
         <div className="flex flex-col items-center text-center">
-            <h1 className="text-5xl font-bold font-headline mb-4 text-primary">Ryzor AI</h1>
+            <h1 className="text-5xl font-bold font-headline mb-4 text-primary">
+              {user ? `${getGreeting()}, ${userName}` : "Ryzor AI"}
+            </h1>
             <TypingAnimation lines={aboutLines} className="mb-12 h-8 text-foreground/80" />
         </div>
       
@@ -150,5 +162,3 @@ export function ChatInterface() {
     </div>
   );
 }
-
-    

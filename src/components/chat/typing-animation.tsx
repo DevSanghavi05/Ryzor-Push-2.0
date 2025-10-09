@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 
-export function TypingAnimation({ text, speed = 30 }: { text: string, speed?: number}) {
+export function TypingAnimation({ text, speed = 30, className }: { text: string, speed?: number, className?: string}) {
   const [displayedText, setDisplayedText] = useState("");
 
   useEffect(() => {
@@ -38,11 +38,9 @@ export function TypingAnimation({ text, speed = 30 }: { text: string, speed?: nu
   const htmlContent = toHtml(displayedText);
 
   return (
-    <p className="text-lg leading-relaxed whitespace-pre-line">
+    <p className={`text-lg leading-relaxed whitespace-pre-line ${className}`}>
         <span dangerouslySetInnerHTML={{ __html: htmlContent }} />
         <span className="border-r-2 border-primary animate-pulse"></span>
     </p>
   );
 }
-
-    
