@@ -25,7 +25,7 @@ export async function ask(
     ${question}
   `;
 
-  const { stream } = ai.generateStream({
+  const { stream } = await ai.generateStream({
     model: ai.model,
     prompt: prompt,
     history,
