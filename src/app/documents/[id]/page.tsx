@@ -12,7 +12,7 @@ import { useUser } from '@/firebase';
 type LocalDocument = {
     id: string;
     name: string;
-    content: string; // Assuming content is a data URL for the PDF
+    content: string; // This is now retrieved from its separate storage
     uploaded: string;
 }
 
@@ -27,10 +27,15 @@ export default function DocumentPage() {
     useEffect(() => {
         if (id && user) {
             const storageKey = `documents_${user.uid}`;
+            const contentKey = `document_content_${id}`;
+
             const existingDocuments = JSON.parse(localStorage.getItem(storageKey) || '[]');
-            const foundDoc = existingDocuments.find((d: LocalDocument) => d.id === id);
-            if (foundDoc) {
-                setDoc(foundDoc);
+            const foundDocMeta = existingDocuments.find((d: any) => d.id === id);
+            
+            const content = localStorage.getItem(contentKey);
+
+            if (foundDocMeta && content) {
+                setDoc({ ...foundDocMeta, content });
             }
             setLoading(false);
         } else if (!user) {

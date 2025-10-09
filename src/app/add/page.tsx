@@ -58,8 +58,8 @@ function AddDocumentPage() {
         return;
       }
       
-      const reader = new FileReader();
-      reader.onload = async (e) => {
+      const fileReader = new FileReader();
+      fileReader.onload = async (e) => {
         try {
           const textContent = await extractTextFromPdf(fileToSave);
           const newDocument = {
@@ -71,18 +71,33 @@ function AddDocumentPage() {
           };
           const storageKey = `documents_${user.uid}`;
           const existingDocuments = JSON.parse(localStorage.getItem(storageKey) || '[]');
-          localStorage.setItem(storageKey, JSON.stringify([newDocument, ...existingDocuments]));
+          
+          // Separate content from metadata for analysis
+          const docForList = {
+            id: newDocument.id,
+            name: newDocument.name,
+            uploaded: newDocument.uploaded,
+            textContent: newDocument.textContent,
+          };
+
+          // Store full content separately for viewing, if needed, or handle viewing differently
+          // For this app, the content is the DataURL for the PDF viewer iframe.
+          const contentKey = `document_content_${newDocument.id}`;
+          localStorage.setItem(contentKey, newDocument.content as string);
+
+
+          localStorage.setItem(storageKey, JSON.stringify([docForList, ...existingDocuments]));
           resolve();
         } catch (error) {
           console.error("Error processing file:", error);
           reject(new Error(`Could not process the file ${fileToSave.name}.`));
         }
       };
-      reader.onerror = (error) => {
+      fileReader.onerror = (error) => {
         console.error("FileReader error:", error);
         reject(new Error(`Could not read the file ${fileToSave.name}.`));
       };
-      reader.readAsDataURL(fileToSave);
+      fileReader.readAsDataURL(fileToSave);
     });
   };
   
