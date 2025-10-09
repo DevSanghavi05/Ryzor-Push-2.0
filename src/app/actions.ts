@@ -29,20 +29,12 @@ export async function ask(
     history,
   });
 
-  const reader = stream.getReader();
   const readableStream = new ReadableStream<string>({
     async start(controller) {
-      function push() {
-        reader.read().then(({ done, value }) => {
-          if (done) {
-            controller.close();
-            return;
-          }
-          controller.enqueue(value.text);
-          push();
-        });
+      for await (const chunk of stream) {
+        controller.enqueue(chunk.text);
       }
-      push();
+      controller.close();
     },
   });
 
