@@ -63,6 +63,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (!auth) return;
     const provider = new GoogleAuthProvider();
     provider.addScope('https://www.googleapis.com/auth/drive.readonly');
+    provider.addScope('https://www.googleapis.com/auth/documents.readonly');
     try {
       const result = await signInWithPopup(auth, provider);
       const credential = GoogleAuthProvider.credentialFromResult(result);

@@ -71,6 +71,24 @@ const getFileIcon = (mimeType: string, source: 'drive' | 'local') => {
     return <File className="w-5 h-5 text-gray-500" />;
 }
 
+// Helper to extract text from a Google Doc response object
+const extractTextFromDoc = (doc: any): string => {
+    let text = '';
+    if (doc.body && doc.body.content) {
+        doc.body.content.forEach((element: any) => {
+            if (element.paragraph) {
+                element.paragraph.elements.forEach((paragraphElement: any) => {
+                    if (paragraphElement.textRun) {
+                        text += paragraphElement.textRun.content;
+                    }
+                });
+            }
+        });
+    }
+    return text;
+};
+
+
 function DocumentsPageContent() {
   const { accessToken, user, loading: userLoading } = useUser();
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -153,18 +171,19 @@ function DocumentsPageContent() {
         const gapi = gapiScript.gapi;
         setGapiInstance(gapi);
         
-        gapi.load('client', () => {
-          gapi.client.init({
+        gapi.load('client', async () => {
+          await gapi.client.init({
             discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
-          }).then(() => {
-            if (accessToken) {
-                gapi.auth.setToken({ access_token: accessToken });
-            }
-            fetchFiles(gapi);
-          }).catch(err => {
-              console.error("Error initializing GAPI client", err);
-              fetchFiles(gapi); // Fetch local files even if GAPI fails
           });
+
+          // Also load the Google Docs API client
+          await gapi.client.load('docs', 'v1');
+
+          if (accessToken) {
+              gapi.auth.setToken({ access_token: accessToken });
+          }
+          fetchFiles(gapi);
+
         });
       } catch (e) {
         console.error("Error loading GAPI script", e);
@@ -227,9 +246,11 @@ function DocumentsPageContent() {
     if (showTrashConfirm && user) {
         if (showTrashConfirm.source === 'local') {
              const storageKey = `documents_${user.uid}`;
+             const contentKey = `document_content_${showTrashConfirm.id}`;
              const existingDocuments = JSON.parse(localStorage.getItem(storageKey) || '[]');
              const updatedDocuments = existingDocuments.filter((d: any) => d.id !== showTrashConfirm.id);
              localStorage.setItem(storageKey, JSON.stringify(updatedDocuments));
+             localStorage.removeItem(contentKey);
         } else {
             // Here you would call the API to move the Drive file to trash
         }
@@ -257,25 +278,32 @@ function DocumentsPageContent() {
     }
 
     try {
-        const response = await gapiInstance.client.drive.files.export({
-            fileId: doc.id,
-            mimeType: 'text/plain',
+        // Use the Google Docs API to get the document content
+        const response = await gapiInstance.client.docs.documents.get({
+            documentId: doc.id,
         });
 
-        const textContent = response.body;
+        const textContent = extractTextFromDoc(response.result);
+
+        if (!textContent.trim()) {
+            toast({
+                variant: 'destructive',
+                title: "Import Failed",
+                description: "The document appears to be empty.",
+            });
+            return;
+        }
         
         const newDocument = {
             id: doc.id,
             name: `${doc.name} (Imported)`,
             uploaded: new Date().toISOString(),
             textContent: textContent,
-            source: 'local-gdoc', // special type to denote imported gdoc
         };
 
         const storageKey = `documents_${user.uid}`;
         const existingDocuments = JSON.parse(localStorage.getItem(storageKey) || '[]');
         
-        // Prevent re-importing
         if (existingDocuments.some((d: any) => d.id === doc.id)) {
             toast({ title: 'Already Imported', description: `${doc.name} is already in your local documents.` });
             return;
@@ -288,7 +316,6 @@ function DocumentsPageContent() {
             description: `${doc.name} has been imported and its content is ready for analysis.`,
         });
 
-        // Re-fetch files to update the UI
         if(gapiInstance) fetchFiles(gapiInstance);
 
     } catch (error: any) {
@@ -296,7 +323,7 @@ function DocumentsPageContent() {
         toast({
             variant: 'destructive',
             title: "Import Failed",
-            description: error.result?.error?.message || "Could not import the document.",
+            description: error.result?.error?.message || "Could not import the document. Ensure you have granted permission.",
         });
     }
   };
@@ -437,7 +464,7 @@ function DocumentsPageContent() {
                 <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This will move the document "{showTrashConfirm?.name}" to the trash. This action can be undone later for local files, but is permanent for Drive files in this app.
+                        This will move the document "{showTrashConfirm?.name}" to the trash. This action is not easily reversible for local documents.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
