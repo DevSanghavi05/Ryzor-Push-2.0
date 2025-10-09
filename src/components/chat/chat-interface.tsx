@@ -13,6 +13,7 @@ import { AuthProviderDropdown } from '@/components/auth/auth-provider-dropdown';
 import Link from 'next/link';
 import { TypingAnimation } from './typing-animation';
 import { ask, Message } from '@/app/actions';
+import { MarkdownContent } from './markdown-content';
 
 export function ChatInterface() {
   const { user } = useUser();
@@ -27,6 +28,7 @@ export function ChatInterface() {
     if (!input.trim()) return;
 
     const userMessage: Message = { role: 'user', content: input };
+    const currentInput = input;
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setLoading(true);
@@ -50,7 +52,7 @@ export function ChatInterface() {
     }
 
     try {
-      const aiResponse = await ask(input, context);
+      const aiResponse = await ask(currentInput, context);
       setMessages(prev => [...prev, { role: 'model', content: aiResponse }]);
     } catch (error) {
       console.error("Error asking AI:", error);
@@ -79,7 +81,11 @@ export function ChatInterface() {
             {messages.map((msg, index) => (
               <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`p-3 rounded-lg max-w-[80%] ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
-                  <p className="text-sm">{msg.content}</p>
+                   {msg.role === 'model' ? (
+                    <MarkdownContent content={msg.content} />
+                  ) : (
+                    <p className="text-sm">{msg.content}</p>
+                  )}
                 </div>
               </div>
             ))}
