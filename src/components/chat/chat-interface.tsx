@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { Paperclip, Send } from 'lucide-react';
+import { Paperclip, Send, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { placeholderImages } from '@/lib/placeholder-images';
 import { useUser } from '@/firebase';
@@ -55,8 +55,13 @@ export function ChatInterface() {
       let fullResponse = '';
       setMessages(prev => [...prev, { role: 'model', content: '' }]);
 
-      for await (const chunk of stream) {
-        fullResponse += chunk;
+      const reader = stream.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        fullResponse += decoder.decode(value, { stream: true });
         setMessages(prev => {
           const lastMessage = prev[prev.length - 1];
           if (lastMessage.role === 'model') {
@@ -92,23 +97,16 @@ export function ChatInterface() {
         <Card className="mb-6 p-4 bg-card/80 backdrop-blur-sm max-h-[40vh] overflow-y-auto">
           <CardContent className="space-y-4 p-2">
             {messages.map((msg, index) => (
-              <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`p-3 rounded-lg max-w-[80%] ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
-                   {msg.role === 'model' ? (
-                    <MarkdownContent content={msg.content} />
-                  ) : (
-                    <p className="text-sm">{msg.content}</p>
-                  )}
+                   {msg.role === 'model' && msg.content === '' && loading ? (
+                     <Loader2 className="animate-spin" />
+                   ) : (
+                     <MarkdownContent content={msg.content} />
+                   )}
                 </div>
               </div>
             ))}
-            {loading && messages[messages.length - 1]?.role !== 'model' && (
-                <div className="flex justify-start">
-                    <div className="p-3 rounded-lg bg-secondary">
-                        <TypingAnimation lines={["..."]} typingSpeed={150} />
-                    </div>
-                </div>
-            )}
           </CardContent>
         </Card>
       )}
@@ -133,7 +131,7 @@ export function ChatInterface() {
               disabled={loading}
             />
             <Button size="icon" className="rounded-full" onClick={handleInteraction} disabled={loading}>
-              <Send />
+              {loading ? <Loader2 className="animate-spin" /> : <Send />}
               <span className="sr-only">Send Message</span>
             </Button>
           </CardContent>

@@ -62,8 +62,13 @@ function ChatPage() {
       let fullResponse = '';
       setMessages(prev => [...prev, { role: 'model', content: '' }]);
 
-      for await (const chunk of stream) {
-        fullResponse += chunk;
+      const reader = stream.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        fullResponse += decoder.decode(value, { stream: true });
         setMessages(prev => {
           const lastMessage = prev[prev.length - 1];
           if (lastMessage.role === 'model') {
@@ -103,7 +108,7 @@ function ChatPage() {
             {messages.map((msg, index) => (
               <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                  <div className={`p-3 rounded-lg max-w-[80%] ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}>
-                   {msg.role === 'model' && msg.content === '' ? (
+                   {msg.role === 'model' && msg.content === '' && loading ? (
                      <Loader2 className="animate-spin" />
                    ) : (
                      <MarkdownContent content={msg.content} />
