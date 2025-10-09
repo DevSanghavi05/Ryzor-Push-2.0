@@ -102,12 +102,12 @@ export function ChatInterface() {
                 </div>
               </div>
             ))}
-            {loading && messages[messages.length-1]?.role !== 'model' && (
-              <div className="flex justify-start">
-                  <div className="p-3 rounded-lg bg-secondary">
-                      <TypingAnimation lines={["..."]} typingSpeed={150} />
-                  </div>
-              </div>
+            {loading && messages[messages.length - 1]?.role !== 'model' && (
+                <div className="flex justify-start">
+                    <div className="p-3 rounded-lg bg-secondary">
+                        <TypingAnimation lines={["..."]} typingSpeed={150} />
+                    </div>
+                </div>
             )}
           </CardContent>
         </Card>
@@ -130,6 +130,7 @@ export function ChatInterface() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleInteraction()}
+              disabled={loading}
             />
             <Button size="icon" className="rounded-full" onClick={handleInteraction} disabled={loading}>
               <Send />
