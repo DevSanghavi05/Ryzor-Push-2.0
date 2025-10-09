@@ -2,13 +2,13 @@
 'use server';
 
 import { ai } from '@/ai/genkit';
+import { Message } from './chat/page';
 
-export interface Message {
-  role: 'user' | 'model';
-  content: string;
-}
-
-export async function ask(question: string, context: string): Promise<string> {
+export async function ask(
+  question: string,
+  context: string,
+  history: Message[]
+): Promise<ReadableStream<string>> {
   const prompt = `
     You are an expert analyst and helpful AI assistant. Your task is to provide insightful answers to questions based *only* on the provided document context.
     Analyze the context to answer not just what is explicitly stated, but also to provide analysis and logical reasoning based on the text.
@@ -23,10 +23,29 @@ export async function ask(question: string, context: string): Promise<string> {
     ${question}
   `;
 
-  const llmResponse = await ai.generate({
+  const { stream } = await ai.generate({
     model: ai.model,
     prompt: prompt,
+    history,
+    stream: true,
   });
 
-  return llmResponse.text;
+  const reader = stream.getReader();
+  const readableStream = new ReadableStream<string>({
+    async start(controller) {
+      function push() {
+        reader.read().then(({ done, value }) => {
+          if (done) {
+            controller.close();
+            return;
+          }
+          controller.enqueue(value.text);
+          push();
+        });
+      }
+      push();
+    },
+  });
+
+  return readableStream;
 }
