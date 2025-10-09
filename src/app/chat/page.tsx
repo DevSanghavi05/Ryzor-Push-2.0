@@ -53,7 +53,7 @@ function ChatPage() {
         .join('\n\n');
 
       if (!context) {
-        setMessages(prev => [...prev, { role: 'model', content: "I don't have any documents to analyze. Please upload a PDF first." }]);
+        setMessages(prev => [...prev, { role: 'model', content: "I don't have any documents to analyze. Please upload a PDF or import a Google Doc first." }]);
         setLoading(false);
         return;
       }
