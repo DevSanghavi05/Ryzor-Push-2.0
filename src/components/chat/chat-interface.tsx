@@ -85,7 +85,7 @@ export function ChatInterface() {
 
 
   return (
-    <div className="flex flex-col h-full max-w-6xl mx-auto w-full flex-1 justify-center">
+    <div className="flex flex-col h-full max-w-6xl mx-auto w-full flex-1 justify-center pt-16">
         <div className="flex flex-col items-center text-center">
             <h1 className="text-5xl font-bold font-headline mb-4 text-primary">
               {user ? `${getGreeting()}, ${userName}` : "Ryzor AI"}
@@ -94,7 +94,7 @@ export function ChatInterface() {
         </div>
       
       {messages.length > 0 && (
-        <div className="mb-6 p-4 max-h-[40vh] overflow-y-auto space-y-4">
+        <div className="mb-6 p-4 max-h-[50vh] overflow-y-auto space-y-4">
             {messages.map((msg, index) => (
               <div key={index} className={`flex items-start gap-3 justify-start`}>
                 <div className={`p-3 rounded-lg max-w-[80%]`}>

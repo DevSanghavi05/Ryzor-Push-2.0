@@ -40,7 +40,6 @@ export function TypingAnimation({ text, speed = 30, className }: { text: string,
   return (
     <p className={`text-lg leading-relaxed whitespace-pre-line ${className}`}>
         <span dangerouslySetInnerHTML={{ __html: htmlContent }} />
-        <span className="border-r-2 border-primary animate-pulse"></span>
     </p>
   );
 }
