@@ -63,12 +63,11 @@ function ChatPage() {
       setMessages(prev => [...prev, { role: 'model', content: '' }]);
 
       const reader = stream.getReader();
-      const decoder = new TextDecoder();
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        fullResponse += decoder.decode(value, { stream: true });
+        fullResponse += value;
         setMessages(prev => {
           const lastMessage = prev[prev.length - 1];
           if (lastMessage.role === 'model') {
