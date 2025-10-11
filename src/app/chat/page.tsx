@@ -10,6 +10,7 @@ import { ask } from '@/app/actions';
 import { TypingAnimation } from '@/components/chat/typing-animation';
 import withAuth from '@/firebase/auth/with-auth';
 import Link from 'next/link';
+import { MarkdownContent } from '@/components/chat/markdown-content';
 
 export interface Message {
   role: 'user' | 'model';
@@ -35,9 +36,10 @@ function ChatPage() {
     }
 
     const currentInput = input;
+    const userMessage: Message = { role: 'user', content: currentInput };
     setInput('');
     setLoading(true);
-    setMessages([]); // Clear previous messages for a clean response
+    setMessages(prev => [...prev, userMessage]); 
 
     try {
       const storageKey = `documents_${user.uid}`;
@@ -50,29 +52,38 @@ function ChatPage() {
         .join('\n\n');
 
       if (!context) {
-        setMessages([{ role: 'model', content: "I don't have any documents to analyze. Please upload a PDF or import a Google Doc first." }]);
+        setMessages(prev => [...prev, { role: 'model', content: "I don't have any documents to analyze. Please upload a PDF or import a Google Doc first." }]);
         setLoading(false);
         return;
       }
       
-      const stream = await ask(currentInput, context, []);
+      const stream = await ask(currentInput, context, messages.slice(-10)); // Pass last 10 messages for history
       let fullResponse = '';
-      const newMessage: Message = { role: 'model', content: '' };
-      setMessages([newMessage]);
+      const modelMessageIndex = messages.length + 1;
+      setMessages(prev => [...prev, { role: 'model', content: '' }]);
 
       const reader = stream.getReader();
 
-      while (true) {
+      const readStream = async () => {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          setLoading(false);
+          return;
+        }
         fullResponse += value;
-        setMessages([{ role: 'model', content: fullResponse }]);
-      }
+        setMessages(prev => {
+          const newMessages = [...prev];
+          newMessages[modelMessageIndex] = { role: 'model', content: fullResponse };
+          return newMessages;
+        });
+        await readStream();
+      };
+      
+      await readStream();
 
     } catch (error) {
       console.error("Error asking AI:", error);
-      setMessages([{ role: 'model', content: "Sorry, I ran into an error. Please try again." }]);
-    } finally {
+      setMessages(prev => [...prev, { role: 'model', content: "Sorry, I ran into an error. Please try again." }]);
       setLoading(false);
     }
   };
@@ -88,23 +99,37 @@ function ChatPage() {
             <h1 className="text-2xl font-bold font-headline text-primary">Chat with your Documents</h1>
         </div>
 
-        <div ref={chatContainerRef} className="flex-1 mb-6 p-4 overflow-y-auto space-y-4">
+        <div ref={chatContainerRef} className="flex-1 mb-6 p-4 overflow-y-auto space-y-6">
             {messages.length === 0 && !loading && (
                 <div className="text-center text-muted-foreground">
                     Ask a question to get an answer from your documents.
                 </div>
             )}
             {messages.map((msg, index) => (
-              <div key={index} className={`flex items-start gap-3 justify-center text-center`}>
-                 <div className={`p-3 rounded-lg max-w-[80%]`}>
+              <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                 {msg.role === 'model' && (
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">AI</div>
+                 )}
+                 <div className={`p-3 rounded-lg max-w-[85%] ${msg.role === 'user' ? 'bg-primary/10' : 'bg-card'}`}>
                    {msg.role === 'model' && msg.content === '' && loading ? (
                      <Loader2 className="animate-spin" />
                    ) : (
-                     <TypingAnimation text={msg.content} />
+                     <MarkdownContent content={msg.content} />
                    )}
                 </div>
+                {msg.role === 'user' && (
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-bold text-xs shrink-0">YOU</div>
+                )}
               </div>
             ))}
+            {loading && messages[messages.length - 1]?.role === 'user' && (
+                 <div className="flex items-start gap-3 justify-start">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">AI</div>
+                    <div className="p-3 rounded-lg max-w-[85%] bg-card">
+                        <Loader2 className="animate-spin" />
+                    </div>
+                </div>
+            )}
         </div>
 
       <div className="mt-auto">
@@ -114,7 +139,7 @@ function ChatPage() {
               placeholder="Ask anything about your documents..."
               className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 text-base bg-transparent shadow-none px-4 py-1 h-auto"
               value={input}
-              onChange={(e) => setInput(e.tribalist.value)}
+              onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleInteraction()}
               disabled={loading}
             />

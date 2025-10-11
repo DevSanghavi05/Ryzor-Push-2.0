@@ -1,9 +1,10 @@
 
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
+import { MarkdownContent } from "./markdown-content";
 
-export function TypingAnimation({ text, speed = 30, className }: { text: string, speed?: number, className?: string}) {
+export const TypingAnimation = memo(({ text, speed = 20, className }: { text: string, speed?: number, className?: string}) => {
   const [displayedText, setDisplayedText] = useState("");
 
   useEffect(() => {
@@ -21,25 +22,11 @@ export function TypingAnimation({ text, speed = 30, className }: { text: string,
     return () => clearInterval(interval);
   }, [text, speed]);
 
-  // A simple markdown to HTML converter for the typewriter
-  const toHtml = (markdown: string): string => {
-    let html = markdown
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/^\s*\*[ \t]+(.+)/gm, '<li>$1</li>')
-        .replace(/(<li>(?:.|\n)*?<\/li>)/g, '<ul>$1</ul>')
-        .replace(/\n/g, '<br />')
-        .replace(/<br \/><ul>/g, '<ul>')
-        .replace(/<\/ul><br \/>/g, '</ul>')
-        .replace(/<li><br \/>/g, '<li>');
-    return html;
-  };
-
-  const htmlContent = toHtml(displayedText);
-
   return (
-    <p className={`text-lg leading-relaxed whitespace-pre-line ${className}`}>
-        <span dangerouslySetInnerHTML={{ __html: htmlContent }} />
-    </p>
+    <div className={`text-sm leading-relaxed whitespace-pre-wrap ${className}`}>
+        <MarkdownContent content={displayedText} />
+    </div>
   );
-}
+});
+
+TypingAnimation.displayName = 'TypingAnimation';

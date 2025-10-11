@@ -13,23 +13,23 @@ import Link from 'next/link';
 import { TypingAnimation } from './typing-animation';
 import { Message } from '@/app/chat/page';
 import { ask } from '@/app/actions';
+import { useRouter } from 'next/navigation';
 
 export function ChatInterface() {
   const { user } = useUser();
-  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
 
   const handleInteraction = async () => {
     if (!user) {
+      // Maybe prompt to sign in
       return;
     }
     if (!input.trim()) return;
 
-    const currentInput = input;
-    setInput('');
     setLoading(true);
-    setMessages([]); // Clear previous messages
 
     try {
       const storageKey = `documents_${user.uid}`;
@@ -42,27 +42,22 @@ export function ChatInterface() {
         .join('\n\n');
 
       if (!context) {
-        setMessages([{ role: 'model', content: "I don't have any documents to analyze. Please upload a PDF or import a Google Doc first." }]);
+        // You might want to show a toast or a message in the UI
+        console.log("No documents to analyze.");
         setLoading(false);
+        // Maybe route to the /add page or show a message
         return;
       }
       
-      const stream = await ask(currentInput, context, []);
-      let fullResponse = '';
-      setMessages([{ role: 'model', content: '' }]);
+      // We are navigating to the chat page, so we don't need to handle the stream here.
+      // The state will be passed via query params or a state management library if needed.
+      // For simplicity, we just navigate. The chat page will handle the rest.
+      router.push('/chat');
 
-      const reader = stream.getReader();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        fullResponse += value;
-        setMessages([{ role: 'model', content: fullResponse }]);
-      }
 
     } catch (error) {
-      console.error("Error asking AI:", error);
-      setMessages([{ role: 'model', content: "Sorry, I ran into an error. Please try again." }]);
+      console.error("Error preparing for chat:", error);
+      // Show a toast error
     } finally {
       setLoading(false);
     }
@@ -93,22 +88,6 @@ export function ChatInterface() {
             <TypingAnimation lines={aboutLines} className="mb-12 h-8 text-foreground/80" />
         </div>
       
-      {messages.length > 0 && (
-        <div className="mb-6 p-4 max-h-[50vh] overflow-y-auto space-y-4">
-            {messages.map((msg, index) => (
-              <div key={index} className={`flex items-start gap-3 justify-center text-center`}>
-                <div className={`p-3 rounded-lg max-w-[80%]`}>
-                   {msg.role === 'model' && msg.content === '' && loading ? (
-                     <Loader2 className="animate-spin" />
-                   ) : (
-                     <TypingAnimation text={msg.content} />
-                   )}
-                </div>
-              </div>
-            ))}
-        </div>
-      )}
-
 
       {/* Input Area */}
       <div className="mt-6 px-12">
@@ -141,24 +120,22 @@ export function ChatInterface() {
         )}
       </div>
 
-      {messages.length === 0 && !loading && (
-        <div className="mt-16 w-full max-w-6xl mx-auto px-4" style={{ perspective: '1000px' }}>
-            <div className="relative group transition-all duration-500" style={{ transform: 'rotateY(-20deg) rotateX(10deg)' }}>
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-accent rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
-            <div className="relative bg-card rounded-lg overflow-hidden transition-transform duration-300 group-hover:scale-105 border border-primary/20 shadow-2xl shadow-primary/20">
-                <Image
-                src={placeholderImages[2].imageUrl}
-                alt={placeholderImages[2].description}
-                width={1200}
-                height={800}
-                className="object-cover w-full h-full"
-                data-ai-hint={placeholderImages[2].imageHint}
-                priority
-                />
-            </div>
-            </div>
-        </div>
-      )}
+      <div className="mt-16 w-full max-w-6xl mx-auto px-4" style={{ perspective: '1000px' }}>
+          <div className="relative group transition-all duration-500" style={{ transform: 'rotateY(-20deg) rotateX(10deg)' }}>
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-accent rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
+          <div className="relative bg-card rounded-lg overflow-hidden transition-transform duration-300 group-hover:scale-105 border border-primary/20 shadow-2xl shadow-primary/20">
+              <Image
+              src={placeholderImages[2].imageUrl}
+              alt={placeholderImages[2].description}
+              width={1200}
+              height={800}
+              className="object-cover w-full h-full"
+              data-ai-hint={placeholderImages[2].imageHint}
+              priority
+              />
+          </div>
+          </div>
+      </div>
     </div>
   );
 }
