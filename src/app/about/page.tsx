@@ -1,6 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BrainCircuit, FileSearch, Lightbulb } from 'lucide-react';
+import Link from 'next/link';
 
 export default function AboutPage() {
   return (
@@ -58,6 +59,19 @@ export default function AboutPage() {
         <h2 className="text-3xl font-bold font-headline">The Future of Document Interaction</h2>
         <p className="mt-4 text-muted-foreground max-w-2xl mx-auto">
             Ryzor AI was built on the principle that your data should be accessible and intelligent. We leverage state-of-the-art AI to create a seamless bridge between your questions and the answers hidden within your documents.
+        </p>
+      </div>
+
+      <div className="mt-16 border-t pt-8 text-center">
+        <p className="text-muted-foreground">
+          For more details, please review our{' '}
+          <Link href="/terms" className="text-primary hover:underline">
+            Terms of Service
+          </Link>{' '}
+          and{' '}
+          <Link href="/privacy" className="text-primary hover:underline">
+            Privacy Policy
+          </Link>.
         </p>
       </div>
     </div>
