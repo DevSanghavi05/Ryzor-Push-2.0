@@ -122,39 +122,6 @@ function DocumentsPageContent() {
     }));
   }, [user]);
 
-  const fetchDriveFiles = useCallback((gapi: typeof Gapi) => {
-    if (!gapi.client?.drive || !accessToken) {
-        setLoadingDrive(false);
-        return;
-    }
-    setLoadingDrive(true);
-    gapi.client.drive.files.list({
-      'pageSize': 20,
-      'fields': "nextPageToken, files(id, name, mimeType, modifiedTime, webViewLink)"
-    }).then((response: any) => {
-      const files = response.result.files as any[];
-      const formattedDriveFiles: Document[] = files.map(file => ({
-        id: file.id,
-        name: file.name,
-        modifiedTime: file.modifiedTime,
-        mimeType: file.mimeType,
-        webViewLink: file.webViewLink,
-        icon: getFileIcon(file.mimeType, 'drive'),
-        source: 'drive' as const,
-      }));
-      setDocuments(prevDocs => [...formattedDriveFiles, ...prevDocs.filter(d => d.source !== 'drive')]);
-      setLoadingDrive(false);
-    }, (error: any) => {
-        const errorDetails = error.result?.error;
-        if (errorDetails) {
-          console.error("Error fetching files from Google Drive API:", JSON.stringify(errorDetails, null, 2));
-        } else {
-          console.error("Error fetching files: ", error);
-        }
-        setLoadingDrive(false);
-    });
-  }, [accessToken]);
-
   useEffect(() => {
     if (user) {
         const localFiles = fetchLocalFiles();
@@ -177,7 +144,32 @@ function DocumentsPageContent() {
                 discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest", "https://docs.googleapis.com/$discovery/rest?version=v1"],
               });
               gapi.auth.setToken({ access_token: accessToken });
-              fetchDriveFiles(gapi);
+              
+                gapi.client.drive.files.list({
+                    'pageSize': 20,
+                    'fields': "nextPageToken, files(id, name, mimeType, modifiedTime, webViewLink)"
+                }).then((response: any) => {
+                    const files = response.result.files as any[];
+                    const formattedDriveFiles: Document[] = files.map(file => ({
+                        id: file.id,
+                        name: file.name,
+                        modifiedTime: file.modifiedTime,
+                        mimeType: file.mimeType,
+                        webViewLink: file.webViewLink,
+                        icon: getFileIcon(file.mimeType, 'drive'),
+                        source: 'drive' as const,
+                    }));
+                    setDocuments(prevDocs => [...formattedDriveFiles, ...prevDocs.filter(d => d.source !== 'drive')]);
+                    setLoadingDrive(false);
+                }, (error: any) => {
+                    const errorDetails = error.result?.error;
+                    if (errorDetails) {
+                      console.error("Error fetching files from Google Drive API:", JSON.stringify(errorDetails, null, 2));
+                    } else {
+                      console.error("Error fetching files: ", error);
+                    }
+                    setLoadingDrive(false);
+                });
             });
           } catch (e) {
             console.error("Error loading GAPI script", e);
@@ -186,7 +178,7 @@ function DocumentsPageContent() {
         };
         initGapiClient();
     }
-  }, [accessToken, user, fetchDriveFiles]);
+  }, [accessToken, user]);
 
 
   const filteredDocuments = documents
@@ -484,7 +476,3 @@ function DocumentsPage() {
 }
 
 export default withAuth(DocumentsPage);
-
-    
-
-    
