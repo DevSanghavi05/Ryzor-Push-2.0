@@ -230,5 +230,3 @@ function AddDocumentPage() {
 }
 
 export default withAuth(AddDocumentPage);
-
-    

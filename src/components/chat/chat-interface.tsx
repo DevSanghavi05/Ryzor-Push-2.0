@@ -162,5 +162,3 @@ export function ChatInterface() {
     </div>
   );
 }
-
-    
