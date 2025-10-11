@@ -11,8 +11,12 @@ export default function withAuth<P extends object>(WrappedComponent: ComponentTy
 
     useEffect(() => {
       if (!loading && !user) {
-        signInWithGoogle();
-        router.push('/');
+        // Instead of routing, just trigger the sign-in.
+        // The `useUser` hook will update the state, and this component will re-render.
+        signInWithGoogle().catch(() => {
+            // If sign-in fails or is dismissed, you might want to redirect.
+            router.push('/');
+        });
       }
     }, [user, loading, router, signInWithGoogle]);
 

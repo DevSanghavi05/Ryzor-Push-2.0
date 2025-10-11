@@ -93,6 +93,7 @@ function DocumentsPageContent() {
   const { accessToken, user, loading: userLoading } = useUser();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingDrive, setLoadingDrive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [gapiInstance, setGapiInstance] = useState<typeof Gapi | null>(null);
 
@@ -105,32 +106,28 @@ function DocumentsPageContent() {
   const [showTrashConfirm, setShowTrashConfirm] = useState<Document | null>(null);
   const { toast } = useToast();
 
-  const fetchFiles = useCallback((gapi: typeof Gapi) => {
-    if (!user) {
-        setLoading(false);
-        return;
-    }
-    setLoading(true);
-    
+  const fetchLocalFiles = useCallback(() => {
+    if (!user) return [];
     const storageKey = `documents_${user.uid}`;
     const localDocsString = localStorage.getItem(storageKey);
     const localDocs = localDocsString ? JSON.parse(localDocsString) : [];
-    const formattedLocalDocs: Document[] = localDocs.map((doc: any) => ({
-        id: doc.id,
-        name: doc.name,
-        modifiedTime: doc.uploaded,
-        mimeType: 'application/pdf',
-        webViewLink: `/documents/${doc.id}`, // Correct link for local files
-        icon: getFileIcon('application/pdf', 'local'),
-        source: 'local' as const,
+    return localDocs.map((doc: any) => ({
+      id: doc.id,
+      name: doc.name,
+      modifiedTime: doc.uploaded,
+      mimeType: 'application/pdf',
+      webViewLink: `/documents/${doc.id}`,
+      icon: getFileIcon('application/pdf', 'local'),
+      source: 'local' as const,
     }));
+  }, [user]);
 
+  const fetchDriveFiles = useCallback((gapi: typeof Gapi) => {
     if (!gapi.client?.drive || !accessToken) {
-        setDocuments(formattedLocalDocs);
-        setLoading(false);
+        setLoadingDrive(false);
         return;
     }
-
+    setLoadingDrive(true);
     gapi.client.drive.files.list({
       'pageSize': 20,
       'fields': "nextPageToken, files(id, name, mimeType, modifiedTime, webViewLink)"
@@ -145,8 +142,7 @@ function DocumentsPageContent() {
         icon: getFileIcon(file.mimeType, 'drive'),
         source: 'drive' as const,
       }));
-      setDocuments([...formattedDriveFiles, ...formattedLocalDocs]);
-      setLoading(false);
+      setDocuments(prevDocs => [...formattedDriveFiles, ...prevDocs.filter(d => d.source !== 'drive')]);
     }).catch((error: any) => {
         const errorDetails = error.result?.error;
         if (errorDetails) {
@@ -154,63 +150,44 @@ function DocumentsPageContent() {
         } else {
           console.error("Error fetching files: ", error);
         }
-        setDocuments(formattedLocalDocs);
-        setLoading(false);
+    }).finally(() => {
+        setLoadingDrive(false);
     });
-  }, [accessToken, user]);
+  }, [accessToken]);
 
   useEffect(() => {
-    if (userLoading) {
-      setLoading(true);
-      return;
-    }
-    
-    const initGapiClient = async () => {
-      try {
-        const gapiScript = await import('gapi-script');
-        const gapi = gapiScript.gapi;
-        setGapiInstance(gapi);
-        
-        gapi.load('client', async () => {
-          await gapi.client.init({
-            discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
-          });
-
-          // Also load the Google Docs API client
-          await gapi.client.load('docs', 'v1');
-
-          if (accessToken) {
-              gapi.auth.setToken({ access_token: accessToken });
-          }
-          fetchFiles(gapi);
-
-        });
-      } catch (e) {
-        console.error("Error loading GAPI script", e);
-        if (user) {
-            const storageKey = `documents_${user.uid}`;
-            const localDocsString = localStorage.getItem(storageKey);
-            const localDocs = localDocsString ? JSON.parse(localDocsString) : [];
-            const formattedLocalDocs: Document[] = localDocs.map((doc: any) => ({
-                id: doc.id,
-                name: doc.name,
-                modifiedTime: doc.uploaded,
-                mimeType: 'application/pdf',
-                webViewLink: `/documents/${doc.id}`,
-                icon: getFileIcon('application/pdf', 'local'),
-                source: 'local' as const,
-            }));
-            setDocuments(formattedLocalDocs);
-        } else {
-            setDocuments([]);
-        }
+    if (user) {
+        const localFiles = fetchLocalFiles();
+        setDocuments(localFiles);
         setLoading(false);
-      }
-    };
+    }
+  }, [user, fetchLocalFiles]);
 
-    initGapiClient();
-
-  }, [accessToken, userLoading, fetchFiles, user]);
+  useEffect(() => {
+    if (user && accessToken) {
+        const initGapiClient = async () => {
+          setLoadingDrive(true);
+          try {
+            const gapiScript = await import('gapi-script');
+            const gapi = gapiScript.gapi;
+            setGapiInstance(gapi);
+            
+            gapi.load('client', async () => {
+              await gapi.client.init({
+                discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
+              });
+              await gapi.client.load('docs', 'v1');
+              gapi.auth.setToken({ access_token: accessToken });
+              fetchDriveFiles(gapi);
+            });
+          } catch (e) {
+            console.error("Error loading GAPI script", e);
+            setLoadingDrive(false);
+          }
+        };
+        initGapiClient();
+    }
+  }, [accessToken, user, fetchDriveFiles]);
 
 
   const filteredDocuments = documents
@@ -278,7 +255,6 @@ function DocumentsPageContent() {
     }
 
     try {
-        // Use the Google Docs API to get the document content
         const response = await gapiInstance.client.docs.documents.get({
             documentId: doc.id,
         });
@@ -308,6 +284,11 @@ function DocumentsPageContent() {
             toast({ title: 'Already Imported', description: `${doc.name} is already in your local documents.` });
             return;
         }
+        
+        const contentKey = `document_content_${doc.id}`;
+        // Note: For imported docs, we don't have a viewable content URL like we do for PDFs.
+        // The textContent is what we need for analysis.
+        localStorage.setItem(contentKey, "This is an imported Google Doc. View the original on Google Drive.");
 
         localStorage.setItem(storageKey, JSON.stringify([newDocument, ...existingDocuments]));
 
@@ -316,7 +297,10 @@ function DocumentsPageContent() {
             description: `${doc.name} has been imported and its content is ready for analysis.`,
         });
 
-        if(gapiInstance) fetchFiles(gapiInstance);
+        // Refresh local documents list
+        const localFiles = fetchLocalFiles();
+        setDocuments(prevDocs => [...prevDocs.filter(d => d.source === 'drive'), ...localFiles]);
+
 
     } catch (error: any) {
         console.error("Error importing Google Doc:", error);
@@ -368,13 +352,19 @@ function DocumentsPageContent() {
              <div className="flex flex-col items-center justify-center text-center py-16 border-2 border-dashed border-border rounded-lg">
                 <Loader className="w-16 h-16 text-muted-foreground animate-spin mb-4" />
                 <h2 className="text-2xl font-bold font-headline mb-2">
-                    Fetching Documents...
+                    Loading Documents...
                 </h2>
-                <p className="text-muted-foreground">Please wait while we connect to your accounts.</p>
+                <p className="text-muted-foreground">Please wait a moment.</p>
              </div>
-          ) : filteredDocuments.length > 0 ? (
+          ) : filteredDocuments.length > 0 || loadingDrive ? (
             <div className="border rounded-lg overflow-hidden">
               <ul className="divide-y divide-border">
+                {loadingDrive && (
+                    <li className="flex items-center justify-center p-4 text-muted-foreground">
+                        <Loader className="w-5 h-5 animate-spin mr-2" />
+                        Fetching Google Drive files...
+                    </li>
+                )}
                 {filteredDocuments.map(doc => (
                   <li key={doc.id} className="flex items-center justify-between p-4 group hover:bg-accent/50 transition-colors">
                     <div className="flex items-center gap-4 truncate">
