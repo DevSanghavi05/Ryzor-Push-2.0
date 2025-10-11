@@ -22,7 +22,7 @@ export function Header() {
               <Link href="/add">Add</Link>
             </Button>
             <Button asChild variant="ghost">
-              <Link href="#">About</Link>
+              <Link href="/about">About</Link>
             </Button>
             <Button asChild variant="ghost" >
                 <Link href="/documents">

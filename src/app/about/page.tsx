@@ -1,0 +1,65 @@
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { BrainCircuit, FileSearch, Lightbulb } from 'lucide-react';
+
+export default function AboutPage() {
+  return (
+    <div className="container mx-auto py-12 px-4 md:px-6">
+      <div className="text-center mb-12">
+        <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">About Ryzor AI</h1>
+        <p className="mt-4 text-lg text-muted-foreground max-w-3xl mx-auto">
+          Unlock the collective intelligence of your documents. Ryzor AI transforms your static files into a dynamic knowledge base you can converse with.
+        </p>
+      </div>
+
+      <div className="grid md:grid-cols-3 gap-8 text-center">
+        <Card>
+          <CardHeader>
+            <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
+              <FileSearch className="w-8 h-8 text-primary" />
+            </div>
+            <CardTitle className="mt-4">Centralize Your Knowledge</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              Securely upload PDFs or connect your Google Drive to bring all your scattered information into one intelligent hub. No more hunting through folders.
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
+              <BrainCircuit className="w-8 h-8 text-primary" />
+            </div>
+            <CardTitle className="mt-4">Ask, Don't Search</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              Interact with your documents using natural language. Ask complex questions and get synthesized answers instantly, complete with sources.
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
+              <Lightbulb className="w-8 h-8 text-primary" />
+            </div>
+            <CardTitle className="mt-4">Uncover Insights</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              Let our advanced AI analyze your content to find connections, summarize key points, and extract valuable information you might have missed.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="mt-20 text-center">
+        <h2 className="text-3xl font-bold font-headline">The Future of Document Interaction</h2>
+        <p className="mt-4 text-muted-foreground max-w-2xl mx-auto">
+            Ryzor AI was built on the principle that your data should be accessible and intelligent. We leverage state-of-the-art AI to create a seamless bridge between your questions and the answers hidden within your documents.
+        </p>
+      </div>
+    </div>
+  );
+}
