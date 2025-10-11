@@ -69,6 +69,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       const result = await signInWithPopup(auth, provider);
       const credential = GoogleAuthProvider.credentialFromResult(result);
       if (credential) {
+        // This gives you a Google Access Token. You can use it to access the Google API.
         setAccessToken(credential.accessToken || null);
       }
     } catch (error) {
