@@ -143,14 +143,14 @@ function DocumentsPageContent() {
         source: 'drive' as const,
       }));
       setDocuments(prevDocs => [...formattedDriveFiles, ...prevDocs.filter(d => d.source !== 'drive')]);
-    }).catch((error: any) => {
+      setLoadingDrive(false);
+    }, (error: any) => {
         const errorDetails = error.result?.error;
         if (errorDetails) {
           console.error("Error fetching files from Google Drive API:", JSON.stringify(errorDetails, null, 2));
         } else {
           console.error("Error fetching files: ", error);
         }
-    }).finally(() => {
         setLoadingDrive(false);
     });
   }, [accessToken]);
@@ -174,9 +174,8 @@ function DocumentsPageContent() {
             
             gapi.load('client', async () => {
               await gapi.client.init({
-                discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
+                discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest", "https://docs.googleapis.com/$discovery/rest?version=v1"],
               });
-              await gapi.client.load('docs', 'v1');
               gapi.auth.setToken({ access_token: accessToken });
               fetchDriveFiles(gapi);
             });
@@ -254,6 +253,11 @@ function DocumentsPageContent() {
         return;
     }
 
+    if (!gapiInstance.client?.docs) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Google Docs API client is not loaded.' });
+        return;
+    }
+    
     try {
         const response = await gapiInstance.client.docs.documents.get({
             documentId: doc.id,
@@ -480,5 +484,7 @@ function DocumentsPage() {
 }
 
 export default withAuth(DocumentsPage);
+
+    
 
     

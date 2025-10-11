@@ -46,10 +46,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
-    const unsubscribe = onFirebaseAuthStateChanged(auth, (user) => {
+    const unsubscribe = onFirebaseAuthStateChanged(auth, async (user) => {
       setUser(user);
       if (user) {
-        user.getIdToken().then(setAccessToken);
+        const idTokenResult = await user.getIdTokenResult();
+        setAccessToken(idTokenResult.token);
       } else {
         setAccessToken(null);
       }
@@ -112,3 +113,5 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 }
+
+    
