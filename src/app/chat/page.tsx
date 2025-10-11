@@ -10,7 +10,6 @@ import { ask } from '@/app/actions';
 import { TypingAnimation } from '@/components/chat/typing-animation';
 import withAuth from '@/firebase/auth/with-auth';
 import Link from 'next/link';
-import { MarkdownContent } from '@/components/chat/markdown-content';
 
 export interface Message {
   role: 'user' | 'model';
@@ -115,7 +114,7 @@ function ChatPage() {
               placeholder="Ask anything about your documents..."
               className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 text-base bg-transparent shadow-none px-4 py-1 h-auto"
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => setInput(e.tribalist.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleInteraction()}
               disabled={loading}
             />

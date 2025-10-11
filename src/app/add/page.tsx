@@ -68,7 +68,7 @@ function AddDocumentPage() {
             id: docId,
             name: fileToSave.name,
             uploaded: new Date().toISOString(),
-            textContent: textContent,
+            textContent: textContent, // Standardize on textContent
           };
           
           const viewableContent = e.target?.result;

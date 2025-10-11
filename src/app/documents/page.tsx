@@ -288,9 +288,8 @@ function DocumentsPageContent() {
             return;
         }
         
+        // This key is for viewing content, for imported docs we can't view it directly.
         const contentKey = `document_content_${doc.id}`;
-        // Note: For imported docs, we don't have a viewable content URL like we do for PDFs.
-        // The textContent is what we need for analysis.
         localStorage.setItem(contentKey, "This is an imported Google Doc. View the original on Google Drive.");
 
         localStorage.setItem(storageKey, JSON.stringify([newDocument, ...existingDocuments]));
@@ -300,7 +299,7 @@ function DocumentsPageContent() {
             description: `${doc.name} has been imported and its content is ready for analysis.`,
         });
 
-        // Refresh local documents list
+        // Refresh documents list to reflect the new (imported) local doc.
         const localFiles = fetchLocalFiles();
         setDocuments(prevDocs => [...prevDocs.filter(d => d.source === 'drive'), ...localFiles]);
 
