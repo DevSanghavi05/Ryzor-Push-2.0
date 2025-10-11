@@ -10,6 +10,7 @@ import { ask } from '@/app/actions';
 import { TypingAnimation } from '@/components/chat/typing-animation';
 import withAuth from '@/firebase/auth/with-auth';
 import Link from 'next/link';
+import { MarkdownContent } from '@/components/chat/markdown-content';
 
 export interface Message {
   role: 'user' | 'model';
@@ -57,7 +58,8 @@ function ChatPage() {
       
       const stream = await ask(currentInput, context, []);
       let fullResponse = '';
-      setMessages([{ role: 'model', content: '' }]);
+      const newMessage: Message = { role: 'model', content: '' };
+      setMessages([newMessage]);
 
       const reader = stream.getReader();
 

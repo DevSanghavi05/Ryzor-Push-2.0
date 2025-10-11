@@ -96,7 +96,7 @@ export function ChatInterface() {
       {messages.length > 0 && (
         <div className="mb-6 p-4 max-h-[50vh] overflow-y-auto space-y-4">
             {messages.map((msg, index) => (
-              <div key={index} className={`flex items-start gap-3 justify-start`}>
+              <div key={index} className={`flex items-start gap-3 justify-center text-center`}>
                 <div className={`p-3 rounded-lg max-w-[80%]`}>
                    {msg.role === 'model' && msg.content === '' && loading ? (
                      <Loader2 className="animate-spin" />
@@ -162,3 +162,5 @@ export function ChatInterface() {
     </div>
   );
 }
+
+    
