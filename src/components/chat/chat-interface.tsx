@@ -37,8 +37,8 @@ export function ChatInterface() {
       const documents = documentsString ? JSON.parse(documentsString) : [];
 
       const context = documents
-        .filter((doc: any) => doc.textContent && doc.textContent.trim().length > 0)
-        .map((doc: any) => `Document: ${doc.name}\nContent: ${doc.textContent}`)
+        .filter((doc: any) => doc.content && doc.content.trim().length > 0)
+        .map((doc: any) => `Document: ${doc.name}\nContent: ${doc.content}`)
         .join('\n\n');
 
       if (!context) {
