@@ -14,17 +14,22 @@ import { TypingAnimation } from './typing-animation';
 import { Message } from '@/app/chat/page';
 import { ask } from '@/app/actions';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 
 export function ChatInterface() {
   const { user } = useUser();
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { toast } = useToast();
 
 
   const handleInteraction = async () => {
     if (!user) {
-      // Maybe prompt to sign in
+      toast({
+        title: "Please Sign In",
+        description: "You need to sign in to start a chat with your documents.",
+      });
       return;
     }
     if (!input.trim()) return;
@@ -37,15 +42,18 @@ export function ChatInterface() {
       const documents = documentsString ? JSON.parse(documentsString) : [];
 
       const context = documents
-        .filter((doc: any) => doc.content && doc.content.trim().length > 0)
-        .map((doc: any) => `Document: ${doc.name}\nContent: ${doc.content}`)
+        .filter((doc: any) => doc.textContent && doc.textContent.trim().length > 0)
+        .map((doc: any) => `Document: ${doc.name}\nContent: ${doc.textContent}`)
         .join('\n\n');
 
       if (!context) {
-        // You might want to show a toast or a message in the UI
-        console.log("No documents to analyze.");
+        toast({
+            variant: "destructive",
+            title: "No Documents Found",
+            description: "Please upload or import a document before starting a chat.",
+        });
         setLoading(false);
-        // Maybe route to the /add page or show a message
+        router.push('/add');
         return;
       }
       
@@ -57,7 +65,11 @@ export function ChatInterface() {
 
     } catch (error) {
       console.error("Error preparing for chat:", error);
-      // Show a toast error
+      toast({
+          variant: "destructive",
+          title: "An Error Occurred",
+          description: "Could not start the chat session. Please try again.",
+      });
     } finally {
       setLoading(false);
     }
