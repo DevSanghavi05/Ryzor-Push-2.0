@@ -185,7 +185,7 @@ function LandingPage() {
         <div className="relative flex flex-col items-center justify-center h-full text-center overflow-hidden p-4">
             <div className="absolute inset-0 bg-gears -z-10"></div>
             <div className="relative z-10 animate-fade-in-down">
-                <h1 className="text-5xl md:text-7xl font-bold font-headline mb-4 text-primary">
+                <h1 className="text-6xl md:text-8xl font-bold font-headline mb-4 text-primary">
                     <TypingAnimation text="No more folders. Just answers." speed={50} />
                 </h1>
                 <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
