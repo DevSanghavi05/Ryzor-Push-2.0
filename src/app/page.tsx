@@ -186,8 +186,8 @@ function LandingPage() {
             <div className="absolute inset-0 bg-gears -z-10"></div>
             <div className="container mx-auto grid md:grid-cols-2 gap-12 items-center relative z-10 animate-fade-in-down text-center md:text-left">
                 <div>
-                    <h1 className="text-4xl md:text-6xl font-bold font-headline mb-4 text-primary">
-                        <TypingAnimation text="No more folders. Just answers." speed={50} />
+                    <h1 className="text-5xl md:text-6xl font-extrabold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent mb-4">
+                        No more folders. Just answers.
                     </h1>
                     <p className="text-lg text-muted-foreground max-w-2xl mx-auto md:mx-0 mb-8">
                         Upload or connect your files. Ask anything. Get instant answers.
@@ -242,3 +242,5 @@ export default function Home() {
 
   return user ? <LoggedInView /> : <LandingPage />;
 }
+
+    
