@@ -95,7 +95,8 @@ function AddDocumentPage() {
         console.error("FileReader error:", error);
         reject(new Error(`Could not read the file ${fileToSave.name}.`));
       };
-      fileReader.readAsDataURL(fileToSave);
+      // For PDFs, we need to read the raw data for pdf.js, not a data URL
+      fileReader.readAsArrayBuffer(fileToSave); 
     });
   };
   
