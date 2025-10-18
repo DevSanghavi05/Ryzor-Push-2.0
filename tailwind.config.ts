@@ -125,16 +125,16 @@ export default {
         '.transform-style-preserve-3d': {
           'transform-style': 'preserve-3d',
         },
-        '.rotate-y-[-15deg]': {
-          transform: 'rotateY(-15deg)',
-        },
         '.rotate-x-10': {
           transform: 'rotateX(10deg)',
         },
-        '[class*="group-hover:"]:rotate-y-0': {
+        '.rotate-y-\\[-15deg\\]': {
+            transform: 'rotateY(-15deg)',
+        },
+        '.group-hover\\:rotate-y-0': {
           transform: 'rotateY(0)',
         },
-        '[class*="group-hover:"]:rotate-x-0': {
+        '.group-hover\\:rotate-x-0': {
           transform: 'rotateX(0)',
         },
       });
