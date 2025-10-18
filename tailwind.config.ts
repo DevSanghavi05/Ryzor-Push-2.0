@@ -107,37 +107,9 @@ export default {
         'fade-in-down': 'fade-in-down 0.5s ease-out',
         'fade-in-up': 'fade-in-up 0.5s ease-out',
       },
-       perspective: {
-        '1000': '1000px',
-      },
-      transformStyle: {
-        'preserve-3d': 'preserve-3d',
-      },
     },
   },
   plugins: [
     require('tailwindcss-animate'),
-    function ({ addUtilities }: { addUtilities: any }) {
-      addUtilities({
-        '.perspective-1000': {
-          perspective: '1000px',
-        },
-        '.transform-style-preserve-3d': {
-          'transform-style': 'preserve-3d',
-        },
-        '.rotate-x-10': {
-          transform: 'rotateX(10deg)',
-        },
-        '.rotate-y-\\[-15deg\\]': {
-            transform: 'rotateY(-15deg)',
-        },
-        '.group-hover\\:rotate-y-0': {
-          transform: 'rotateY(0)',
-        },
-        '.group-hover\\:rotate-x-0': {
-          transform: 'rotateX(0)',
-        },
-      });
-    },
   ],
 } satisfies Config;

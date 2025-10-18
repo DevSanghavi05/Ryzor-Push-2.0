@@ -182,37 +182,36 @@ function LandingPage() {
     };
 
     return (
-        <div className="relative flex flex-col items-center justify-center h-full text-center overflow-hidden p-4">
+        <div className="relative flex flex-col items-center justify-center h-full overflow-hidden p-4">
             <div className="absolute inset-0 bg-gears -z-10"></div>
-            <div className="relative z-10 animate-fade-in-down">
-                <h1 className="text-6xl md:text-8xl font-bold font-headline mb-4 text-primary">
-                    <TypingAnimation text="No more folders. Just answers." speed={50} />
-                </h1>
-                <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-                    Upload or connect your files. Ask anything. Get instant answers.
-                </p>
-                <div className="flex justify-center gap-4">
-                    <Button 
-                        size="lg" 
-                        onClick={signInWithGoogle} 
-                        className="bg-gradient-to-r from-primary to-accent text-primary-foreground transition-transform hover:scale-105"
-                    >
-                        Continue with Google
-                    </Button>
-                    <Button 
-                        size="lg" 
-                        variant="outline" 
-                        onClick={handleDemo}
-                        className="transition-transform hover:scale-105"
-                    >
-                        Try Demo
-                    </Button>
+            <div className="container mx-auto grid md:grid-cols-2 gap-12 items-center relative z-10 animate-fade-in-down text-center md:text-left">
+                <div>
+                    <h1 className="text-4xl md:text-6xl font-bold font-headline mb-4 text-primary">
+                        <TypingAnimation text="No more folders. Just answers." speed={50} />
+                    </h1>
+                    <p className="text-lg text-muted-foreground max-w-2xl mx-auto md:mx-0 mb-8">
+                        Upload or connect your files. Ask anything. Get instant answers.
+                    </p>
+                    <div className="flex justify-center md:justify-start gap-4">
+                        <Button 
+                            size="lg" 
+                            onClick={signInWithGoogle} 
+                            className="bg-gradient-to-r from-primary to-accent text-primary-foreground transition-transform hover:scale-105"
+                        >
+                            Continue with Google
+                        </Button>
+                        <Button 
+                            size="lg" 
+                            variant="outline" 
+                            onClick={handleDemo}
+                            className="transition-transform hover:scale-105"
+                        >
+                            Try Demo
+                        </Button>
+                    </div>
                 </div>
-            </div>
 
-            <div className="relative w-full max-w-4xl mt-16 group perspective-1000">
-                <div className="transition-all duration-500 transform-gpu group-hover:rotate-y-0 group-hover:rotate-x-0 rotate-x-10 rotate-y-[-15deg]">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-primary/50 to-accent/50 rounded-lg blur-xl opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+                <div className="w-full max-w-xl mx-auto group">
                     <div className="relative bg-card/80 backdrop-blur-sm rounded-lg p-4 border border-primary/20 shadow-2xl shadow-primary/10">
                         <div className="flex items-center gap-3 p-3">
                              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-bold text-xs shrink-0"><User size={16}/></div>

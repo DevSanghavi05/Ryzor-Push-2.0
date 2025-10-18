@@ -19,17 +19,22 @@ export function Header() {
               <Link href="/">Home</Link>
             </Button>
             <Button asChild variant="ghost">
-              <Link href="/add">Add</Link>
-            </Button>
-            <Button asChild variant="ghost">
               <Link href="/about">About</Link>
             </Button>
-            <Button asChild variant="ghost" >
-                <Link href="/documents">
-                    <BookCopy />
-                    My Documents
-                </Link>
-            </Button>
+            {user && (
+              <>
+                <Button asChild variant="ghost">
+                  <Link href="/add">Add</Link>
+                </Button>
+                <Button asChild variant="ghost" >
+                    <Link href="/documents">
+                        <BookCopy />
+                        My Documents
+                    </Link>
+                </Button>
+              </>
+            )}
+            <div className="flex-1" />
             {user ? (
                 <UserAvatar />
             ) : (
