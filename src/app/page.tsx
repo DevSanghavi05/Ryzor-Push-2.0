@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -70,9 +71,8 @@ function LoggedInView() {
       const stream = await ask(currentInput, context, messages.slice(-10));
       
       let fullResponse = '';
-      const modelMessageIndex = messages.length + 1; // Correctly calculate the index for the new model message
+      const modelMessageIndex = messages.length + 1;
       
-      // Add a placeholder for the model's response
       setMessages(prev => [...prev, { role: 'model', content: '' }]);
 
       const reader = stream.getReader();
@@ -111,8 +111,8 @@ function LoggedInView() {
   };
 
   return (
-     <div className="relative flex flex-col h-full max-w-4xl mx-auto w-full flex-1 justify-between p-4 animate-fade-in-up">
-      <Image src="/ai-abstract.svg" alt="Abstract AI visual" width={500} height={500} className="absolute right-10 top-1/4 w-1/3 opacity-5 animate-pulse" />
+     <div className="relative flex flex-col h-full max-w-4xl mx-auto w-full flex-1 p-4 animate-fade-in-up">
+      <Image src="/ai-abstract.svg" alt="Abstract AI visual" width={500} height={500} className="absolute right-10 top-1/4 w-1/3 opacity-10" />
       <div ref={chatContainerRef} className="flex-1 mb-24 p-4 overflow-y-auto space-y-6">
         {messages.length === 0 && !loading && (
            <div className="text-center text-muted-foreground mt-16 pt-8 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-600/10 via-transparent to-transparent">
@@ -244,5 +244,3 @@ export default function Home() {
 
   return user ? <LoggedInView /> : <LandingPage />;
 }
-
-    
