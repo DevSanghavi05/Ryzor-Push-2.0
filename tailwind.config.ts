@@ -99,6 +99,10 @@ export default {
             opacity: '1',
             transform: 'translateY(0)'
           },
+        },
+        pan: {
+            '0%': { backgroundPosition: '0% 0%' },
+            '100%': { backgroundPosition: '100% 100%' },
         }
       },
       animation: {
@@ -106,6 +110,7 @@ export default {
         'accordion-up': 'accordion-up 0.2s ease-out',
         'fade-in-down': 'fade-in-down 0.5s ease-out',
         'fade-in-up': 'fade-in-up 0.5s ease-out',
+        'pan': 'pan 120s linear infinite'
       },
     },
   },
@@ -113,3 +118,5 @@ export default {
     require('tailwindcss-animate'),
   ],
 } satisfies Config;
+
+    

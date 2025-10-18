@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -13,6 +12,8 @@ import Link from 'next/link';
 import { MarkdownContent } from '@/components/chat/markdown-content';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+
 
 export interface Message {
   role: 'user' | 'model';
@@ -110,10 +111,11 @@ function LoggedInView() {
   };
 
   return (
-     <div className="flex flex-col h-full max-w-4xl mx-auto w-full flex-1 justify-between p-4 animate-fade-in-up">
-      <div ref={chatContainerRef} className="flex-1 mb-6 p-4 overflow-y-auto space-y-6">
+     <div className="relative flex flex-col h-full max-w-4xl mx-auto w-full flex-1 justify-between p-4 animate-fade-in-up">
+      <Image src="/ai-abstract.svg" alt="Abstract AI visual" width={500} height={500} className="absolute right-10 top-1/4 w-1/3 opacity-5 animate-pulse" />
+      <div ref={chatContainerRef} className="flex-1 mb-24 p-4 overflow-y-auto space-y-6">
         {messages.length === 0 && !loading && (
-          <div className="text-center text-muted-foreground mt-16">
+           <div className="text-center text-muted-foreground mt-16 pt-8 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-600/10 via-transparent to-transparent">
             <h1 className="text-3xl font-bold font-headline text-primary">Workspace</h1>
             <p className="mt-2">Ask a question to begin analyzing your documents.</p>
           </div>
@@ -141,9 +143,9 @@ function LoggedInView() {
         )}
       </div>
 
-      <div className="mt-auto">
-        <div className="rounded-full p-1 shadow-[0_0_25px_-5px_hsl(var(--primary)/0.3)] border-border/50 focus-within:border-primary transition-all bg-card/80 backdrop-blur-sm">
-          <div className="p-0 flex items-center">
+      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-3xl">
+        <div className="bg-[#0b0b0b]/60 backdrop-blur-md rounded-full shadow-lg border border-gray-700">
+          <div className="p-2 flex items-center">
              <Button asChild variant="ghost" size="icon" className="rounded-full">
               <Link href="/add">
                 <PlusCircle />
