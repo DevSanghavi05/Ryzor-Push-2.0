@@ -143,8 +143,8 @@ function LoggedInView() {
       </div>
 
       {/* Chat Bar — Brighter Glow */}
-      <div className="fixed bottom-12 left-1/2 -translate-x-1/2 w-[92%] max-w-3xl z-50">
-        <div className="bg-neutral-900/80 backdrop-blur-xl rounded-full border border-neutral-700 shadow-[0_0_35px_rgba(129,140,248,0.8)]">
+      <div className="fixed bottom-16 left-1/2 -translate-x-1/2 w-[92%] max-w-3xl z-50">
+        <div className="bg-neutral-900/80 backdrop-blur-xl rounded-full border border-neutral-700 shadow-[0_0_40px_10px_rgba(129,140,248,0.6)]">
           <div className="p-3 flex items-center gap-3">
             <Button
               asChild
