@@ -117,7 +117,7 @@ function LoggedInView() {
             <Image src="/ai-abstract.svg" alt="Abstract AI visual" width={500} height={500} className="absolute right-10 top-1/4 w-1/3 opacity-10" />
             <div ref={chatContainerRef} className="flex-1 mb-24 p-4 overflow-y-auto space-y-6 pt-20">
                 {messages.length === 0 && !loading && (
-                <div className="text-center text-muted-foreground mt-16 pt-8 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-600/10 via-transparent to-transparent">
+                <div className="text-center text-muted-foreground mt-16 pt-8 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-600/20 via-transparent to-transparent">
                     <h1 className="text-3xl font-bold font-headline text-primary">Workspace</h1>
                     <p className="mt-2">Ask a question to begin analyzing your documents.</p>
                 </div>
@@ -145,39 +145,39 @@ function LoggedInView() {
                 )}
             </div>
         </div>
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-3xl z-50">
-            <div className="bg-neutral-900/80 backdrop-blur-xl rounded-full shadow-2xl border border-neutral-700">
-                <div className="p-2 flex items-center gap-2">
-                
-                <Button asChild variant="outline" size="icon" className="rounded-full border-none bg-primary/10 hover:bg-primary/20 transition">
-                    <Link href="/add">
-                    <PlusCircle className="text-primary" />
-                    <span className="sr-only">Upload Document</span>
-                    </Link>
-                </Button>
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-3xl z-50">
+          <div className="bg-neutral-900/80 backdrop-blur-xl rounded-full shadow-2xl shadow-primary/20 border border-neutral-700">
+            <div className="p-2 flex items-center gap-2">
+              
+              <Button asChild variant="outline" size="icon" className="rounded-full border-none bg-primary/10 hover:bg-primary/20 transition">
+                <Link href="/add">
+                  <PlusCircle className="text-primary" />
+                  <span className="sr-only">Upload Document</span>
+                </Link>
+              </Button>
 
-                
-                <Input
-                    placeholder="Ask anything about your documents..."
-                    className="border-none focus-visible:ring-0 flex-1 text-base bg-transparent text-white placeholder:text-gray-400 px-4"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleInteraction()}
-                    disabled={loading}
-                />
+              
+              <Input
+                placeholder="Ask anything about your documents..."
+                className="border-none focus-visible:ring-0 flex-1 text-base bg-transparent text-white placeholder:text-gray-400 px-4"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleInteraction()}
+                disabled={loading}
+              />
 
-                
-                <Button
-                    size="icon"
-                    className="rounded-full bg-primary text-primary-foreground hover:bg-primary/80 transition disabled:opacity-50"
-                    onClick={handleInteraction}
-                    disabled={loading}
-                >
-                    {loading ? <Loader2 className="animate-spin" /> : <Send />}
-                    <span className="sr-only">Send Message</span>
-                </Button>
-                </div>
+              
+              <Button
+                size="icon"
+                className="rounded-full bg-primary text-primary-foreground hover:bg-primary/80 transition disabled:opacity-50"
+                onClick={handleInteraction}
+                disabled={loading}
+              >
+                {loading ? <Loader2 className="animate-spin" /> : <Send />}
+                <span className="sr-only">Send Message</span>
+              </Button>
             </div>
+          </div>
         </div>
     </div>
   );

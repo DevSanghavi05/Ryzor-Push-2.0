@@ -8,6 +8,7 @@ import { useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AuthProviderDropdown } from '../auth/auth-provider-dropdown';
 import { BookCopy, BrainCircuit } from 'lucide-react';
+import { ThemeToggleButton } from '../theme-toggle';
 
 export function Header() {
   const { user } = useUser();
@@ -40,12 +41,14 @@ export function Header() {
                 </>
                 )}
             </div>
-            <div className="flex-1" />
-            {user ? (
-                <UserAvatar />
-            ) : (
-                <AuthProviderDropdown isHeader={true} />
-            )}
+            <div className="flex-1 flex justify-end items-center gap-4">
+              {user ? (
+                  <UserAvatar />
+              ) : (
+                  <AuthProviderDropdown isHeader={true} />
+              )}
+              <ThemeToggleButton />
+            </div>
         </header>
     </div>
   );
