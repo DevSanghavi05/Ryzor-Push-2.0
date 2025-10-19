@@ -117,7 +117,7 @@ function LoggedInView() {
             <Image src="/ai-abstract.svg" alt="Abstract AI visual" width={500} height={500} className="absolute right-10 top-1/4 w-1/3 opacity-10" />
             <div ref={chatContainerRef} className="flex-1 mb-24 p-4 overflow-y-auto space-y-6 pt-20">
                 {messages.length === 0 && !loading && (
-                <div className="text-center text-muted-foreground mt-16 pt-8 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-600/20 via-transparent to-transparent">
+                <div className="text-center text-muted-foreground mt-16 pt-8 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-600/30 via-transparent to-transparent">
                     <h1 className="text-3xl font-bold font-headline text-primary">Workspace</h1>
                     <p className="mt-2">Ask a question to begin analyzing your documents.</p>
                 </div>
