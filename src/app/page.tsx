@@ -1,10 +1,9 @@
-
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, Loader2, User, Bot, PlusCircle, BrainCircuit, FileSearch, Lightbulb } from 'lucide-react';
+import { Send, Loader2, User, Bot, PlusCircle } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { ask } from '@/app/actions';
 import { TypingAnimation } from '@/components/chat/typing-animation';
@@ -14,8 +13,6 @@ import { MarkdownContent } from '@/components/chat/markdown-content';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
 
 export interface Message {
   role: 'user' | 'model';
@@ -38,270 +35,161 @@ function LoggedInView() {
   }, [messages, loading]);
 
   const handleInteraction = async () => {
-    if (!user || !input.trim()) {
-      return;
-    }
+    if (!user || !input.trim()) return;
 
     const currentInput = input;
     const userMessage: Message = { role: 'user', content: currentInput };
     setInput('');
     setLoading(true);
-    setMessages(prev => [...prev, userMessage]); 
+    setMessages(prev => [...prev, userMessage]);
 
     try {
       const storageKey = `documents_${user.uid}`;
       const documentsString = localStorage.getItem(storageKey);
       const documents = documentsString ? JSON.parse(documentsString) : [];
-      
+
       const context = documents
-        .filter((doc: any) => doc.textContent && doc.textContent.trim().length > 0)
-        .map((doc: any) => `Document: ${doc.name}\n\nContent:\n${doc.textContent}`)
+        .filter((doc: any) => doc.textContent?.trim()?.length > 0)
+        .map((doc: any) => `Document: ${doc.name}\n\n${doc.textContent}`)
         .join('\n\n---\n\n');
 
       if (!context) {
         toast({
-            variant: "destructive",
-            title: "No Documents Found",
-            description: "Please upload or import a document before starting a chat.",
+          variant: 'destructive',
+          title: 'No Documents Found',
+          description: 'Upload or import a document before chatting.',
         });
         setLoading(false);
         router.push('/add');
         return;
       }
-      
+
       const stream = await ask(currentInput, context, messages.slice(-10));
-      
+
       let fullResponse = '';
       const modelMessageIndex = messages.length + 1;
-      
       setMessages(prev => [...prev, { role: 'model', content: '' }]);
 
       const reader = stream.getReader();
       const readStream = async () => {
-        try {
-            const { done, value } = await reader.read();
-            if (done) {
-              setLoading(false);
-              return;
-            }
-            fullResponse += value;
-            setMessages(prev => {
-              const newMessages = [...prev];
-              newMessages[modelMessageIndex] = { role: 'model', content: fullResponse };
-              return newMessages;
-            });
-            await readStream();
-        } catch (error) {
-            console.error("Error reading stream:", error);
-            setMessages(prev => {
-                const newMessages = [...prev];
-                newMessages[modelMessageIndex] = { role: 'model', content: "Sorry, I encountered an error while streaming the response." };
-                return newMessages;
-            });
-            setLoading(false);
-        }
+        const { done, value } = await reader.read();
+        if (done) return setLoading(false);
+        fullResponse += value;
+        setMessages(prev => {
+          const newMsgs = [...prev];
+          newMsgs[modelMessageIndex] = { role: 'model', content: fullResponse };
+          return newMsgs;
+        });
+        await readStream();
       };
-      
       await readStream();
-
     } catch (error) {
-      console.error("Error asking AI:", error);
-      setMessages(prev => [...prev, { role: 'model', content: "Sorry, I ran into an error. Please try again." }]);
+      console.error(error);
+      setMessages(prev => [
+        ...prev,
+        { role: 'model', content: 'Something went wrong. Try again.' },
+      ]);
       setLoading(false);
     }
   };
 
   return (
-     <div className="flex flex-col w-full h-full">
-        <div className="relative flex-1 w-full max-w-4xl mx-auto flex flex-col p-4">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-blue-600/30 via-transparent to-transparent -z-10"></div>
-            <Image src="/ai-abstract.svg" alt="Abstract AI visual" width={500} height={500} className="absolute right-10 top-1/4 w-1/3 opacity-10" />
-            <div ref={chatContainerRef} className="flex-1 mb-24 p-4 overflow-y-auto space-y-6 pt-20">
-                {messages.length === 0 && !loading && (
-                <div className="text-center text-muted-foreground mt-16 pt-8 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-600/40 via-transparent to-transparent">
-                    <h1 className="text-3xl font-bold font-headline text-primary">Workspace</h1>
-                    <p className="mt-2">Ask a question to begin analyzing your documents.</p>
-                </div>
-                )}
-                {messages.map((msg, index) => (
-                <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    {msg.role === 'model' && (
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0"><Bot size={16}/></div>
-                    )}
-                    <div className={`p-3 rounded-lg max-w-[85%] ${msg.role === 'user' ? 'bg-primary/20' : 'bg-card'}`}>
-                    <MarkdownContent content={msg.content} />
-                    </div>
-                    {msg.role === 'user' && (
-                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-bold text-xs shrink-0"><User size={16}/></div>
-                    )}
-                </div>
-                ))}
-                {loading && (
-                <div className="flex items-start gap-3 justify-start">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0"><Bot size={16}/></div>
-                    <div className="p-3 rounded-lg max-w-[85%] bg-card flex items-center">
-                    <TypingAnimation text="..." />
-                    </div>
-                </div>
-                )}
+    <div className="flex flex-col w-full h-full relative overflow-hidden">
+      {/* Gradient Backgrounds */}
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.3),_transparent_70%)] blur-3xl"></div>
+        <div className="absolute bottom-0 right-0 w-[700px] h-[700px] bg-[radial-gradient(circle_at_bottom_right,_rgba(236,72,153,0.25),_transparent_70%)] blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/4 w-[500px] h-[500px] bg-[radial-gradient(circle_at_center,_rgba(14,165,233,0.25),_transparent_70%)] blur-3xl animate-pulse"></div>
+        <div className="absolute top-1/3 right-1/3 w-[400px] h-[400px] bg-[radial-gradient(circle_at_center,_rgba(192,132,252,0.2),_transparent_70%)] blur-3xl animate-pulse"></div>
+      </div>
+
+      {/* Chat Area */}
+      <div ref={chatContainerRef} className="flex-1 p-6 pb-32 overflow-y-auto space-y-6">
+        {messages.length === 0 && !loading && (
+          <div className="text-center text-muted-foreground mt-24">
+            <h1 className="text-3xl font-bold text-white/80">Workspace</h1>
+            <p className="mt-2">Ask a question to start analyzing your documents.</p>
+          </div>
+        )}
+
+        {messages.map((msg, i) => (
+          <div key={i} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            {msg.role === 'model' && (
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                <Bot size={16} />
+              </div>
+            )}
+            <div className={`p-3 rounded-lg max-w-[85%] ${msg.role === 'user' ? 'bg-primary/20' : 'bg-neutral-800/50'}`}>
+              <MarkdownContent content={msg.content} />
             </div>
+            {msg.role === 'user' && (
+              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
+                <User size={16} />
+              </div>
+            )}
+          </div>
+        ))}
+
+        {loading && (
+          <div className="flex items-start gap-3 justify-start">
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              <Bot size={16} />
+            </div>
+            <div className="p-3 rounded-lg max-w-[85%] bg-neutral-800/50 flex items-center">
+              <TypingAnimation text="..." />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Chat Bar — Brighter Glow */}
+      <div className="fixed bottom-12 left-1/2 -translate-x-1/2 w-[92%] max-w-3xl z-50">
+        <div className="bg-neutral-900/80 backdrop-blur-xl rounded-full border border-neutral-700 shadow-[0_0_35px_rgba(129,140,248,0.8)]">
+          <div className="p-3 flex items-center gap-3">
+            <Button
+              asChild
+              size="icon"
+              className="rounded-full bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 border-none transition-all duration-200"
+            >
+              <Link href="/add">
+                <PlusCircle />
+                <span className="sr-only">Upload</span>
+              </Link>
+            </Button>
+
+            <Input
+              placeholder="Ask anything about your documents..."
+              className="border-none focus-visible:ring-0 flex-1 text-base bg-transparent text-white placeholder:text-gray-400 px-4"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleInteraction()}
+              disabled={loading}
+            />
+
+            <Button
+              size="icon"
+              className="rounded-full bg-indigo-500 hover:bg-indigo-400 text-white shadow-[0_0_25px_rgba(129,140,248,1)] hover:shadow-[0_0_40px_rgba(129,140,248,1)] transition-all duration-200"
+              onClick={handleInteraction}
+              disabled={loading}
+            >
+              {loading ? <Loader2 className="animate-spin" /> : <Send />}
+            </Button>
+          </div>
         </div>
-        <div className="fixed bottom-16 left-1/2 -translate-x-1/2 w-[90%] max-w-3xl z-50">
-  <div className="bg-neutral-900/80 backdrop-blur-xl rounded-full shadow-[0_0_25px_rgba(129,140,248,0.4)] border border-neutral-700">
-    <div className="p-3 flex items-center gap-3">
-      {/* Upload Button */}
-      <Button
-        asChild
-        size="icon"
-        className="rounded-full bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 border-none transition-all duration-200"
-      >
-        <Link href="/add">
-          <PlusCircle />
-          <span className="sr-only">Upload Document</span>
-        </Link>
-      </Button>
-
-      {/* Input */}
-      <Input
-        placeholder="Ask anything about your documents..."
-        className="border-none focus-visible:ring-0 flex-1 text-base bg-transparent text-white placeholder:text-gray-400 px-4"
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && handleInteraction()}
-        disabled={loading}
-      />
-
-      {/* Send Button */}
-      <Button
-        size="icon"
-        className="rounded-full bg-indigo-500 hover:bg-indigo-400 text-white shadow-[0_0_15px_rgba(129,140,248,0.6)] hover:shadow-[0_0_25px_rgba(129,140,248,0.8)] transition-all duration-200"
-        onClick={handleInteraction}
-        disabled={loading}
-      >
-        {loading ? <Loader2 className="animate-spin" /> : <Send />}
-        <span className="sr-only">Send Message</span>
-      </Button>
-    </div>
-  </div>
-</div>
+      </div>
     </div>
   );
 }
 
-
-function LandingPage() {
-    const { signInWithGoogle } = useUser();
-    const { toast } = useToast();
-
-    const handleDemo = () => {
-        toast({
-            title: "Demo Coming Soon!",
-            description: "The interactive demo is not yet available, but you can sign in to get started!",
-        });
-    };
-
-    return (
-        <div className="flex flex-col items-center justify-center h-full overflow-hidden p-4 w-full">
-            <div className="absolute inset-0 bg-gears -z-10"></div>
-            <div className="container mx-auto grid md:grid-cols-2 gap-12 items-center relative z-10 animate-fade-in-down text-center md:text-left">
-                <div>
-                    <h1 className="text-5xl md:text-6xl font-extrabold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent mb-4">
-                        No more folders. Just answers.
-                    </h1>
-                    <p className="text-lg text-muted-foreground max-w-2xl mx-auto md:mx-0 mb-8">
-                        Upload or connect your files. Ask anything. Get instant answers.
-                    </p>
-                    <div className="flex justify-center md:justify-start gap-4">
-                        <Button 
-                            size="lg" 
-                            onClick={signInWithGoogle} 
-                            className="bg-gradient-to-r from-primary to-accent text-primary-foreground transition-transform hover:scale-105"
-                        >
-                            Continue with Google
-                        </Button>
-                        <Button 
-                            size="lg" 
-                            variant="outline" 
-                            onClick={handleDemo}
-                            className="transition-transform hover:scale-105"
-                        >
-                            Try Demo
-                        </Button>
-                    </div>
-                </div>
-
-                <div className="w-full max-w-xl mx-auto group">
-                    <div className="relative bg-card/80 backdrop-blur-sm rounded-lg p-4 border border-primary/20 shadow-2xl shadow-primary/10">
-                        <div className="flex items-center gap-3 p-3">
-                             <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-bold text-xs shrink-0"><User size={16}/></div>
-                             <div className="p-3 rounded-lg bg-primary/20 max-w-[85%]">
-                                <p>What were the key findings in the Q3 market analysis?</p>
-                             </div>
-                        </div>
-                         <div className="flex items-start gap-3 p-3">
-                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0"><Bot size={16}/></div>
-                            <div className="p-3 rounded-lg bg-card max-w-[85%] text-left">
-                                <TypingAnimation text={"Based on the Q3 report, the key findings were:\n\n*   **North American market** grew by 15% quarter-over-quarter.\n*   **New product line 'Alpha'** exceeded sales projections by 30%.\n*   **Emerging challenges** include supply chain disruptions in the APAC region."} speed={25}/>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div className="container mx-auto py-24 px-4 md:px-6">
-                <div className="grid md:grid-cols-3 gap-8 text-center">
-                    <Card>
-                    <CardHeader>
-                        <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
-                        <FileSearch className="w-8 h-8 text-primary" />
-                        </div>
-                        <CardTitle className="mt-4">Ask, Don't Search</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-muted-foreground">
-                        Interact with your documents using natural language. Ask complex questions and get synthesized answers instantly, complete with sources.
-                        </p>
-                    </CardContent>
-                    </Card>
-                    <Card>
-                    <CardHeader>
-                        <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
-                        <BrainCircuit className="w-8 h-8 text-primary" />
-                        </div>
-                        <CardTitle className="mt-4">Uncover Insights</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-muted-foreground">
-                        Let our advanced AI analyze your content to find connections, summarize key points, and extract valuable information you might have missed.
-                        </p>
-                    </CardContent>
-                    </Card>
-                    <Card>
-                    <CardHeader>
-                        <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
-                        <Lightbulb className="w-8 h-8 text-primary" />
-                        </div>
-                        <CardTitle className="mt-4">Centralize Your Knowledge</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-muted-foreground">
-                        Securely upload PDFs or connect your Google Drive to bring all your scattered information into one intelligent hub. No more hunting through folders.
-                        </p>
-                    </CardContent>
-                    </Card>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-
 export default function Home() {
   const { user, loading } = useUser();
-  
   if (loading) {
-    return <div className="flex items-center justify-center h-full"><Loader2 className="animate-spin text-primary"/></div>;
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="animate-spin text-primary" />
+      </div>
+    );
   }
 
-  return user ? <LoggedInView /> : <LandingPage />;
+  return user ? <LoggedInView /> : <div className="text-center p-8">Please log in to start chatting.</div>;
 }
