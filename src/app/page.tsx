@@ -145,18 +145,22 @@ function LoggedInView() {
                 )}
             </div>
         </div>
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-3xl z-50">
-          <div className="bg-neutral-900/80 backdrop-blur-xl rounded-full shadow-2xl shadow-primary/20 border border-neutral-700">
-            <div className="p-2 flex items-center gap-2">
-              
-              <Button asChild variant="outline" size="icon" className="rounded-full border-none bg-primary/10 hover:bg-primary/20 transition">
+        <div className="fixed bottom-16 left-1/2 -translate-x-1/2 w-[90%] max-w-3xl z-50">
+          <div className="bg-neutral-900/80 backdrop-blur-xl rounded-full shadow-[0_0_25px_rgba(129,140,248,0.4)] border border-neutral-700">
+            <div className="p-3 flex items-center gap-3">
+              {/* Upload Button */}
+              <Button
+                asChild
+                size="icon"
+                className="rounded-full bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 border-none transition-all duration-200"
+              >
                 <Link href="/add">
-                  <PlusCircle className="text-primary" />
+                  <PlusCircle />
                   <span className="sr-only">Upload Document</span>
                 </Link>
               </Button>
 
-              
+              {/* Input */}
               <Input
                 placeholder="Ask anything about your documents..."
                 className="border-none focus-visible:ring-0 flex-1 text-base bg-transparent text-white placeholder:text-gray-400 px-4"
@@ -166,10 +170,10 @@ function LoggedInView() {
                 disabled={loading}
               />
 
-              
+              {/* Send Button */}
               <Button
                 size="icon"
-                className="rounded-full bg-primary text-primary-foreground hover:bg-primary/80 transition disabled:opacity-50"
+                className="rounded-full bg-indigo-500 hover:bg-indigo-400 text-white shadow-[0_0_15px_rgba(129,140,248,0.6)] hover:shadow-[0_0_25px_rgba(129,140,248,0.8)] transition-all duration-200"
                 onClick={handleInteraction}
                 disabled={loading}
               >
@@ -300,5 +304,3 @@ export default function Home() {
 
   return user ? <LoggedInView /> : <LandingPage />;
 }
-
-    
