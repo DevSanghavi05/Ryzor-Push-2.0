@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, Loader2, User, Bot, PlusCircle } from 'lucide-react';
@@ -12,7 +12,7 @@ import Link from 'next/link';
 import { MarkdownContent } from '@/components/chat/markdown-content';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { motion } from 'framer-motion';
 
 export interface Message {
   role: 'user' | 'model';
@@ -181,15 +181,78 @@ function LoggedInView() {
   );
 }
 
+function LandingPage() {
+  const [prompt, setPrompt] = useState("");
+
+  return (
+    <div className="relative min-h-screen w-full overflow-hidden bg-black text-white flex flex-col items-center justify-center px-6">
+      {/* Background gradient shapes */}
+      <div className="absolute inset-0 overflow-hidden">
+        {[...Array(10)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-[400px] h-[400px] rounded-full bg-gradient-to-r from-purple-500 to-pink-500 opacity-20 blur-3xl"
+            animate={{
+              x: [0, Math.random() * 100 - 50],
+              y: [0, Math.random() * 100 - 50],
+            }}
+            transition={{ duration: 10 + Math.random() * 10, repeat: Infinity, repeatType: "reverse" }}
+            style={{
+              top: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Title Section */}
+      <motion.h1
+        className="text-6xl md:text-7xl font-bold text-center mb-8 z-10"
+        initial={{ opacity: 0, y: -30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1 }}
+      >
+        No more folders. Just answers.
+      </motion.h1>
+
+      <motion.p
+        className="text-xl md:text-2xl text-center text-gray-300 mb-16 max-w-2xl z-10"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1, delay: 0.3 }}
+      >
+        Upload your PDFs. Ask anything. Get instant answers.
+      </motion.p>
+
+      {/* Chat Input Box */}
+      <motion.div
+        className="relative w-full max-w-3xl z-20 mt-[-40px]"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1, delay: 0.6 }}
+      >
+        <input
+          type="text"
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          placeholder="Ask a question about your documents..."
+          className="w-full bg-black/70 border border-gray-700 rounded-full px-6 py-4 text-lg focus:outline-none focus:ring-4 focus:ring-purple-500/60 shadow-[0_0_25px_10px_rgba(168,85,247,0.5)]"
+        />
+      </motion.div>
+    </div>
+  );
+}
+
+
 export default function Home() {
   const { user, loading } = useUser();
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-screen bg-black">
         <Loader2 className="animate-spin text-primary" />
       </div>
     );
   }
 
-  return user ? <LoggedInView /> : <div className="text-center p-8">Please log in to start chatting.</div>;
+  return user ? <LoggedInView /> : <LandingPage />;
 }
