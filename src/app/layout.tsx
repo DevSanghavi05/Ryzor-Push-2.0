@@ -33,7 +33,7 @@ export default function RootLayout({
       <body className="font-body antialiased flex flex-col min-h-dvh">
         <FirebaseClientProvider>
           <Header />
-          <main className="flex-1 flex flex-col pt-24">{children}</main>
+          <main className="flex-1 flex flex-col">{children}</main>
           <Footer />
         </FirebaseClientProvider>
         <Toaster />
@@ -41,3 +41,5 @@ export default function RootLayout({
     </html>
   );
 }
+
+    

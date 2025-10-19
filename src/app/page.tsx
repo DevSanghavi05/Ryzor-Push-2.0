@@ -113,7 +113,7 @@ function LoggedInView() {
 
   return (
      <div className="flex flex-col w-full h-full">
-        <div className="relative flex-1 w-full max-w-4xl mx-auto flex flex-col p-4 animate-fade-in-up">
+        <div className="relative flex-1 w-full max-w-4xl mx-auto flex flex-col p-4 animate-fade-in-up pt-16">
             <Image src="/ai-abstract.svg" alt="Abstract AI visual" width={500} height={500} className="absolute right-10 top-1/4 w-1/3 opacity-10" />
             <div ref={chatContainerRef} className="flex-1 mb-24 p-4 overflow-y-auto space-y-6">
                 {messages.length === 0 && !loading && (
@@ -290,3 +290,5 @@ export default function Home() {
 
   return user ? <LoggedInView /> : <LandingPage />;
 }
+
+    
