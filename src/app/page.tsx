@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, Loader2, User, Bot, PlusCircle } from 'lucide-react';
+import { Send, Loader2, User, Bot, PlusCircle, Brain, MessageSquare, Wand } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { ask } from '@/app/actions';
 import { TypingAnimation } from '@/components/chat/typing-animation';
@@ -12,7 +12,7 @@ import Link from 'next/link';
 import { MarkdownContent } from '@/components/chat/markdown-content';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, useInView } from 'framer-motion';
 
 export interface Message {
   role: 'user' | 'model';
@@ -73,11 +73,20 @@ function LoggedInView() {
       const reader = stream.getReader();
       const readStream = async () => {
         const { done, value } = await reader.read();
-        if (done) return setLoading(false);
+        if (done) {
+          setLoading(false);
+          // Set the final content without the cursor
+          setMessages(prev => {
+            const newMsgs = [...prev];
+            newMsgs[modelMessageIndex] = { role: 'model', content: fullResponse };
+            return newMsgs;
+          });
+          return;
+        }
         fullResponse += value;
         setMessages(prev => {
           const newMsgs = [...prev];
-          newMsgs[modelMessageIndex] = { role: 'model', content: fullResponse };
+          newMsgs[modelMessageIndex] = { role: 'model', content: fullResponse + '▋' };
           return newMsgs;
         });
         await readStream();
@@ -153,7 +162,7 @@ function LoggedInView() {
           </div>
         ))}
 
-        {loading && (
+        {loading && messages[messages.length-1]?.role === 'user' && (
           <div className="flex items-start gap-3 justify-start">
             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
               <Bot size={16} />
@@ -165,7 +174,7 @@ function LoggedInView() {
         )}
       </div>
 
-      {/* Chat Bar — Brighter Glow */}
+      {/* Chat Bar */}
       <div className="fixed bottom-16 left-1/2 -translate-x-1/2 w-[92%] max-w-3xl z-50">
         <div className="bg-neutral-900/80 backdrop-blur-xl rounded-full border border-neutral-700 shadow-[0_0_40px_10px_rgba(129,140,248,0.6)]">
           <div className="p-3 flex items-center gap-3">
@@ -204,64 +213,99 @@ function LoggedInView() {
   );
 }
 
-function LandingPage() {
-  const [prompt, setPrompt] = useState("");
+function AnimatedSection({ children }: { children: React.ReactNode }) {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, amount: 0.3 });
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-black text-white flex flex-col items-center justify-center px-6">
-      {/* Background gradient shapes */}
-      <div className="absolute inset-0 overflow-hidden">
-        {[...Array(10)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-[400px] h-[400px] rounded-full bg-gradient-to-r from-purple-500 to-pink-500 opacity-20 blur-3xl"
-            animate={{
-              x: [0, Math.random() * 100 - 50],
-              y: [0, Math.random() * 100 - 50],
-            }}
-            transition={{ duration: 10 + Math.random() * 10, repeat: Infinity, repeatType: "reverse" }}
-            style={{
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
-            }}
-          />
-        ))}
+    <motion.section
+      ref={ref}
+      initial={{ opacity: 0, y: 50 }}
+      animate={{ opacity: isInView ? 1 : 0, y: isInView ? 0 : 50 }}
+      transition={{ duration: 0.8, ease: 'easeOut' }}
+      className="py-20"
+    >
+      {children}
+    </motion.section>
+  );
+}
+
+
+function LandingPage() {
+  return (
+    <div className="relative w-full overflow-x-hidden bg-black text-white">
+      {/* Hero Section */}
+      <div className="min-h-screen flex flex-col items-center justify-center text-center px-6 relative">
+          <div className="absolute inset-0 -z-10">
+            {[...Array(5)].map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute w-[300px] h-[300px] md:w-[500px] md:h-[500px] rounded-full bg-gradient-to-r from-purple-500/30 to-pink-500/30 opacity-20 blur-3xl"
+                animate={{
+                  x: [0, Math.random() * 200 - 100, 0],
+                  y: [0, Math.random() * 200 - 100, 0],
+                  scale: [1, 1.1, 1],
+                }}
+                transition={{ duration: 15 + Math.random() * 10, repeat: Infinity, repeatType: "mirror" }}
+                style={{
+                  top: `${Math.random() * 80}%`,
+                  left: `${Math.random() * 80}%`,
+                }}
+              />
+            ))}
+          </div>
+
+        <motion.h1
+          className="text-5xl md:text-7xl font-bold mb-6 z-10"
+          initial={{ opacity: 0, y: -30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1 }}
+        >
+          No more folders. Just answers.
+        </motion.h1>
+        <motion.p
+          className="text-lg md:text-xl text-gray-300 max-w-2xl z-10"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 0.3 }}
+        >
+          Upload your PDFs. Ask anything. Get instant answers from your documents.
+        </motion.p>
       </div>
 
-      {/* Title Section */}
-      <motion.h1
-        className="text-6xl md:text-7xl font-bold text-center mb-8 z-10"
-        initial={{ opacity: 0, y: -30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1 }}
-      >
-        No more folders. Just answers.
-      </motion.h1>
-
-      <motion.p
-        className="text-xl md:text-2xl text-center text-gray-300 mb-16 max-w-2xl z-10"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1, delay: 0.3 }}
-      >
-        Upload your PDFs. Ask anything. Get instant answers.
-      </motion.p>
-
-      {/* Chat Input Box */}
-      <motion.div
-        className="relative w-full max-w-3xl z-20 mt-[-40px]"
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1, delay: 0.6 }}
-      >
-        <input
-          type="text"
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Ask a question about your documents..."
-          className="w-full bg-black/70 border border-gray-700 rounded-full px-6 py-4 text-lg focus:outline-none focus:ring-4 focus:ring-purple-500/60 shadow-[0_0_25px_10px_rgba(168,85,247,0.5)]"
-        />
-      </motion.div>
+      {/* How It Works Section */}
+      <AnimatedSection>
+        <div className="container mx-auto px-6 text-center">
+          <h2 className="text-4xl md:text-5xl font-bold mb-12">Your documents, understood instantly.</h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="bg-neutral-900/50 p-8 rounded-2xl border border-neutral-800 shadow-[0_0_20px_rgba(129,140,248,0.2)]">
+              <Brain className="w-12 h-12 text-primary mx-auto mb-4" />
+              <h3 className="text-2xl font-semibold mb-2">Upload</h3>
+              <p className="text-muted-foreground">Drop your PDFs into Ryzor.</p>
+            </div>
+            <div className="bg-neutral-900/50 p-8 rounded-2xl border border-neutral-800 shadow-[0_0_20px_rgba(129,140,248,0.2)]">
+              <MessageSquare className="w-12 h-12 text-primary mx-auto mb-4" />
+              <h3 className="text-2xl font-semibold mb-2">Ask</h3>
+              <p className="text-muted-foreground">Type natural questions like “Summarize Chapter 3.”</p>
+            </div>
+            <div className="bg-neutral-900/50 p-8 rounded-2xl border border-neutral-800 shadow-[0_0_20px_rgba(129,140,248,0.2)]">
+              <Wand className="w-12 h-12 text-primary mx-auto mb-4" />
+              <h3 className="text-2xl font-semibold mb-2">Get Answers</h3>
+              <p className="text-muted-foreground">AI finds and explains instantly.</p>
+            </div>
+          </div>
+        </div>
+      </AnimatedSection>
+      
+      {/* Why Ryzor Section */}
+      <AnimatedSection>
+        <div className="container mx-auto px-6 text-center max-w-4xl">
+          <h2 className="text-4xl md:text-5xl font-bold mb-6">AI-first. Free. Faster.</h2>
+          <p className="text-lg text-muted-foreground">
+            While others like Dropbox Dash and Google Drive barely touch AI — and still charge — Ryzor is built entirely around it. It’s free, faster, and focused purely on answers, not storage.
+          </p>
+        </div>
+      </AnimatedSection>
     </div>
   );
 }
