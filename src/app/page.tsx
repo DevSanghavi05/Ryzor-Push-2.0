@@ -113,9 +113,9 @@ function LoggedInView() {
 
   return (
      <div className="flex flex-col w-full h-full">
-        <div className="relative flex-1 w-full max-w-4xl mx-auto flex flex-col p-4 animate-fade-in-up pt-16">
+        <div className="relative flex-1 w-full max-w-4xl mx-auto flex flex-col p-4 animate-fade-in-up">
             <Image src="/ai-abstract.svg" alt="Abstract AI visual" width={500} height={500} className="absolute right-10 top-1/4 w-1/3 opacity-10" />
-            <div ref={chatContainerRef} className="flex-1 mb-24 p-4 overflow-y-auto space-y-6">
+            <div ref={chatContainerRef} className="flex-1 mb-24 p-4 overflow-y-auto space-y-6 pt-20">
                 {messages.length === 0 && !loading && (
                 <div className="text-center text-muted-foreground mt-16 pt-8 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-600/10 via-transparent to-transparent">
                     <h1 className="text-3xl font-bold font-headline text-primary">Workspace</h1>
