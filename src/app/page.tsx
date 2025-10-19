@@ -232,6 +232,7 @@ function AnimatedSection({ children }: { children: React.ReactNode }) {
 
 
 function LandingPage() {
+  const { signInWithGoogle } = useUser();
   return (
     <div className="relative w-full overflow-x-hidden bg-black text-white">
       {/* Hero Section */}
@@ -297,13 +298,20 @@ function LandingPage() {
         </div>
       </AnimatedSection>
       
-      {/* Why Ryzor Section */}
+      {/* Redefining Knowledge Section */}
       <AnimatedSection>
         <div className="container mx-auto px-6 text-center max-w-4xl">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6">AI-first. Free. Faster.</h2>
-          <p className="text-lg text-muted-foreground">
-            While others like Dropbox Dash and Google Drive barely touch AI — and still charge — Ryzor is built entirely around it. It’s free, faster, and focused purely on answers, not storage.
+          <h2 className="text-4xl md:text-5xl font-bold mb-6">We’re redefining how humans use knowledge.</h2>
+          <p className="text-lg text-muted-foreground mb-8">
+            Ryzor AI turns messy documents into living intelligence. No folders. No chaos. Just clarity — instantly.
           </p>
+          <Button 
+            onClick={signInWithGoogle}
+            size="lg"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_20px_rgba(var(--primary-hsl),0.4)] hover:shadow-[0_0_30px_rgba(var(--primary-hsl),0.6)] transition-all"
+          >
+            Try Ryzor AI Now
+          </Button>
         </div>
       </AnimatedSection>
     </div>
