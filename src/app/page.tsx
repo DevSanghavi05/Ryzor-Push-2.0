@@ -113,7 +113,7 @@ function LoggedInView() {
 
   return (
      <div className="flex flex-col w-full h-full">
-        <div className="relative flex-1 w-full max-w-4xl mx-auto flex flex-col p-4 animate-fade-in-up">
+        <div className="relative flex-1 w-full max-w-4xl mx-auto flex flex-col p-4">
             <Image src="/ai-abstract.svg" alt="Abstract AI visual" width={500} height={500} className="absolute right-10 top-1/4 w-1/3 opacity-10" />
             <div ref={chatContainerRef} className="flex-1 mb-24 p-4 overflow-y-auto space-y-6 pt-20">
                 {messages.length === 0 && !loading && (
@@ -145,27 +145,37 @@ function LoggedInView() {
                 )}
             </div>
         </div>
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-3xl">
-            <div className="bg-[#0b0b0b]/60 backdrop-blur-md rounded-full shadow-lg border border-gray-700">
-                <div className="p-2 flex items-center">
-                    <Button asChild variant="ghost" size="icon" className="rounded-full">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-3xl z-50">
+            <div className="bg-neutral-900/80 backdrop-blur-xl rounded-full shadow-2xl border border-neutral-700">
+                <div className="p-2 flex items-center gap-2">
+                
+                <Button asChild variant="outline" size="icon" className="rounded-full border-none bg-primary/10 hover:bg-primary/20 transition">
                     <Link href="/add">
-                        <PlusCircle />
-                        <span className="sr-only">Upload Document</span>
+                    <PlusCircle className="text-primary" />
+                    <span className="sr-only">Upload Document</span>
                     </Link>
-                    </Button>
-                    <Input
+                </Button>
+
+                
+                <Input
                     placeholder="Ask anything about your documents..."
-                    className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 text-base bg-transparent shadow-none px-4 py-1 h-auto"
+                    className="border-none focus-visible:ring-0 flex-1 text-base bg-transparent text-white placeholder:text-gray-400 px-4"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleInteraction()}
                     disabled={loading}
-                    />
-                    <Button size="icon" className="rounded-full" onClick={handleInteraction} disabled={loading}>
+                />
+
+                
+                <Button
+                    size="icon"
+                    className="rounded-full bg-primary text-primary-foreground hover:bg-primary/80 transition disabled:opacity-50"
+                    onClick={handleInteraction}
+                    disabled={loading}
+                >
                     {loading ? <Loader2 className="animate-spin" /> : <Send />}
                     <span className="sr-only">Send Message</span>
-                    </Button>
+                </Button>
                 </div>
             </div>
         </div>
