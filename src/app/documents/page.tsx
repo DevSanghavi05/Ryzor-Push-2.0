@@ -131,24 +131,23 @@ function DocumentsPageContent() {
 
   useEffect(() => {
     if (!accessToken || !user) return;
-
+  
     const script = document.createElement('script');
     script.src = 'https://apis.google.com/js/api.js';
     script.async = true;
     script.defer = true;
     
-    const initClientAndFetchFiles = () => {
+    script.onload = () => {
       const gapi = window.gapi as typeof Gapi;
       gapi.load('client', async () => {
+        setLoadingDrive(true);
         try {
-          // No gapi.client.init needed when using Firebase Auth's token
           gapi.client.setToken({ access_token: accessToken });
-          setLoadingDrive(true);
   
           // Load discovery docs before making API calls
           await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
           await gapi.client.load('https://docs.googleapis.com/$discovery/rest?version=v1');
-
+  
           const response = await gapi.client.drive.files.list({
             'pageSize': 20,
             'fields': "nextPageToken, files(id, name, mimeType, modifiedTime, webViewLink)"
@@ -184,17 +183,14 @@ function DocumentsPageContent() {
       });
     };
   
-    script.onload = initClientAndFetchFiles;
-  
     document.body.appendChild(script);
   
-    // Cleanup the script tag
     return () => {
       const gapiScript = document.querySelector('script[src="https://apis.google.com/js/api.js"]');
       if (gapiScript) {
         document.body.removeChild(gapiScript);
       }
-    }
+    };
   }, [accessToken, user]);
 
 
