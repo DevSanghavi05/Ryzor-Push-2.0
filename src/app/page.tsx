@@ -49,12 +49,11 @@ function LoggedInView() {
       const documentsString = localStorage.getItem(storageKey);
       const documents = documentsString ? JSON.parse(documentsString) : [];
 
-      const context = documents
+      const contextDocuments = documents
         .filter((doc: any) => doc.textContent?.trim()?.length > 0)
-        .map((doc: any) => `Document: ${doc.name}\n\n${doc.textContent}`)
-        .join('\n\n---\n\n');
+        .map((doc: any) => `Document: ${doc.name}\n\n${doc.textContent}`);
 
-      if (!context) {
+      if (contextDocuments.length === 0) {
         toast({
           variant: 'destructive',
           title: 'No Documents Found',
@@ -65,7 +64,7 @@ function LoggedInView() {
         return;
       }
 
-      const stream = await ask(currentInput, context, messages.slice(-10));
+      const stream = await ask(currentInput, contextDocuments, messages.slice(-10));
 
       let fullResponse = '';
       const modelMessageIndex = messages.length + 1;
@@ -107,8 +106,6 @@ function LoggedInView() {
     <div className="flex flex-col w-full h-full relative overflow-hidden">
       {/* Gradient Backgrounds */}
       <div className="absolute inset-0 -z-10 overflow-hidden bg-background">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.15),_transparent_40%)]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,_rgba(236,72,153,0.15),_transparent_40%)]"></div>
         <motion.div 
             className="absolute -top-1/4 -left-1/4 w-[1000px] h-[1000px] bg-[radial-gradient(circle_at_center,_rgba(14,165,233,0.15),_transparent_50%)] rounded-full"
             animate={{
@@ -137,7 +134,7 @@ function LoggedInView() {
       </div>
 
       {/* Chat Area */}
-      <div ref={chatContainerRef} className="flex-1 p-6 pb-32 overflow-y-auto space-y-6">
+      <div ref={chatContainerRef} className="flex-1 p-6 pb-40 overflow-y-auto space-y-6">
         {messages.length === 0 && !loading && (
           <div className="text-center text-muted-foreground mt-24">
             <h1 className="text-3xl font-bold text-white/80">Workspace</h1>
@@ -176,7 +173,7 @@ function LoggedInView() {
       </div>
 
       {/* Chat Bar */}
-      <div className="fixed bottom-16 left-1/2 -translate-x-1/2 w-[92%] max-w-3xl z-50">
+      <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-[92%] max-w-3xl z-50">
         <div className="bg-neutral-900/80 backdrop-blur-xl rounded-full border border-neutral-700 shadow-[0_0_40px_10px_rgba(129,140,248,0.6)]">
           <div className="p-3 flex items-center gap-3">
             <Button

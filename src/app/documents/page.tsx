@@ -17,8 +17,7 @@ import {
     Link2,
     Trash2,
     Filter,
-    HardDriveUpload,
-    Download
+    HardDriveUpload
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState, useCallback, Suspense } from 'react';
@@ -51,6 +50,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { firebaseConfig } from '@/firebase/config';
 
 type Document = {
   id: string;
@@ -130,62 +130,67 @@ function DocumentsPageContent() {
     }
   }, [user, fetchLocalFiles]);
 
+   useEffect(() => {
+    const initGapi = async () => {
+      try {
+        const gapiScript = await import('gapi-script');
+        setGapiInstance(gapiScript.gapi);
+      } catch (e) {
+        console.error("Error loading GAPI script", e);
+      }
+    };
+    initGapi();
+  }, []);
+
   useEffect(() => {
-    if (user && accessToken) {
-        const initGapiClient = async () => {
-          setLoadingDrive(true);
-          try {
-            const gapiScript = await import('gapi-script');
-            const gapi = gapiScript.gapi;
-            setGapiInstance(gapi);
-            
-            await new Promise((resolve, reject) => {
-              gapi.load('client', {
-                callback: resolve,
-                onerror: reject,
-              });
-            });
-
-            await gapi.client.init({
-              discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest", "https://docs.googleapis.com/$discovery/rest?version=v1"],
-            });
-            
-            gapi.client.setToken({ access_token: accessToken });
-
+    if (gapiInstance && accessToken) {
+        const initClient = async () => {
+            setLoadingDrive(true);
             try {
-              const response = await gapi.client.drive.files.list({
-                  'pageSize': 20,
-                  'fields': "nextPageToken, files(id, name, mimeType, modifiedTime, webViewLink)"
-              });
-              const files = response.result.files as any[];
-              const formattedDriveFiles: Document[] = files.map(file => ({
-                  id: file.id,
-                  name: file.name,
-                  modifiedTime: file.modifiedTime,
-                  mimeType: file.mimeType,
-                  webViewLink: file.webViewLink,
-                  icon: getFileIcon(file.mimeType, 'drive'),
-                  source: 'drive' as const,
-              }));
-              setDocuments(prevDocs => [...formattedDriveFiles, ...prevDocs.filter(d => d.source !== 'drive')]);
+                await new Promise<void>((resolve, reject) => {
+                    gapiInstance.load('client', {
+                        callback: resolve,
+                        onerror: reject,
+                    });
+                });
+
+                await gapiInstance.client.init({
+                    apiKey: firebaseConfig.apiKey,
+                    discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest", "https://docs.googleapis.com/$discovery/rest?version=v1"],
+                });
+                
+                gapiInstance.client.setToken({ access_token: accessToken });
+
+                const response = await gapiInstance.client.drive.files.list({
+                    'pageSize': 20,
+                    'fields': "nextPageToken, files(id, name, mimeType, modifiedTime, webViewLink)"
+                });
+                const files = response.result.files as any[];
+                const formattedDriveFiles: Document[] = files.map(file => ({
+                    id: file.id,
+                    name: file.name,
+                    modifiedTime: file.modifiedTime,
+                    mimeType: file.mimeType,
+                    webViewLink: file.webViewLink,
+                    icon: getFileIcon(file.mimeType, 'drive'),
+                    source: 'drive' as const,
+                }));
+                setDocuments(prevDocs => [...formattedDriveFiles, ...prevDocs.filter(d => d.source !== 'drive')]);
+
             } catch (error: any) {
-              const errorDetails = error.result?.error;
-              if (errorDetails) {
-                console.error("Error fetching files from Google Drive API:", JSON.stringify(errorDetails, null, 2));
-              } else {
-                console.error("Error fetching files: ", error);
-              }
+                const errorDetails = error.result?.error;
+                if (errorDetails) {
+                    console.error("Error fetching files from Google Drive API:", JSON.stringify(errorDetails, null, 2));
+                } else {
+                    console.error("Error initializing GAPI client or fetching files: ", error);
+                }
             } finally {
-              setLoadingDrive(false);
+                setLoadingDrive(false);
             }
-          } catch (e) {
-            console.error("Error loading GAPI script", e);
-            setLoadingDrive(false);
-          }
         };
-        initGapiClient();
+        initClient();
     }
-  }, [accessToken, user]);
+  }, [gapiInstance, accessToken]);
 
 
   const filteredDocuments = documents
@@ -246,7 +251,7 @@ function DocumentsPageContent() {
     }
   };
 
-  const handleImport = async (doc: Document) => {
+  const handleAutoSummarizeAndFetch = async (doc: Document) => {
     if (!gapiInstance || !user) {
         toast({ variant: 'destructive', title: 'Error', description: 'Google API not initialized or user not logged in.' });
         return;
@@ -273,33 +278,35 @@ function DocumentsPageContent() {
             return;
         }
         
+        // This is where the summarization would happen.
+        // For now, we'll just save the full content to be used as context.
         const newDocument = {
             id: doc.id,
-            name: `${doc.name} (Imported)`,
+            name: doc.name, // Keep original name
             uploaded: new Date().toISOString(),
             textContent: textContent,
         };
 
         const storageKey = `documents_${user.uid}`;
-        const existingDocuments = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        let existingDocuments = JSON.parse(localStorage.getItem(storageKey) || '[]');
         
-        if (existingDocuments.some((d: any) => d.id === doc.id)) {
-            toast({ title: 'Already Imported', description: `${doc.name} is already in your local documents.` });
-            return;
+        const docIndex = existingDocuments.findIndex((d: any) => d.id === doc.id);
+        if (docIndex > -1) {
+            // Update existing doc
+            existingDocuments[docIndex] = newDocument;
+        } else {
+            // Add new doc
+            existingDocuments = [newDocument, ...existingDocuments];
         }
-        
-        // This key is for viewing content, for imported docs we can't view it directly.
-        const contentKey = `document_content_${doc.id}`;
-        localStorage.setItem(contentKey, "This is an imported Google Doc. View the original on Google Drive.");
 
-        localStorage.setItem(storageKey, JSON.stringify([newDocument, ...existingDocuments]));
+        localStorage.setItem(storageKey, JSON.stringify(existingDocuments));
 
         toast({
-            title: "Import Successful",
-            description: `${doc.name} has been imported and its content is ready for analysis.`,
+            title: "Document Ready",
+            description: `${doc.name} content is now available for chat.`,
         });
 
-        // Refresh documents list to reflect the new (imported) local doc.
+        // Visually refresh list to show it's "local" now.
         const localFiles = fetchLocalFiles();
         setDocuments(prevDocs => [...prevDocs.filter(d => d.source === 'drive'), ...localFiles]);
 
@@ -388,9 +395,6 @@ function DocumentsPageContent() {
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem onSelect={() => handleDocumentClick(new MouseEvent('click') as any, doc)}>
                                     <ExternalLink className="mr-2 h-4 w-4" /> Open
-                                </DropdownMenuItem>
-                                 <DropdownMenuItem onSelect={() => handleImport(doc)} disabled={doc.source === 'local' || !doc.mimeType.includes('document')}>
-                                    <Download className="mr-2 h-4 w-4" /> Import for Analysis
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
                                   <button
