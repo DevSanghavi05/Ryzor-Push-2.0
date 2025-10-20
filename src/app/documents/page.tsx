@@ -144,27 +144,35 @@ function DocumentsPageContent() {
 
   useEffect(() => {
     if (gapiInstance && accessToken) {
-        const initClient = async () => {
+        const initClientAndFetchFiles = async () => {
             setLoadingDrive(true);
             try {
+                // 1. Load client and auth2 libraries
                 await new Promise<void>((resolve, reject) => {
-                    gapiInstance.load('client', {
+                    gapiInstance.load('client:auth2', {
                         callback: resolve,
                         onerror: reject,
                     });
                 });
 
+                // 2. Initialize the client
                 await gapiInstance.client.init({
                     apiKey: firebaseConfig.apiKey,
-                    discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest", "https://docs.googleapis.com/$discovery/rest?version=v1"],
+                    discoveryDocs: [
+                        "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest",
+                        "https://docs.googleapis.com/$discovery/rest?version=v1"
+                    ],
                 });
                 
+                // 3. Set the access token for the current user
                 gapiInstance.client.setToken({ access_token: accessToken });
 
+                // 4. Fetch files from Google Drive
                 const response = await gapiInstance.client.drive.files.list({
                     'pageSize': 20,
                     'fields': "nextPageToken, files(id, name, mimeType, modifiedTime, webViewLink)"
                 });
+
                 const files = response.result.files as any[];
                 const formattedDriveFiles: Document[] = files.map(file => ({
                     id: file.id,
@@ -188,7 +196,7 @@ function DocumentsPageContent() {
                 setLoadingDrive(false);
             }
         };
-        initClient();
+        initClientAndFetchFiles();
     }
   }, [gapiInstance, accessToken]);
 
@@ -396,6 +404,11 @@ function DocumentsPageContent() {
                                 <DropdownMenuItem onSelect={() => handleDocumentClick(new MouseEvent('click') as any, doc)}>
                                     <ExternalLink className="mr-2 h-4 w-4" /> Open
                                 </DropdownMenuItem>
+                                {doc.source === 'drive' && doc.mimeType.includes('document') && (
+                                    <DropdownMenuItem onSelect={() => handleAutoSummarizeAndFetch(doc)}>
+                                        <Wand className="mr-2 h-4 w-4" /> Import for Analysis
+                                    </DropdownMenuItem>
+                                )}
                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
                                   <button
                                     className="flex items-center w-full"
