@@ -70,40 +70,31 @@ function LoggedInView() {
       const modelMessageIndex = messages.length + 1;
       setMessages(prev => [...prev, { role: 'model', content: '' }]);
 
-      const reader = stream.getReader();
-      const readStream = async () => {
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) {
-              break;
-            }
-            fullResponse += value;
-            setMessages(prev => {
-              const newMsgs = [...prev];
-              newMsgs[modelMessageIndex] = { role: 'model', content: fullResponse + '▋' };
-              return newMsgs;
-            });
-            // Small delay for typewriter effect
-            await new Promise(resolve => setTimeout(resolve, 10)); 
-          }
-        } finally {
-          setLoading(false);
-          setMessages(prev => {
-            const newMsgs = [...prev];
-            newMsgs[modelMessageIndex] = { role: 'model', content: fullResponse };
-            return newMsgs;
-          });
-        }
-      };
-      await readStream();
+      for await (const chunk of stream) {
+        fullResponse += chunk;
+        setMessages(prev => {
+          const newMsgs = [...prev];
+          newMsgs[modelMessageIndex] = { role: 'model', content: fullResponse + '▋' };
+          return newMsgs;
+        });
+        // Small delay for typewriter effect
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+
+      setMessages(prev => {
+        const newMsgs = [...prev];
+        newMsgs[modelMessageIndex] = { role: 'model', content: fullResponse };
+        return newMsgs;
+      });
+
     } catch (error) {
       console.error(error);
       setMessages(prev => [
         ...prev,
         { role: 'model', content: 'Something went wrong. Try again.' },
       ]);
-      setLoading(false);
+    } finally {
+        setLoading(false);
     }
   };
 
@@ -336,3 +327,5 @@ export default function Home() {
 
   return user ? <LoggedInView /> : <LandingPage />;
 }
+
+    
