@@ -49,6 +49,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onFirebaseAuthStateChanged(auth, async (user) => {
       setUser(user);
       if (user) {
+        // This pattern ensures we get the token from the credential on sign-in,
+        // and from the user object on subsequent loads.
         const idTokenResult = await user.getIdTokenResult();
         setAccessToken(idTokenResult.token);
       } else {
@@ -63,13 +65,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = async () => {
     if (!auth) return;
     const provider = new GoogleAuthProvider();
+    // Add required scopes for Drive and Docs API
     provider.addScope('https://www.googleapis.com/auth/drive.readonly');
     provider.addScope('https://www.googleapis.com/auth/documents.readonly');
     try {
       const result = await signInWithPopup(auth, provider);
       const credential = GoogleAuthProvider.credentialFromResult(result);
       if (credential) {
-        // This gives you a Google Access Token. You can use it to access the Google API.
+        // This gives you a Google Access Token.
         setAccessToken(credential.accessToken || null);
       }
     } catch (error) {
