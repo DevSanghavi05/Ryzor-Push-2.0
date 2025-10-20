@@ -144,7 +144,7 @@ function LoggedInView() {
       <div ref={chatContainerRef} className="flex-1 p-6 pb-40 overflow-y-auto space-y-6">
         {messages.length === 0 && !loading && (
           <div className="text-center text-muted-foreground mt-24">
-            <h1 className="text-3xl font-bold text-white/80">Workspace</h1>
+            <h1 className="text-3xl font-bold text-foreground/80">Workspace</h1>
             <p className="mt-2">Ask a question to start analyzing your documents.</p>
           </div>
         )}
