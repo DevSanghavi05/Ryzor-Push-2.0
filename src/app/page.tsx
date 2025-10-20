@@ -51,7 +51,7 @@ function LoggedInView() {
 
       const contextDocuments = documents
         .filter((doc: any) => doc.textContent?.trim()?.length > 0)
-        .map((doc: any) => `Document: ${doc.name}\n\n${doc.textContent}`);
+        .map((doc: any) => ({ name: doc.name, content: doc.textContent }));
 
       if (contextDocuments.length === 0) {
         toast({
@@ -107,28 +107,30 @@ function LoggedInView() {
       {/* Gradient Backgrounds */}
       <div className="absolute inset-0 -z-10 overflow-hidden bg-background">
         <motion.div 
-            className="absolute -top-1/4 -left-1/4 w-[1000px] h-[1000px] bg-[radial-gradient(circle_at_center,_rgba(14,165,233,0.15),_transparent_50%)] rounded-full"
+            className="absolute -top-1/2 -left-1/2 w-[2000px] h-[2000px] bg-[radial-gradient(circle_at_center,_rgba(14,165,233,0.15),_transparent_50%)] rounded-full"
             animate={{
-                y: [0, -20, 0],
+                y: [0, -40, 0],
+                x: [0, 20, 0],
                 scale: [1, 1.05, 1],
             }}
             transition={{
-                duration: 15,
+                duration: 25,
                 repeat: Infinity,
                 repeatType: 'mirror',
             }}
         />
         <motion.div 
-            className="absolute -bottom-1/4 -right-1/4 w-[1000px] h-[1000px] bg-[radial-gradient(circle_at_center,_rgba(192,132,252,0.15),_transparent_50%)] rounded-full"
+            className="absolute -bottom-1/2 -right-1/2 w-[2000px] h-[2000px] bg-[radial-gradient(circle_at_center,_rgba(192,132,252,0.15),_transparent_50%)] rounded-full"
             animate={{
-                y: [0, 20, 0],
+                y: [0, 40, 0],
+                x: [0, -20, 0],
                 scale: [1, 1.1, 1],
             }}
             transition={{
-                duration: 20,
+                duration: 30,
                 repeat: Infinity,
                 repeatType: 'mirror',
-                delay: 5,
+                delay: 7,
             }}
         />
       </div>
