@@ -17,7 +17,8 @@ import {
     Link2,
     Trash2,
     Filter,
-    HardDriveUpload
+    HardDriveUpload,
+    Wand
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState, useCallback, Suspense } from 'react';
@@ -66,7 +67,7 @@ const getFileIcon = (mimeType: string, source: 'drive' | 'local') => {
     if (source === 'local') return <HardDriveUpload className="w-5 h-5 text-purple-500" />;
     if (mimeType.includes('document')) return <FileText className="w-5 h-5 text-blue-500" />;
     if (mimeType.includes('spreadsheet')) return <Sheet className="w-5 h-5 text-green-500" />;
-    if (mimeType.includes('presentation')) return <Presentation className="w-5 h_5 text-yellow-500" />;
+    if (mimeType.includes('presentation')) return <Presentation className="w-5 h-5 text-yellow-500" />;
     if (mimeType.includes('pdf')) return <FileText className="w-5 h-5 text-red-500" />;
     return <File className="w-5 h-5 text-gray-500" />;
 }
@@ -95,8 +96,6 @@ function DocumentsPageContent() {
   const [loading, setLoading] = useState(true);
   const [loadingDrive, setLoadingDrive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [gapiInstance, setGapiInstance] = useState<typeof Gapi | null>(null);
-
   
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -131,74 +130,65 @@ function DocumentsPageContent() {
   }, [user, fetchLocalFiles]);
 
    useEffect(() => {
-    const initGapi = async () => {
-      try {
-        const gapiScript = await import('gapi-script');
-        setGapiInstance(gapiScript.gapi);
-      } catch (e) {
-        console.error("Error loading GAPI script", e);
-      }
-    };
-    initGapi();
-  }, []);
+    if (!accessToken) return;
 
-  useEffect(() => {
-    if (gapiInstance && accessToken) {
-        const initClientAndFetchFiles = async () => {
-            setLoadingDrive(true);
-            try {
-                // 1. Load client and auth2 libraries
-                await new Promise<void>((resolve, reject) => {
-                    gapiInstance.load('client:auth2', {
-                        callback: resolve,
-                        onerror: reject,
-                    });
-                });
+    setLoadingDrive(true);
+    const script = document.createElement('script');
+    script.src = 'https://apis.google.com/js/api.js';
+    script.async = true;
+    script.defer = true;
+    
+    script.onload = () => {
+      const gapi = window.gapi as typeof Gapi;
+      gapi.load('client', async () => {
+        try {
+          await gapi.client.init({
+            apiKey: firebaseConfig.apiKey,
+            discoveryDocs: [
+                "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest",
+                "https://docs.googleapis.com/$discovery/rest?version=v1"
+            ],
+          });
 
-                // 2. Initialize the client
-                await gapiInstance.client.init({
-                    apiKey: firebaseConfig.apiKey,
-                    discoveryDocs: [
-                        "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest",
-                        "https://docs.googleapis.com/$discovery/rest?version=v1"
-                    ],
-                });
-                
-                // 3. Set the access token for the current user
-                gapiInstance.client.setToken({ access_token: accessToken });
+          gapi.client.setToken({ access_token: accessToken });
 
-                // 4. Fetch files from Google Drive
-                const response = await gapiInstance.client.drive.files.list({
-                    'pageSize': 20,
-                    'fields': "nextPageToken, files(id, name, mimeType, modifiedTime, webViewLink)"
-                });
+          const response = await gapi.client.drive.files.list({
+            'pageSize': 20,
+            'fields': "nextPageToken, files(id, name, mimeType, modifiedTime, webViewLink)"
+          });
 
-                const files = response.result.files as any[];
-                const formattedDriveFiles: Document[] = files.map(file => ({
-                    id: file.id,
-                    name: file.name,
-                    modifiedTime: file.modifiedTime,
-                    mimeType: file.mimeType,
-                    webViewLink: file.webViewLink,
-                    icon: getFileIcon(file.mimeType, 'drive'),
-                    source: 'drive' as const,
-                }));
-                setDocuments(prevDocs => [...formattedDriveFiles, ...prevDocs.filter(d => d.source !== 'drive')]);
-
-            } catch (error: any) {
-                const errorDetails = error.result?.error;
-                if (errorDetails) {
-                    console.error("Error fetching files from Google Drive API:", JSON.stringify(errorDetails, null, 2));
-                } else {
-                    console.error("Error initializing GAPI client or fetching files: ", error);
-                }
-            } finally {
-                setLoadingDrive(false);
+          const files = response.result.files as any[];
+          if (files) {
+            const formattedDriveFiles: Document[] = files.map(file => ({
+                id: file.id,
+                name: file.name,
+                modifiedTime: file.modifiedTime,
+                mimeType: file.mimeType,
+                webViewLink: file.webViewLink,
+                icon: getFileIcon(file.mimeType, 'drive'),
+                source: 'drive' as const,
+            }));
+            setDocuments(prevDocs => [...prevDocs.filter(d => d.source !== 'drive'), ...formattedDriveFiles]);
+          }
+        } catch (error: any) {
+            const errorDetails = error.result?.error;
+            if (errorDetails) {
+                console.error("Error fetching files from Google Drive API:", JSON.stringify(errorDetails, null, 2));
+            } else {
+                console.error("Error initializing GAPI client or fetching files: ", error);
             }
-        };
-        initClientAndFetchFiles();
+        } finally {
+            setLoadingDrive(false);
+        }
+      });
+    };
+    
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
     }
-  }, [gapiInstance, accessToken]);
+  }, [accessToken]);
 
 
   const filteredDocuments = documents
@@ -260,18 +250,19 @@ function DocumentsPageContent() {
   };
 
   const handleAutoSummarizeAndFetch = async (doc: Document) => {
-    if (!gapiInstance || !user) {
+    const gapi = window.gapi as typeof Gapi;
+    if (!gapi || !user) {
         toast({ variant: 'destructive', title: 'Error', description: 'Google API not initialized or user not logged in.' });
         return;
     }
 
-    if (!gapiInstance.client?.docs) {
+    if (!gapi.client?.docs) {
         toast({ variant: 'destructive', title: 'Error', description: 'Google Docs API client is not loaded.' });
         return;
     }
     
     try {
-        const response = await gapiInstance.client.docs.documents.get({
+        const response = await gapi.client.docs.documents.get({
             documentId: doc.id,
         });
 
@@ -499,3 +490,5 @@ function DocumentsPage() {
 }
 
 export default withAuth(DocumentsPage);
+
+    
