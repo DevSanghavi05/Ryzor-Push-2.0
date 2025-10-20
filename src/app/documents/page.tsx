@@ -18,7 +18,8 @@ import {
     Trash2,
     Filter,
     HardDriveUpload,
-    Wand
+    Wand,
+    Briefcase
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState, useCallback, Suspense, useRef } from 'react';
@@ -357,6 +358,13 @@ function DocumentsPageContent() {
                         <SelectItem value="pdf">PDFs</SelectItem>
                     </SelectContent>
                 </Select>
+                <Button 
+                  variant="outline"
+                  onClick={() => toast({ title: "Coming Soon!", description: "The ability to sync a work account will be available in a future update."})}
+                >
+                    <Briefcase className="mr-2 h-4 w-4" />
+                    Sync Work Account
+                </Button>
             </div>
           </div>
           {loading ? (
