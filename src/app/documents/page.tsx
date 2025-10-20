@@ -26,6 +26,7 @@ import { Input } from '@/components/ui/input';
 import { useRouter, useSearchParams } from 'next/navigation';
 import withAuth from '@/firebase/auth/with-auth';
 import { useUser } from '@/firebase/auth/use-user';
+import { useGapi } from 'gapi-script';
 import type { gapi as Gapi } from 'gapi-script';
 import {
     DropdownMenu,
@@ -104,6 +105,7 @@ function DocumentsPageContent() {
 
   const [showTrashConfirm, setShowTrashConfirm] = useState<Document | null>(null);
   const { toast } = useToast();
+  const gapi = useGapi(firebaseConfig.apiKey);
 
   const fetchLocalFiles = useCallback(() => {
     if (!user) return [];
@@ -130,65 +132,55 @@ function DocumentsPageContent() {
   }, [user, fetchLocalFiles]);
 
    useEffect(() => {
-    if (!accessToken) return;
+    if (!gapi || !accessToken) return;
 
     setLoadingDrive(true);
-    const script = document.createElement('script');
-    script.src = 'https://apis.google.com/js/api.js';
-    script.async = true;
-    script.defer = true;
     
-    script.onload = () => {
-      const gapi = window.gapi as typeof Gapi;
-      gapi.load('client', async () => {
-        try {
-          await gapi.client.init({
-            apiKey: firebaseConfig.apiKey,
-            discoveryDocs: [
-                "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest",
-                "https://docs.googleapis.com/$discovery/rest?version=v1"
-            ],
-          });
+    const initClientAndFetchFiles = async () => {
+      try {
+        await gapi.client.init({
+          apiKey: firebaseConfig.apiKey,
+          discoveryDocs: [
+            "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest",
+            "https://docs.googleapis.com/$discovery/rest?version=v1"
+          ],
+        });
+        
+        gapi.client.setToken({ access_token: accessToken });
 
-          gapi.client.setToken({ access_token: accessToken });
+        const response = await gapi.client.drive.files.list({
+          'pageSize': 20,
+          'fields': "nextPageToken, files(id, name, mimeType, modifiedTime, webViewLink)"
+        });
 
-          const response = await gapi.client.drive.files.list({
-            'pageSize': 20,
-            'fields': "nextPageToken, files(id, name, mimeType, modifiedTime, webViewLink)"
-          });
-
-          const files = response.result.files as any[];
-          if (files) {
-            const formattedDriveFiles: Document[] = files.map(file => ({
-                id: file.id,
-                name: file.name,
-                modifiedTime: file.modifiedTime,
-                mimeType: file.mimeType,
-                webViewLink: file.webViewLink,
-                icon: getFileIcon(file.mimeType, 'drive'),
-                source: 'drive' as const,
-            }));
-            setDocuments(prevDocs => [...prevDocs.filter(d => d.source !== 'drive'), ...formattedDriveFiles]);
-          }
-        } catch (error: any) {
-            const errorDetails = error.result?.error;
-            if (errorDetails) {
-                console.error("Error fetching files from Google Drive API:", JSON.stringify(errorDetails, null, 2));
-            } else {
-                console.error("Error initializing GAPI client or fetching files: ", error);
-            }
-        } finally {
-            setLoadingDrive(false);
+        const files = response.result.files as any[];
+        if (files) {
+          const formattedDriveFiles: Document[] = files.map(file => ({
+            id: file.id,
+            name: file.name,
+            modifiedTime: file.modifiedTime,
+            mimeType: file.mimeType,
+            webViewLink: file.webViewLink,
+            icon: getFileIcon(file.mimeType, 'drive'),
+            source: 'drive' as const,
+          }));
+          setDocuments(prevDocs => [...prevDocs.filter(d => d.source !== 'drive'), ...formattedDriveFiles]);
         }
-      });
+      } catch (error: any) {
+        const errorDetails = error.result?.error;
+        if (errorDetails) {
+            console.error("Error fetching files from Google Drive API:", JSON.stringify(errorDetails, null, 2));
+        } else {
+            console.error("Error initializing GAPI client or fetching files: ", error);
+        }
+      } finally {
+        setLoadingDrive(false);
+      }
     };
-    
-    document.body.appendChild(script);
 
-    return () => {
-      document.body.removeChild(script);
-    }
-  }, [accessToken]);
+    initClientAndFetchFiles();
+
+  }, [gapi, accessToken]);
 
 
   const filteredDocuments = documents
@@ -250,7 +242,6 @@ function DocumentsPageContent() {
   };
 
   const handleAutoSummarizeAndFetch = async (doc: Document) => {
-    const gapi = window.gapi as typeof Gapi;
     if (!gapi || !user) {
         toast({ variant: 'destructive', title: 'Error', description: 'Google API not initialized or user not logged in.' });
         return;
@@ -490,5 +481,3 @@ function DocumentsPage() {
 }
 
 export default withAuth(DocumentsPage);
-
-    
