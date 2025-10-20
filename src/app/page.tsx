@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Send, Loader2, User, Bot, PlusCircle, Brain, MessageSquare, Wand } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { ask } from '@/app/actions';
-import { TypingAnimation } from '@/components/chat/typing-animation';
 import withAuth from '@/firebase/auth/with-auth';
 import Link from 'next/link';
 import { MarkdownContent } from '@/components/chat/markdown-content';
@@ -69,18 +68,24 @@ function LoggedInView() {
       let fullResponse = '';
       const modelMessageIndex = messages.length + 1;
       setMessages(prev => [...prev, { role: 'model', content: '' }]);
-
-      for await (const chunk of stream) {
-        fullResponse += chunk;
+      
+      const reader = stream.getReader();
+      const decoder = new TextDecoder();
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        fullResponse += decoder.decode(value, { stream: true });
         setMessages(prev => {
           const newMsgs = [...prev];
           newMsgs[modelMessageIndex] = { role: 'model', content: fullResponse + '▋' };
           return newMsgs;
         });
-        // Small delay for typewriter effect
-        await new Promise(resolve => setTimeout(resolve, 10));
+        
+        await new Promise(resolve => setTimeout(resolve, 10)); 
       }
-
+      
       setMessages(prev => {
         const newMsgs = [...prev];
         newMsgs[modelMessageIndex] = { role: 'model', content: fullResponse };
@@ -99,7 +104,7 @@ function LoggedInView() {
   };
 
   return (
-    <div className="flex flex-col w-full h-full relative overflow-hidden">
+    <div className="flex flex-col w-full h-full relative overflow-hidden pt-24">
       {/* Gradient Backgrounds */}
       <div className="absolute inset-0 -z-10 overflow-hidden bg-background">
         <motion.div 
@@ -134,9 +139,9 @@ function LoggedInView() {
       {/* Chat Area */}
       <div ref={chatContainerRef} className="flex-1 p-6 pb-40 overflow-y-auto space-y-6">
         {messages.length === 0 && !loading && (
-          <div className="text-center text-muted-foreground mt-24">
+          <div className="text-center mt-24">
             <h1 className="text-3xl font-bold text-foreground/80">Workspace</h1>
-            <p className="mt-2">Ask a question to start analyzing your documents.</p>
+            <p className="mt-2 text-muted-foreground">Ask a question to start analyzing your documents.</p>
           </div>
         )}
 
@@ -164,7 +169,7 @@ function LoggedInView() {
               <Bot size={16} />
             </div>
             <div className="p-3 rounded-lg max-w-[85%] bg-neutral-800/50 flex items-center">
-              <TypingAnimation text="..." />
+               <MarkdownContent content={'▋'} />
             </div>
           </div>
         )}
@@ -327,5 +332,3 @@ export default function Home() {
 
   return user ? <LoggedInView /> : <LandingPage />;
 }
-
-    
