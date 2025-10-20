@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -109,7 +110,7 @@ function LoggedInView() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.15),_transparent_40%)]"></div>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,_rgba(236,72,153,0.15),_transparent_40%)]"></div>
         <motion.div 
-            className="absolute top-1/4 left-1/4 w-96 h-96 bg-[radial-gradient(circle_at_center,_rgba(14,165,233,0.15),_transparent_50%)] rounded-full"
+            className="absolute -top-1/4 -left-1/4 w-[1000px] h-[1000px] bg-[radial-gradient(circle_at_center,_rgba(14,165,233,0.15),_transparent_50%)] rounded-full"
             animate={{
                 y: [0, -20, 0],
                 scale: [1, 1.05, 1],
@@ -121,7 +122,7 @@ function LoggedInView() {
             }}
         />
         <motion.div 
-            className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-[radial-gradient(circle_at_center,_rgba(192,132,252,0.15),_transparent_50%)] rounded-full"
+            className="absolute -bottom-1/4 -right-1/4 w-[1000px] h-[1000px] bg-[radial-gradient(circle_at_center,_rgba(192,132,252,0.15),_transparent_50%)] rounded-full"
             animate={{
                 y: [0, 20, 0],
                 scale: [1, 1.1, 1],
