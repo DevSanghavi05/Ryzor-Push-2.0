@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Header } from '@/components/layout/header';
@@ -22,7 +21,7 @@ import {
     Briefcase
 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState, useCallback, Suspense, useRef } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import { Input } from '@/components/ui/input';
 import { useRouter, useSearchParams } from 'next/navigation';
 import withAuth from '@/firebase/auth/with-auth';
@@ -52,7 +51,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { firebaseConfig } from '@/firebase/config';
 
 type Document = {
   id: string;
@@ -266,7 +264,7 @@ function DocumentsPageContent() {
 
     try {
         // Ensure the docs client is loaded before using it
-        await new Promise((resolve, reject) => {
+        await new Promise<void>((resolve, reject) => {
           gapi.client.load('https://docs.googleapis.com/$discovery/rest?version=v1')
             .then(resolve)
             .catch(reject);

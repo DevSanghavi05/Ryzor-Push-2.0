@@ -6,12 +6,13 @@ import {
   useContext,
   ReactNode,
 } from 'react';
-import type { User, Auth } from 'firebase/auth';
+import type { User } from 'firebase/auth';
 import {
   GoogleAuthProvider,
   OAuthProvider,
   signInWithPopup,
   onAuthStateChanged as onFirebaseAuthStateChanged,
+  signOut as firebaseSignOut,
 } from 'firebase/auth';
 import { useAuth } from '@/firebase/provider';
 
@@ -48,8 +49,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onFirebaseAuthStateChanged(auth, async (user) => {
       setUser(user);
       if (user) {
-        // This pattern ensures we get the token from the credential on sign-in,
-        // and from the user object on subsequent loads.
         const idTokenResult = await user.getIdTokenResult();
         setAccessToken(idTokenResult.token);
       } else {
@@ -64,16 +63,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = async () => {
     if (!auth) return;
     const provider = new GoogleAuthProvider();
-    // Add required scopes for Drive and Docs API
     provider.addScope('https://www.googleapis.com/auth/drive.readonly');
     provider.addScope('https://www.googleapis.com/auth/documents.readonly');
     try {
       const result = await signInWithPopup(auth, provider);
       const credential = GoogleAuthProvider.credentialFromResult(result);
-      if (credential) {
-        // This gives you a Google Access Token.
-        setAccessToken(credential.accessToken || null);
-      }
+      if (credential) setAccessToken(credential.accessToken || null);
     } catch (error) {
       console.error('Error signing in with Google', error);
     }
@@ -84,20 +79,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const provider = new OAuthProvider('microsoft.com');
     provider.addScope('Files.ReadWrite');
     try {
-        const result = await signInWithPopup(auth, provider);
-        const credential = OAuthProvider.credentialFromResult(result);
-        if (credential) {
-            setAccessToken(credential.accessToken || null);
-        }
+      const result = await signInWithPopup(auth, provider);
+      const credential = OAuthProvider.credentialFromResult(result);
+      if (credential) setAccessToken(credential.accessToken || null);
     } catch (error) {
-        console.error('Error signing in with Microsoft', error);
+      console.error('Error signing in with Microsoft', error);
     }
   };
 
   const signOut = async () => {
     if (!auth) return;
     try {
-      await auth.signOut();
+      await firebaseSignOut(auth);
       setUser(null);
       setAccessToken(null);
     } catch (error) {
