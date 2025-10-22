@@ -27,7 +27,7 @@ export default function RootLayout({
       <head>
         <title>Ryzor AI MVP</title>
         <meta name="description" content="Upload a PDF and ask it questions." />
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><defs><linearGradient id=%22g%22 x1=%220%25%22 y1=%220%25%22 x2=%22100%25%22 y2=%22100%25%22><stop offset=%220%25%22 style=%22stop-color:%2300BFFF;%22 /><stop offset=%22100%25%22 style=%22stop-color:%23007BFF;%22 /></linearGradient></defs><text y=%22.9em%22 font-size=%2290%22 fill=%22url(%23g)%22>R</text></svg>" />
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:hsl(184, 99%, 34%);' /><stop offset='100%' style='stop-color:hsl(266, 100%, 50%);' /></linearGradient></defs><path fill='url(%23g)' d='M20,10 L80,10 L80,30 L40,30 L40,50 L70,50 L70,70 L40,70 L40,90 L20,90 Z M50,50 L80,90 L60,90 L30,50 Z' /></svg>" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
@@ -50,5 +50,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-    
