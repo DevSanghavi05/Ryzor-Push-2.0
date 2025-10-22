@@ -147,7 +147,7 @@ function DocumentsPageContent() {
   
           // Load discovery docs before making API calls
           await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
-          await gapi.client.load('https://docs.googleapis.com/$discovery/rest?version=v1');
+          
   
           const response = await gapi.client.drive.files.list({
             'pageSize': 20,
@@ -264,12 +264,18 @@ function DocumentsPageContent() {
         return;
     }
 
-    if (!gapi.client?.docs) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Google Docs API client is not loaded.' });
-        return;
-    }
-    
     try {
+        // Ensure the docs client is loaded before using it
+        await new Promise((resolve, reject) => {
+          gapi.client.load('https://docs.googleapis.com/$discovery/rest?version=v1')
+            .then(resolve)
+            .catch(reject);
+        });
+
+        if (!gapi.client?.docs) {
+          throw new Error('Google Docs API client could not be loaded.');
+        }
+
         const response = await gapi.client.docs.documents.get({
             documentId: doc.id,
         });
@@ -285,8 +291,6 @@ function DocumentsPageContent() {
             return;
         }
         
-        // This is where the summarization would happen.
-        // For now, we'll just save the full content to be used as context.
         const newDocument = {
             id: doc.id,
             name: doc.name,
@@ -300,10 +304,8 @@ function DocumentsPageContent() {
         
         const docIndex = existingDocuments.findIndex((d: any) => d.id === doc.id);
         if (docIndex > -1) {
-            // Update existing doc
             existingDocuments[docIndex] = newDocument;
         } else {
-            // Add new doc
             existingDocuments = [newDocument, ...existingDocuments];
         }
 
@@ -326,13 +328,12 @@ function DocumentsPageContent() {
             return [...otherDocs, updatedDoc].sort((a,b) => new Date(b.modifiedTime).getTime() - new Date(a.modifiedTime).getTime());
         });
 
-
     } catch (error: any) {
         console.error("Error importing Google Doc:", error);
         toast({
             variant: 'destructive',
             title: "Import Failed",
-            description: error.result?.error?.message || "Could not import the document. Ensure you have granted permission.",
+            description: error.result?.error?.message || error.message || "Could not import the document. Ensure you have granted permission.",
         });
     }
   };
@@ -515,5 +516,3 @@ function DocumentsPage() {
 }
 
 export default withAuth(DocumentsPage);
-
-    
