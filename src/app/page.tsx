@@ -72,18 +72,18 @@ function LoggedInView() {
       const reader = stream.getReader();
       const decoder = new TextDecoder();
       
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        
-        fullResponse += decoder.decode(value, { stream: true });
-        setMessages(prev => {
-          const newMsgs = [...prev];
-          newMsgs[modelMessageIndex] = { role: 'model', content: fullResponse + '▋' };
-          return newMsgs;
-        });
-        
-        await new Promise(resolve => setTimeout(resolve, 10)); 
+      let done = false;
+      while (!done) {
+          const { value, done: readerDone } = await reader.read();
+          done = readerDone;
+          const chunk = decoder.decode(value, { stream: true });
+          fullResponse += chunk;
+          setMessages(prev => {
+              const newMsgs = [...prev];
+              newMsgs[modelMessageIndex] = { role: 'model', content: fullResponse + '▋' };
+              return newMsgs;
+          });
+          await new Promise(resolve => setTimeout(resolve, 20)); // Typewriter delay
       }
       
       setMessages(prev => {
@@ -304,7 +304,7 @@ function LandingPage() {
         <div className="container mx-auto px-6 text-center max-w-4xl">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">We’re redefining how humans use knowledge.</h2>
           <p className="text-lg text-muted-foreground mb-8">
-            Ryzor AI turns messy documents into living intelligence. No folders. No chaos. Just clarity — instantly.
+            Ryzor AI turns messy documents into living intelligence. No folders. No chaos. Just clarity — instantly. Read our <Link href="/privacy" className="underline hover:text-primary">Privacy Policy</Link> to learn more.
           </p>
           <Button 
             onClick={signInWithGoogle}
@@ -332,3 +332,5 @@ export default function Home() {
 
   return user ? <LoggedInView /> : <LandingPage />;
 }
+
+    

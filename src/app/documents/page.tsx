@@ -115,9 +115,9 @@ function DocumentsPageContent() {
       id: doc.id,
       name: doc.name,
       modifiedTime: doc.uploaded,
-      mimeType: 'application/pdf',
-      webViewLink: `/documents/${doc.id}`,
-      icon: getFileIcon('application/pdf', 'local'),
+      mimeType: 'application/pdf', // This might be incorrect if we save GDocs
+      webViewLink: doc.mimeType?.includes('google-apps') ? `https://docs.google.com/document/d/${doc.id}` : `/documents/${doc.id}`,
+      icon: getFileIcon(doc.mimeType || 'application/pdf', 'local'),
       source: 'local' as const,
     }));
   }, [user]);
@@ -165,10 +165,10 @@ function DocumentsPageContent() {
               icon: getFileIcon(file.mimeType, 'drive'),
               source: 'drive' as const,
             }));
-            setDocuments(prevDocs => {
-              const driveFileIds = new Set(formattedDriveFiles.map(f => f.id));
-              const localFilesOnly = prevDocs.filter(d => d.source === 'local' && !driveFileIds.has(d.id));
-              return [...localFilesOnly, ...formattedDriveFiles];
+             setDocuments(prevDocs => {
+                const existingLocalIds = new Set(prevDocs.filter(d => d.source === 'local').map(d => d.id));
+                const newDriveFiles = formattedDriveFiles.filter(f => !existingLocalIds.has(f.id));
+                return [...prevDocs, ...newDriveFiles];
             });
           }
         } catch (error: any) {
@@ -204,7 +204,7 @@ function DocumentsPageContent() {
     });
 
   const getFileType = (mimeType: string, source: 'drive' | 'local') => {
-    if (source === 'local') return 'Local PDF';
+    if (source === 'local') return 'Local File';
     if (mimeType.includes('pdf')) return 'PDF';
     if (mimeType.includes('document')) return 'Doc';
     if (mimeType.includes('spreadsheet')) return 'Sheet';
@@ -253,7 +253,7 @@ function DocumentsPageContent() {
     }
   };
 
-  const handleAutoSummarizeAndFetch = async (doc: Document) => {
+  const handleImportAndAnalyze = async (doc: Document) => {
     const gapi = window.gapi as typeof Gapi;
     if (!gapi || !user) {
         toast({ variant: 'destructive', title: 'Error', description: 'Google API not initialized or user not logged in.' });
@@ -285,9 +285,10 @@ function DocumentsPageContent() {
         // For now, we'll just save the full content to be used as context.
         const newDocument = {
             id: doc.id,
-            name: doc.name, // Keep original name
+            name: doc.name,
             uploaded: new Date().toISOString(),
             textContent: textContent,
+            mimeType: doc.mimeType, // Preserve original mimeType
         };
 
         const storageKey = `documents_${user.uid}`;
@@ -310,8 +311,15 @@ function DocumentsPageContent() {
         });
 
         // Visually refresh list to show it's "local" now.
-        const localFiles = fetchLocalFiles();
-        setDocuments(prevDocs => [...prevDocs.filter(d => d.source === 'drive'), ...localFiles]);
+        setDocuments(prevDocs => {
+            const otherDocs = prevDocs.filter(d => d.id !== doc.id);
+            const updatedDoc: Document = {
+                ...doc,
+                source: 'local',
+                webViewLink: `/documents/${doc.id}` // Update link to local view
+            };
+            return [...otherDocs, updatedDoc];
+        });
 
 
     } catch (error: any) {
@@ -327,7 +335,7 @@ function DocumentsPageContent() {
 
   return (
     <div className="flex flex-col min-h-dvh bg-background">
-      <main className="flex-1 p-4 md:p-6">
+      <main className="flex-1 p-4 md:p-6 pt-24">
         <div className="container mx-auto">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
             <h1 className="text-3xl md:text-4xl font-bold font-headline">
@@ -351,7 +359,7 @@ function DocumentsPageContent() {
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All Types</SelectItem>
-                        <SelectItem value="local">Local Files</SelectItem>
+                        <SelectItem value="local">Imported Files</SelectItem>
                         <SelectItem value="document">Docs</SelectItem>
                         <SelectItem value="spreadsheet">Sheets</SelectItem>
                         <SelectItem value="presentation">Slides</SelectItem>
@@ -396,6 +404,12 @@ function DocumentsPageContent() {
                         </div>
                     </div>
                     <div className="flex items-center gap-2 ml-4">
+                        {doc.source === 'drive' && doc.mimeType.includes('document') && (
+                            <Button variant="secondary" size="sm" onClick={() => handleImportAndAnalyze(doc)}>
+                                <Wand className="mr-2 h-4 w-4" />
+                                Import
+                            </Button>
+                        )}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -406,11 +420,6 @@ function DocumentsPageContent() {
                                 <DropdownMenuItem onSelect={() => handleDocumentClick(new MouseEvent('click') as any, doc)}>
                                     <ExternalLink className="mr-2 h-4 w-4" /> Open
                                 </DropdownMenuItem>
-                                {doc.source === 'drive' && doc.mimeType.includes('document') && (
-                                    <DropdownMenuItem onSelect={() => handleAutoSummarizeAndFetch(doc)}>
-                                        <Wand className="mr-2 h-4 w-4" /> Import for Analysis
-                                    </DropdownMenuItem>
-                                )}
                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
                                   <button
                                     className="flex items-center w-full"
@@ -501,3 +510,5 @@ function DocumentsPage() {
 }
 
 export default withAuth(DocumentsPage);
+
+    
