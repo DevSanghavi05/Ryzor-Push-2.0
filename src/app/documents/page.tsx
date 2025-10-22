@@ -115,8 +115,8 @@ function DocumentsPageContent() {
       id: doc.id,
       name: doc.name,
       modifiedTime: doc.uploaded,
-      mimeType: 'application/pdf', // This might be incorrect if we save GDocs
-      webViewLink: doc.mimeType?.includes('google-apps') ? `https://docs.google.com/document/d/${doc.id}` : `/documents/${doc.id}`,
+      mimeType: doc.mimeType || 'application/pdf', // Preserve mimeType if it exists
+      webViewLink: `/documents/${doc.id}`, // All local docs use the local viewer
       icon: getFileIcon(doc.mimeType || 'application/pdf', 'local'),
       source: 'local' as const,
     }));
@@ -165,10 +165,14 @@ function DocumentsPageContent() {
               icon: getFileIcon(file.mimeType, 'drive'),
               source: 'drive' as const,
             }));
+            
+            // This logic prevents duplicate keys.
+            // It gets current local files and ensures we don't add a Drive file if it's already local.
              setDocuments(prevDocs => {
-                const existingLocalIds = new Set(prevDocs.filter(d => d.source === 'local').map(d => d.id));
-                const newDriveFiles = formattedDriveFiles.filter(f => !existingLocalIds.has(f.id));
-                return [...prevDocs, ...newDriveFiles];
+                const currentLocalFiles = fetchLocalFiles();
+                const localFileIds = new Set(currentLocalFiles.map(doc => doc.id));
+                const newDriveFiles = formattedDriveFiles.filter(driveFile => !localFileIds.has(driveFile.id));
+                return [...currentLocalFiles, ...newDriveFiles];
             });
           }
         } catch (error: any) {
@@ -192,7 +196,7 @@ function DocumentsPageContent() {
         document.body.removeChild(gapiScript);
       }
     };
-  }, [accessToken, user]);
+  }, [accessToken, user, fetchLocalFiles]);
 
 
   const filteredDocuments = documents
@@ -316,9 +320,10 @@ function DocumentsPageContent() {
             const updatedDoc: Document = {
                 ...doc,
                 source: 'local',
-                webViewLink: `/documents/${doc.id}` // Update link to local view
+                webViewLink: `/documents/${doc.id}`, // Update link to local view
+                icon: getFileIcon(doc.mimeType, 'local'), // Update icon
             };
-            return [...otherDocs, updatedDoc];
+            return [...otherDocs, updatedDoc].sort((a,b) => new Date(b.modifiedTime).getTime() - new Date(a.modifiedTime).getTime());
         });
 
 
@@ -375,7 +380,7 @@ function DocumentsPageContent() {
                 </Button>
             </div>
           </div>
-          {loading ? (
+          {(loading || userLoading) ? (
              <div className="flex flex-col items-center justify-center text-center py-16 border-2 border-dashed border-border rounded-lg">
                 <Loader className="w-16 h-16 text-muted-foreground animate-spin mb-4" />
                 <h2 className="text-2xl font-bold font-headline mb-2">
@@ -393,7 +398,7 @@ function DocumentsPageContent() {
                     </li>
                 )}
                 {filteredDocuments.map(doc => (
-                  <li key={doc.id} className="flex items-center justify-between p-4 group hover:bg-accent/50 transition-colors">
+                  <li key={`${doc.id}-${doc.source}`} className="flex items-center justify-between p-4 group hover:bg-accent/50 transition-colors">
                     <div className="flex items-center gap-4 truncate">
                         {doc.icon}
                         <div className="truncate">
@@ -510,3 +515,5 @@ function DocumentsPage() {
 }
 
 export default withAuth(DocumentsPage);
+
+    
