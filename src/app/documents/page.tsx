@@ -141,6 +141,7 @@ function DocumentsPageContent() {
       gapi.load('client', async () => {
         setLoadingDrive(true);
         try {
+          // GAPI client is now initialized with the OAuth2 access token
           gapi.client.setToken({ access_token: accessToken });
   
           // Load discovery docs before making API calls
@@ -167,10 +168,9 @@ function DocumentsPageContent() {
             // This logic prevents duplicate keys.
             // It gets current local files and ensures we don't add a Drive file if it's already local.
              setDocuments(prevDocs => {
-                const currentLocalFiles = fetchLocalFiles();
-                const localFileIds = new Set(currentLocalFiles.map(doc => doc.id));
+                const localFileIds = new Set(prevDocs.filter(d => d.source === 'local').map(doc => doc.id));
                 const newDriveFiles = formattedDriveFiles.filter(driveFile => !localFileIds.has(driveFile.id));
-                return [...currentLocalFiles, ...newDriveFiles];
+                return [...prevDocs, ...newDriveFiles];
             });
           }
         } catch (error: any) {

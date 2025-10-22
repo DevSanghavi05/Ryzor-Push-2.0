@@ -46,12 +46,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
+    // This effect only manages the user's login state with Firebase.
+    // The OAuth access token is handled separately during the sign-in flow.
     const unsubscribe = onFirebaseAuthStateChanged(auth, async (user) => {
       setUser(user);
-      if (user) {
-        const idTokenResult = await user.getIdTokenResult();
-        setAccessToken(idTokenResult.token);
-      } else {
+      if (!user) {
+        // Clear access token on sign out
         setAccessToken(null);
       }
       setLoading(false);
@@ -67,8 +67,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
     provider.addScope('https://www.googleapis.com/auth/documents.readonly');
     try {
       const result = await signInWithPopup(auth, provider);
+      // This is the correct way to get the OAuth access token for Google APIs
       const credential = GoogleAuthProvider.credentialFromResult(result);
-      if (credential) setAccessToken(credential.accessToken || null);
+      if (credential) {
+        setAccessToken(credential.accessToken || null);
+      }
     } catch (error) {
       console.error('Error signing in with Google', error);
     }
@@ -91,8 +94,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (!auth) return;
     try {
       await firebaseSignOut(auth);
-      setUser(null);
-      setAccessToken(null);
+      // User state will be cleared by onFirebaseAuthStateChanged listener
     } catch (error) {
       console.error('Error signing out', error);
     }
