@@ -105,6 +105,7 @@ function DocumentsPageContent() {
   const [showTrashConfirm, setShowTrashConfirm] = useState<Document | null>(null);
   const { toast } = useToast();
   const gapiLoaded = useRef(false);
+  const driveFetched = useRef(false); // Ref to track if drive fetch has been initiated
 
   const fetchLocalFiles = useCallback(() => {
     if (!user) return [];
@@ -130,9 +131,11 @@ function DocumentsPageContent() {
     }
   }, [user, fetchLocalFiles]);
 
-  const fetchDriveFiles = useCallback(async (token: string, gapi: typeof Gapi) => {
+  const fetchDriveFiles = useCallback(async (token: string) => {
     setLoadingDrive(true);
+    driveFetched.current = true; // Mark that the fetch has been initiated
     try {
+      const gapi = window.gapi as typeof Gapi;
       gapi.client.setToken({ access_token: token });
 
       await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
@@ -155,11 +158,10 @@ function DocumentsPageContent() {
         }));
         
         setDocuments(prevDocs => {
+          // Combine local files with the newly fetched drive files, preventing duplicates.
           const driveFileIds = new Set(formattedDriveFiles.map(d => d.id));
           const localFiles = prevDocs.filter(d => d.source === 'local');
-          const localDriveFiles = prevDocs.filter(d => d.source === 'drive' && !driveFileIds.has(d.id)); // Keep old drive files if they disappeared from new fetch
-          const newDriveFiles = formattedDriveFiles.filter(driveFile => !localFiles.some(local => local.id === driveFile.id));
-          return [...localFiles, ...localDriveFiles, ...newDriveFiles];
+          return [...localFiles, ...formattedDriveFiles];
         });
       }
     } catch (error: any) {
@@ -174,23 +176,18 @@ function DocumentsPageContent() {
     }
   }, []);
 
+  // Effect to load the GAPI script
   useEffect(() => {
-    if (userLoading) return;
+      if (gapiLoaded.current) return;
 
-    if (!gapiLoaded.current) {
       const script = document.createElement('script');
       script.src = 'https://apis.google.com/js/api.js';
       script.async = true;
       script.defer = true;
       
       script.onload = () => {
-        const gapi = window.gapi as typeof Gapi;
-        gapi.load('client', () => {
+        (window.gapi as typeof Gapi).load('client', () => {
           gapiLoaded.current = true;
-          // If we have an access token already, fetch files.
-          if (accessToken) {
-            fetchDriveFiles(accessToken, gapi);
-          }
         });
       };
 
@@ -202,12 +199,14 @@ function DocumentsPageContent() {
           document.body.removeChild(gapiScript);
         }
       };
-    } else if (accessToken) {
-        // GAPI is loaded, and we have a token, so we can fetch files.
-        const gapi = window.gapi as typeof Gapi;
-        fetchDriveFiles(accessToken, gapi);
+  }, []);
+
+  // Effect to fetch drive files once we have the token and GAPI is loaded.
+  useEffect(() => {
+    if (accessToken && gapiLoaded.current && !driveFetched.current) {
+        fetchDriveFiles(accessToken);
     }
-  }, [accessToken, userLoading, fetchDriveFiles]);
+  }, [accessToken, fetchDriveFiles]);
 
 
   const filteredDocuments = documents
@@ -529,3 +528,6 @@ function DocumentsPage() {
 export default withAuth(DocumentsPage);
 
 
+
+
+    
