@@ -27,7 +27,7 @@ export function Logo({ className, ...props }: React.SVGProps<SVGSVGElement>) {
       </defs>
       <path
         fill="url(#logo-gradient)"
-        d="M26.6,80 L26.6,33.3 C26.6,26.6 33.3,20 40,20 L60,20 L80,40 L60,40 L60,60 L80,60 L60,80 L26.6,80 Z"
+        d="M20 80 V 20 H 60 L 80 50 L 60 80 H 20 Z M 35 65 V 35 H 50 L 50 50 H 45 V 65 H 35 Z"
       />
     </svg>
   );
