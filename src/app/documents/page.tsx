@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Header } from '@/components/layout/header';
@@ -515,3 +516,5 @@ function DocumentsPage() {
 }
 
 export default withAuth(DocumentsPage);
+
+    
