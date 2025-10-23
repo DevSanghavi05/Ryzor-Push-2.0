@@ -181,7 +181,7 @@ function AddDocumentPage() {
   };
 
   return (
-    <div className="container mx-auto py-12">
+    <div className="container mx-auto py-12 pt-24">
       <input
         type="file"
         ref={fileInputRef}
