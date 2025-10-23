@@ -22,7 +22,7 @@ import {
     Briefcase
 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useEffect, useState, useCallback, Suspense, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { useRouter, useSearchParams } from 'next/navigation';
 import withAuth from '@/firebase/auth/with-auth';
@@ -104,6 +104,7 @@ function DocumentsPageContent() {
 
   const [showTrashConfirm, setShowTrashConfirm] = useState<Document | null>(null);
   const { toast } = useToast();
+  const gapiLoaded = useRef(false);
 
   const fetchLocalFiles = useCallback(() => {
     if (!user) return [];
@@ -174,28 +175,38 @@ function DocumentsPageContent() {
   }, []);
 
   useEffect(() => {
-    if (userLoading || !accessToken) return;
+    if (userLoading) return;
 
-    const script = document.createElement('script');
-    script.src = 'https://apis.google.com/js/api.js';
-    script.async = true;
-    script.defer = true;
-    
-    script.onload = () => {
-      const gapi = window.gapi as typeof Gapi;
-      gapi.load('client', () => {
+    if (!gapiLoaded.current) {
+      const script = document.createElement('script');
+      script.src = 'https://apis.google.com/js/api.js';
+      script.async = true;
+      script.defer = true;
+      
+      script.onload = () => {
+        const gapi = window.gapi as typeof Gapi;
+        gapi.load('client', () => {
+          gapiLoaded.current = true;
+          // If we have an access token already, fetch files.
+          if (accessToken) {
+            fetchDriveFiles(accessToken, gapi);
+          }
+        });
+      };
+
+      document.body.appendChild(script);
+
+      return () => {
+        const gapiScript = document.querySelector('script[src="https://apis.google.com/js/api.js"]');
+        if (gapiScript) {
+          document.body.removeChild(gapiScript);
+        }
+      };
+    } else if (accessToken) {
+        // GAPI is loaded, and we have a token, so we can fetch files.
+        const gapi = window.gapi as typeof Gapi;
         fetchDriveFiles(accessToken, gapi);
-      });
-    };
-
-    document.body.appendChild(script);
-
-    return () => {
-      const gapiScript = document.querySelector('script[src="https://apis.google.com/js/api.js"]');
-      if (gapiScript) {
-        document.body.removeChild(gapiScript);
-      }
-    };
+    }
   }, [accessToken, userLoading, fetchDriveFiles]);
 
 
@@ -518,4 +529,3 @@ function DocumentsPage() {
 export default withAuth(DocumentsPage);
 
 
-    
