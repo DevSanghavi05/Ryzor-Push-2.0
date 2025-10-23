@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button';
 import { useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AuthProviderDropdown } from '../auth/auth-provider-dropdown';
-import { BookCopy, BrainCircuit } from 'lucide-react';
+import { BookCopy } from 'lucide-react';
 import { ThemeToggleButton } from '../theme-toggle';
+import { Logo } from './logo';
 
 export function Header() {
   const { user } = useUser();
@@ -17,7 +18,7 @@ export function Header() {
     <div className="fixed top-0 left-0 right-0 z-50 p-4">
         <header className="container mx-auto px-4 lg:px-6 h-14 flex items-center justify-between gap-6 border border-border/40 bg-background/80 backdrop-blur-sm rounded-xl shadow-lg">
             <Link href="/" className="flex items-center gap-2 font-bold font-headline text-lg">
-                <BrainCircuit className="h-6 w-6 text-primary"/>
+                <Logo className="h-6 w-6" />
                 <span>Ryzor AI</span>
             </Link>
             <div className="hidden md:flex items-center gap-2">
@@ -71,5 +72,3 @@ function UserAvatar() {
     </div>
   );
 }
-
-    
