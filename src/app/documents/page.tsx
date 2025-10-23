@@ -128,9 +128,53 @@ function DocumentsPageContent() {
     }
   }, [user, fetchLocalFiles]);
 
+  const fetchDriveFiles = useCallback(async (token: string, gapi: typeof Gapi) => {
+    setLoadingDrive(true);
+    try {
+      gapi.client.setToken({ access_token: token });
+
+      await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
+      
+      const response = await gapi.client.drive.files.list({
+        'pageSize': 20,
+        'fields': "nextPageToken, files(id, name, mimeType, modifiedTime, webViewLink)"
+      });
+
+      const files = response.result.files as any[];
+      if (files) {
+        const formattedDriveFiles: Document[] = files.map(file => ({
+          id: file.id,
+          name: file.name,
+          modifiedTime: file.modifiedTime,
+          mimeType: file.mimeType,
+          webViewLink: file.webViewLink,
+          icon: getFileIcon(file.mimeType, 'drive'),
+          source: 'drive' as const,
+        }));
+        
+        setDocuments(prevDocs => {
+          const driveFileIds = new Set(formattedDriveFiles.map(d => d.id));
+          const localFiles = prevDocs.filter(d => d.source === 'local');
+          const localDriveFiles = prevDocs.filter(d => d.source === 'drive' && !driveFileIds.has(d.id)); // Keep old drive files if they disappeared from new fetch
+          const newDriveFiles = formattedDriveFiles.filter(driveFile => !localFiles.some(local => local.id === driveFile.id));
+          return [...localFiles, ...localDriveFiles, ...newDriveFiles];
+        });
+      }
+    } catch (error: any) {
+      const errorDetails = error.result?.error;
+      if (errorDetails) {
+        console.error("Error fetching files from Google Drive API:", JSON.stringify(errorDetails, null, 2));
+      } else {
+        console.error("Error initializing GAPI client or fetching files: ", error);
+      }
+    } finally {
+      setLoadingDrive(false);
+    }
+  }, []);
+
   useEffect(() => {
-    if (!accessToken || !user) return;
-  
+    if (userLoading || !accessToken) return;
+
     const script = document.createElement('script');
     script.src = 'https://apis.google.com/js/api.js';
     script.async = true;
@@ -138,63 +182,20 @@ function DocumentsPageContent() {
     
     script.onload = () => {
       const gapi = window.gapi as typeof Gapi;
-      gapi.load('client', async () => {
-        setLoadingDrive(true);
-        try {
-          // GAPI client is now initialized with the OAuth2 access token
-          gapi.client.setToken({ access_token: accessToken });
-  
-          // Load discovery docs before making API calls
-          await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
-          
-  
-          const response = await gapi.client.drive.files.list({
-            'pageSize': 20,
-            'fields': "nextPageToken, files(id, name, mimeType, modifiedTime, webViewLink)"
-          });
-  
-          const files = response.result.files as any[];
-          if (files) {
-            const formattedDriveFiles: Document[] = files.map(file => ({
-              id: file.id,
-              name: file.name,
-              modifiedTime: file.modifiedTime,
-              mimeType: file.mimeType,
-              webViewLink: file.webViewLink,
-              icon: getFileIcon(file.mimeType, 'drive'),
-              source: 'drive' as const,
-            }));
-            
-            // This logic prevents duplicate keys.
-            // It gets current local files and ensures we don't add a Drive file if it's already local.
-             setDocuments(prevDocs => {
-                const localFileIds = new Set(prevDocs.filter(d => d.source === 'local').map(doc => doc.id));
-                const newDriveFiles = formattedDriveFiles.filter(driveFile => !localFileIds.has(driveFile.id));
-                return [...prevDocs, ...newDriveFiles];
-            });
-          }
-        } catch (error: any) {
-          const errorDetails = error.result?.error;
-          if (errorDetails) {
-            console.error("Error fetching files from Google Drive API:", JSON.stringify(errorDetails, null, 2));
-          } else {
-            console.error("Error initializing GAPI client or fetching files: ", error);
-          }
-        } finally {
-          setLoadingDrive(false);
-        }
+      gapi.load('client', () => {
+        fetchDriveFiles(accessToken, gapi);
       });
     };
-  
+
     document.body.appendChild(script);
-  
+
     return () => {
       const gapiScript = document.querySelector('script[src="https://apis.google.com/js/api.js"]');
       if (gapiScript) {
         document.body.removeChild(gapiScript);
       }
     };
-  }, [accessToken, user, fetchLocalFiles]);
+  }, [accessToken, userLoading, fetchDriveFiles]);
 
 
   const filteredDocuments = documents
