@@ -45,31 +45,32 @@ export default function DocumentPage() {
     }, [id, user]);
 
   return (
-    <div className="flex flex-col min-h-dvh bg-background">
-      <main className="flex-1 flex flex-col p-4 md:p-6 gap-6">
-        <div className="container mx-auto">
-          <div>
-            <Button asChild variant="ghost">
-              <Link href="/documents">
-                <ArrowLeft className="mr-2" />
-                Back to Documents
-              </Link>
-            </Button>
-            <h1 className="text-2xl font-bold font-headline mt-2 ml-4">
-                {loading ? "Loading..." : doc?.name || "Document not found"}
-            </h1>
-          </div>
-          <div className="flex-1 flex items-center justify-center mt-8">
-            {loading ? (
-                <Loader className="animate-spin" />
-            ) : doc ? (
-                <iframe src={doc.content} className="w-full h-[70vh] border rounded-lg" title={doc.name}></iframe>
-            ) : (
-                <p>Document content could not be loaded or found.</p>
-            )}
-          </div>
-        </div>
-      </main>
+    <div className="flex flex-col min-h-dvh bg-background relative">
+        <div className="bg-aurora"></div>
+        <main className="flex-1 flex flex-col p-4 md:p-6 gap-6 relative pt-24">
+            <div className="container mx-auto">
+            <div>
+                <Button asChild variant="ghost">
+                <Link href="/documents">
+                    <ArrowLeft className="mr-2" />
+                    Back to Documents
+                </Link>
+                </Button>
+                <h1 className="text-2xl font-bold font-headline mt-2 ml-4">
+                    {loading ? "Loading..." : doc?.name || "Document not found"}
+                </h1>
+            </div>
+            <div className="flex-1 flex items-center justify-center mt-8">
+                {loading ? (
+                    <Loader className="animate-spin" />
+                ) : doc ? (
+                    <iframe src={doc.content} className="w-full h-[70vh] border rounded-lg" title={doc.name}></iframe>
+                ) : (
+                    <p>Document content could not be loaded or found.</p>
+                )}
+            </div>
+            </div>
+        </main>
     </div>
   );
 }
