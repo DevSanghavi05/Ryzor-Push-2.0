@@ -1,10 +1,10 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, MouseEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, Loader2, User, Bot, PlusCircle, Brain, MessageSquare, Wand } from 'lucide-react';
+import { Send, Loader2, User, Bot, PlusCircle, Brain, MessageSquare, Wand, Upload, FileQuestion, ArrowRight } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { ask } from '@/app/actions';
 import withAuth from '@/firebase/auth/with-auth';
@@ -13,6 +13,7 @@ import { MarkdownContent } from '@/components/chat/markdown-content';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { motion, useInView } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 export interface Message {
   role: 'user' | 'model';
@@ -231,49 +232,179 @@ function AnimatedSection({ children }: { children: React.ReactNode }) {
   );
 }
 
+const BentoCard = ({
+  name,
+  className,
+  background,
+  Icon,
+  description,
+  href,
+  cta,
+}: {
+  name: string;
+  className: string;
+  background: React.ReactNode;
+  Icon: any;
+  description: string;
+  href: string;
+  cta: string;
+}) => (
+  <motion.div
+    key={name}
+    variants={{
+      initial: {
+        filter: "blur(20px)",
+      },
+      animate: {
+        filter: "blur(0px)",
+      },
+    }}
+    className={cn(
+      "group relative col-span-3 flex flex-col justify-between overflow-hidden rounded-xl",
+      // light styles
+      "bg-white [box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)]",
+      // dark styles
+      "transform-gpu dark:bg-black dark:[border:1px_solid_rgba(255,255,255,.1)] dark:[box-shadow:0_-20px_80px_-20px_#ffffff1f_inset]",
+      className
+    )}
+  >
+    <div>{background}</div>
+    <div className="pointer-events-none z-10 flex transform-gpu flex-col gap-1 p-6 transition-all duration-300 group-hover:-translate-y-10">
+      <Icon className="h-12 w-12 origin-left transform-gpu text-neutral-700 -translate-y-12 transition-all duration-300 ease-in-out group-hover:scale-75 group-hover:text-primary" />
+      <h3 className="text-xl font-semibold text-neutral-700 dark:text-neutral-300">
+        {name}
+      </h3>
+      <p className="max-w-lg text-neutral-400">{description}</p>
+    </div>
+
+    <div
+      className={cn(
+        "pointer-events-none absolute bottom-0 flex w-full translate-y-10 transform-gpu flex-row items-center p-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100"
+      )}
+    >
+      <Button variant="ghost" asChild size="sm" className="pointer-events-auto">
+        <a href={href}>
+          {cta}
+          <ArrowRight className="ml-2 h-4 w-4" />
+        </a>
+      </Button>
+    </div>
+    <div className="pointer-events-none absolute inset-0 transform-gpu transition-all duration-300 group-hover:bg-black/[.03] group-hover:dark:bg-neutral-800/10" />
+  </motion.div>
+);
+
 
 function LandingPage() {
   const { signInWithGoogle } = useUser();
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
+    const { clientX, clientY } = e;
+    const { innerWidth, innerHeight } = window;
+    setMousePosition({
+      x: (clientX / innerWidth) * 2 - 1,
+      y: (clientY / innerHeight) * 2 - 1,
+    });
+  };
+  
+  const features = [
+    {
+      Icon: FileQuestion,
+      name: "Instant Answers",
+      description: "Ask questions and get immediate, synthesized answers from your documents.",
+      href: "/",
+      cta: "Learn more",
+      background: <motion.div
+        animate={{
+          backgroundPosition: `calc(${mousePosition.x * 40 + 50}%) calc(${mousePosition.y * 40 + 50}%)`,
+        }}
+        className="absolute inset-0 z-0 opacity-50"
+        style={{
+          backgroundImage: 'radial-gradient(circle at 50% 50%, hsl(var(--primary) / 0.1), transparent 50%)',
+          backgroundSize: '300% 300%',
+        }}
+        />,
+      className: "col-span-3 lg:col-span-2",
+    },
+    {
+      Icon: Upload,
+      name: "Simple Upload",
+      description: "Drag and drop PDFs to build your knowledge base in seconds.",
+      href: "/",
+      cta: "Learn more",
+      background: <motion.div
+        animate={{
+          backgroundPosition: `calc(${mousePosition.x * 40 + 50}%) calc(${mousePosition.y * 40 + 50}%)`,
+        }}
+        className="absolute inset-0 z-0 opacity-50"
+        style={{
+          backgroundImage: 'radial-gradient(circle at 50% 50%, hsl(var(--accent) / 0.05), transparent 50%)',
+          backgroundSize: '400% 400%',
+        }}
+      />,
+      className: "col-span-3 lg:col-span-1",
+    },
+  ];
+  
   return (
     <div className="relative w-full overflow-x-hidden bg-black text-white">
       {/* Hero Section */}
-      <div className="min-h-screen flex flex-col items-center justify-center text-center px-6 relative">
-          <div className="absolute inset-0 -z-10">
-            {[...Array(5)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute w-[300px] h-[300px] md:w-[500px] md:h-[500px] rounded-full bg-gradient-to-r from-purple-500/30 to-pink-500/30 opacity-20 blur-3xl"
-                animate={{
-                  x: [0, Math.random() * 200 - 100, 0],
-                  y: [0, Math.random() * 200 - 100, 0],
-                  scale: [1, 1.1, 1],
+       <div onMouseMove={handleMouseMove} className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-background px-4 py-20 md:py-40">
+        <div className="relative z-10 mx-auto max-w-7xl">
+            <div className="flex flex-col items-center gap-4 text-center">
+                <motion.h1 
+                    className="text-5xl md:text-7xl font-bold bg-gradient-to-b from-neutral-50 to-neutral-400 bg-clip-text text-transparent"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                >
+                    No more folders. Just answers.
+                </motion.h1>
+                <motion.p 
+                    className="max-w-xl text-neutral-400"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.1 }}
+                >
+                    Upload your PDFs. Ask anything. Get instant, AI-powered insights from your documents.
+                </motion.p>
+            </div>
+            
+            <motion.div
+                variants={{
+                initial: {
+                    opacity: 0,
+                    y: 20,
+                },
+                animate: {
+                    opacity: 1,
+                    y: 0,
+                    transition: {
+                    staggerChildren: 0.1,
+                    delay: 0.2,
+                    },
+                },
                 }}
-                transition={{ duration: 15 + Math.random() * 10, repeat: Infinity, repeatType: "mirror" }}
-                style={{
-                  top: `${Math.random() * 80}%`,
-                  left: `${Math.random() * 80}%`,
-                }}
-              />
-            ))}
-          </div>
-
-        <motion.h1
-          className="text-5xl md:text-7xl font-bold mb-6 z-10"
-          initial={{ opacity: 0, y: -30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1 }}
-        >
-          No more folders. Just answers.
-        </motion.h1>
-        <motion.p
-          className="text-lg md:text-xl text-gray-300 max-w-2xl z-10"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.3 }}
-        >
-          Upload your PDFs. Ask anything. Get instant answers from your documents.
-        </motion.p>
+                initial="initial"
+                animate="animate"
+                className="mt-12 grid grid-flow-dense grid-cols-3 gap-4"
+            >
+                {features.map((feature) => (
+                    <BentoCard key={feature.name} {...feature} />
+                ))}
+            </motion.div>
+        </div>
+        <div className="pointer-events-none absolute inset-0 z-0">
+          <motion.div
+              style={{
+                x: mousePosition.x * -20 - 100,
+                y: mousePosition.y * -20 - 100,
+              }}
+              className="absolute -left-1/2 -top-1/2 h-[150%] w-[150%] bg-[radial-gradient(circle_at_center,rgba(129,140,248,0.1)_0%,rgba(129,140,248,0)_50%)]"
+          />
+        </div>
       </div>
+
 
       {/* How It Works Section */}
       <AnimatedSection>
