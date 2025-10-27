@@ -181,51 +181,54 @@ function AddDocumentPage() {
   };
 
   return (
-    <div className="container mx-auto py-12 pt-24">
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileChange}
-        accept="application/pdf"
-        className="hidden"
-      />
-      <input
-        type="file"
-        ref={folderInputRef}
-        onChange={handleFolderChange}
-        accept="application/pdf"
-        className="hidden"
-        webkitdirectory="true"
-        multiple
-      />
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold font-headline">Add a New Source</h1>
-        <p className="text-muted-foreground mt-2">Create a new document or upload existing files to get started.</p>
-      </div>
+    <div className="relative min-h-screen w-full">
+      <div className="bg-aurora"></div>
+      <div className="relative container mx-auto py-12 pt-24">
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept="application/pdf"
+          className="hidden"
+        />
+        <input
+          type="file"
+          ref={folderInputRef}
+          onChange={handleFolderChange}
+          accept="application/pdf"
+          className="hidden"
+          webkitdirectory="true"
+          multiple
+        />
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold font-headline">Add a New Source</h1>
+          <p className="text-muted-foreground mt-2">Create a new document or upload existing files to get started.</p>
+        </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <ul className="divide-y divide-border">
-            {sources.map(source => (
-              <li key={source.name} className="group hover:bg-accent/50 transition-colors">
-                <button
-                  className="flex items-center w-full text-left p-4"
-                  onClick={() => handleConnect(source)}
-                >
-                  <div className="flex items-center gap-4 flex-1">
-                    {source.icon}
-                    <div className="flex-1">
-                      <p className="font-medium">{source.name}</p>
-                      <p className="text-sm text-muted-foreground">{source.description}</p>
+        <Card>
+          <CardContent className="p-0">
+            <ul className="divide-y divide-border">
+              {sources.map(source => (
+                <li key={source.name} className="group hover:bg-accent/50 transition-colors">
+                  <button
+                    className="flex items-center w-full text-left p-4"
+                    onClick={() => handleConnect(source)}
+                  >
+                    <div className="flex items-center gap-4 flex-1">
+                      {source.icon}
+                      <div className="flex-1">
+                        <p className="font-medium">{source.name}</p>
+                        <p className="text-sm text-muted-foreground">{source.description}</p>
+                      </div>
                     </div>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground ml-4 transform transition-transform group-hover:translate-x-1" />
-                </button>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground ml-4 transform transition-transform group-hover:translate-x-1" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

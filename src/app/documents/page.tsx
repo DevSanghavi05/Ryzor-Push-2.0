@@ -350,8 +350,9 @@ function DocumentsPageContent() {
 
 
   return (
-    <div className="flex flex-col min-h-dvh bg-background">
-      <main className="flex-1 p-4 md:p-6">
+    <div className="flex flex-col min-h-dvh bg-background relative">
+      <div className="bg-aurora"></div>
+      <main className="flex-1 p-4 md:p-6 relative">
         <div className="container mx-auto pt-24">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
             <h1 className="text-3xl md:text-4xl font-bold font-headline">
