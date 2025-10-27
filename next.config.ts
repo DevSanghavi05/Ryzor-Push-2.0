@@ -37,22 +37,6 @@ const nextConfig: NextConfig = {
       }
     ],
   },
-  webpack: (config) => {
-    // Required for pdfjs-dist
-    config.resolve.alias['pdfjs-dist'] = path.join(
-      __dirname,
-      './node_modules/pdfjs-dist/legacy/build/pdf'
-    );
-     // Add rule for SVG files
-    config.module.rules.push({
-      test: /\.svg$/,
-      use: ['@svgr/webpack'],
-    });
-
-    return config;
-  },
 };
 
 export default nextConfig;
-
-    
