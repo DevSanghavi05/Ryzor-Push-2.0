@@ -106,36 +106,8 @@ function LoggedInView() {
 
   return (
     <div className="flex flex-col w-full h-full relative overflow-hidden pt-24">
-      {/* Gradient Backgrounds */}
-      <div className="absolute inset-0 -z-10 overflow-hidden bg-background">
-        <motion.div 
-            className="absolute -top-1/2 -left-1/2 w-[2000px] h-[2000px] bg-[radial-gradient(circle_at_center,_rgba(14,165,233,0.15),_transparent_50%)] rounded-full"
-            animate={{
-                y: [0, -40, 0],
-                x: [0, 20, 0],
-                scale: [1, 1.05, 1],
-            }}
-            transition={{
-                duration: 25,
-                repeat: Infinity,
-                repeatType: 'mirror',
-            }}
-        />
-        <motion.div 
-            className="absolute -bottom-1/2 -right-1/2 w-[2000px] h-[2000px] bg-[radial-gradient(circle_at_center,_rgba(192,132,252,0.15),_transparent_50%)] rounded-full"
-            animate={{
-                y: [0, 40, 0],
-                x: [0, -20, 0],
-                scale: [1, 1.1, 1],
-            }}
-            transition={{
-                duration: 30,
-                repeat: Infinity,
-                repeatType: 'mirror',
-                delay: 7,
-            }}
-        />
-      </div>
+      {/* Consistent Background */}
+      <div className="bg-aurora"></div>
 
       {/* Chat Area */}
       <div ref={chatContainerRef} className="flex-1 p-6 pb-40 overflow-y-auto space-y-6">
@@ -234,21 +206,13 @@ function AnimatedSection({ children }: { children: React.ReactNode }) {
 
 function LandingPage() {
   const { signInWithGoogle } = useUser();
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-
-  const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
-    const { clientX, clientY } = e;
-    const { innerWidth, innerHeight } = window;
-    setMousePosition({
-      x: (clientX / innerWidth) * 2 - 1,
-      y: (clientY / innerHeight) * 2 - 1,
-    });
-  };
   
   return (
-    <div className="relative w-full overflow-x-hidden bg-black text-white">
+    <div className="relative w-full overflow-x-hidden text-white">
+      <div className="bg-aurora"></div>
+
       {/* Hero Section */}
-       <div onMouseMove={handleMouseMove} className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-background px-4 py-20 md:py-40">
+       <div className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden px-4 py-20 md:py-40">
         <div className="relative z-10 mx-auto max-w-7xl">
             <div className="flex flex-col items-center gap-4 text-center">
                 <motion.h1 
@@ -282,15 +246,6 @@ function LandingPage() {
                     </Button>
                 </motion.div>
             </div>
-        </div>
-        <div className="pointer-events-none absolute inset-0 z-0">
-          <motion.div
-              style={{
-                x: mousePosition.x * -20 - 100,
-                y: mousePosition.y * -20 - 100,
-              }}
-              className="absolute inset-0 h-full w-full bg-[radial-gradient(circle_at_center,rgba(192,132,252,0.15)_0%,rgba(192,132,252,0)_50%)]"
-          />
         </div>
       </div>
 
