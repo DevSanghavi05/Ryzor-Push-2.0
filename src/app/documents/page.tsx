@@ -19,7 +19,9 @@ import {
     Filter,
     HardDriveUpload,
     Wand,
-    Briefcase
+    Briefcase,
+    Globe,
+    RefreshCw
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState, useCallback, Suspense, useRef } from 'react';
@@ -27,7 +29,6 @@ import { Input } from '@/components/ui/input';
 import { useRouter, useSearchParams } from 'next/navigation';
 import withAuth from '@/firebase/auth/with-auth';
 import { useUser } from '@/firebase/auth/use-user';
-import type { gapi as Gapi } from 'gapi-script';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -52,6 +53,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 type Document = {
   id: string;
@@ -91,7 +93,7 @@ const extractTextFromDoc = (doc: any): string => {
 
 
 function DocumentsPageContent() {
-  const { accessToken, user, loading: userLoading } = useUser();
+  const { user, loading: userLoading } = useUser();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingDrive, setLoadingDrive] = useState(false);
@@ -104,8 +106,43 @@ function DocumentsPageContent() {
 
   const [showTrashConfirm, setShowTrashConfirm] = useState<Document | null>(null);
   const { toast } = useToast();
-  const gapiLoaded = useRef(false);
-  const driveFetched = useRef(false); // Ref to track if drive fetch has been initiated
+  
+  const hasFetchedDriveFiles = useRef(false);
+  
+  // This effect runs once on component mount to check for a cookie
+  // and fetch files if the cookie exists.
+  useEffect(() => {
+    const fetchInitialDriveFiles = async () => {
+        try {
+            // This is a simple check. We assume if a cookie exists, we can try fetching.
+            // A more robust solution might involve a dedicated endpoint to check token validity.
+            const res = await fetch('/api/drive/files');
+            if (res.ok) {
+                const driveFiles = await res.json();
+                if (driveFiles.length > 0 && !hasFetchedDriveFiles.current) {
+                    hasFetchedDriveFiles.current = true;
+                    const formattedDriveFiles: Document[] = driveFiles.map((file: any) => ({
+                      id: file.id,
+                      name: file.name,
+                      modifiedTime: file.modifiedTime,
+                      mimeType: file.mimeType,
+                      webViewLink: file.webViewLink,
+                      icon: getFileIcon(file.mimeType, 'drive'),
+                      source: 'drive' as const,
+                    }));
+                    setDocuments(prevDocs => {
+                       const localDocs = prevDocs.filter(d => d.source === 'local');
+                       return [...localDocs, ...formattedDriveFiles];
+                    });
+                }
+            }
+        } catch(e) {
+            // It's okay if this fails, it just means the user isn't authed with Drive
+            console.log("No initial Drive session found.");
+        }
+    }
+    fetchInitialDriveFiles();
+  }, [])
 
   const fetchLocalFiles = useCallback(() => {
     if (!user) return [];
@@ -126,99 +163,31 @@ function DocumentsPageContent() {
   useEffect(() => {
     if (user) {
         const localFiles = fetchLocalFiles();
-        setDocuments(localFiles);
+        setDocuments(prevDocs => {
+            const driveDocs = prevDocs.filter(p => p.source === 'drive');
+            return [...localFiles, ...driveDocs];
+        });
         setLoading(false);
     }
   }, [user, fetchLocalFiles]);
 
-  const fetchDriveFiles = useCallback(async (token: string) => {
-    setLoadingDrive(true);
-    driveFetched.current = true; // Mark that the fetch has been initiated
-    try {
-      const gapi = window.gapi as typeof Gapi;
-      gapi.client.setToken({ access_token: token });
-
-      await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
-      
-      const response = await gapi.client.drive.files.list({
-        'pageSize': 20,
-        'fields': "nextPageToken, files(id, name, mimeType, modifiedTime, webViewLink)"
-      });
-
-      const files = response.result.files as any[];
-      if (files) {
-        const formattedDriveFiles: Document[] = files.map(file => ({
-          id: file.id,
-          name: file.name,
-          modifiedTime: file.modifiedTime,
-          mimeType: file.mimeType,
-          webViewLink: file.webViewLink,
-          icon: getFileIcon(file.mimeType, 'drive'),
-          source: 'drive' as const,
-        }));
-        
-        setDocuments(prevDocs => {
-          // Combine local files with the newly fetched drive files, preventing duplicates.
-          const driveFileIds = new Set(formattedDriveFiles.map(d => d.id));
-          const localFiles = prevDocs.filter(d => d.source === 'local');
-          return [...localFiles, ...formattedDriveFiles];
-        });
-      }
-    } catch (error: any) {
-      const errorDetails = error.result?.error;
-      if (errorDetails) {
-        console.error("Error fetching files from Google Drive API:", JSON.stringify(errorDetails, null, 2));
-      } else {
-        console.error("Error initializing GAPI client or fetching files: ", error);
-      }
-    } finally {
-      setLoadingDrive(false);
-    }
-  }, []);
-
-  // Effect to load the GAPI script
-  useEffect(() => {
-      if (gapiLoaded.current) return;
-
-      const script = document.createElement('script');
-      script.src = 'https://apis.google.com/js/api.js';
-      script.async = true;
-      script.defer = true;
-      
-      script.onload = () => {
-        (window.gapi as typeof Gapi).load('client', () => {
-          gapiLoaded.current = true;
-        });
-      };
-
-      document.body.appendChild(script);
-
-      return () => {
-        const gapiScript = document.querySelector('script[src="https://apis.google.com/js/api.js"]');
-        if (gapiScript) {
-          document.body.removeChild(gapiScript);
-        }
-      };
-  }, []);
-
-  // Effect to fetch drive files once we have the token and GAPI is loaded.
-  useEffect(() => {
-    if (accessToken && gapiLoaded.current && !driveFetched.current) {
-        fetchDriveFiles(accessToken);
-    }
-  }, [accessToken, fetchDriveFiles]);
-
+  const syncGoogleDrive = async () => {
+    // Redirect to our backend route which will then redirect to Google
+    router.push('/api/auth/google/signin');
+  };
 
   const filteredDocuments = documents
     .filter(doc => doc.name.toLowerCase().includes(searchQuery.toLowerCase()))
     .filter(doc => {
         if (filterType === 'all') return true;
         if (filterType === 'local') return doc.source === 'local';
+        if (filterType === 'drive') return doc.source === 'drive';
         return doc.mimeType.includes(filterType);
     });
 
   const getFileType = (mimeType: string, source: 'drive' | 'local') => {
-    if (source === 'local') return 'Local File';
+    if (source === 'local') return 'Imported File';
+    if (source === 'drive') return 'Google Drive';
     if (mimeType.includes('pdf')) return 'PDF';
     if (mimeType.includes('document')) return 'Doc';
     if (mimeType.includes('spreadsheet')) return 'Sheet';
@@ -247,10 +216,12 @@ function DocumentsPageContent() {
              const updatedDocuments = existingDocuments.filter((d: any) => d.id !== showTrashConfirm.id);
              localStorage.setItem(storageKey, JSON.stringify(updatedDocuments));
              localStorage.removeItem(contentKey);
+             setDocuments(documents.filter(d => d.id !== showTrashConfirm.id));
         } else {
             // Here you would call the API to move the Drive file to trash
+             toast({ variant: 'destructive', title: "Not Implemented", description: "Deleting Drive files is not yet supported." });
         }
-        setDocuments(documents.filter(d => d.id !== showTrashConfirm.id));
+       
         toast({
             title: "Moved to Trash",
             description: `${showTrashConfirm.name} has been moved to trash.`
@@ -268,83 +239,68 @@ function DocumentsPageContent() {
   };
 
   const handleImportAndAnalyze = async (doc: Document) => {
-    const gapi = window.gapi as typeof Gapi;
-    if (!gapi || !user) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Google API not initialized or user not logged in.' });
-        return;
-    }
+     toast({
+        title: 'Importing Document...',
+        description: 'This may take a moment.',
+      });
 
     try {
-        // Ensure the docs client is loaded before using it
-        await new Promise<void>((resolve, reject) => {
-          gapi.client.load('https://docs.googleapis.com/$discovery/rest?version=v1')
-            .then(resolve)
-            .catch(reject);
-        });
+      const response = await fetch(`/api/drive/files/${doc.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch document content.');
+      }
+      const { textContent } = await response.json();
+      
+      if (!textContent.trim()) {
+        toast({ variant: 'destructive', title: "Import Failed", description: "The document appears to be empty." });
+        return;
+      }
 
-        if (!gapi.client?.docs) {
-          throw new Error('Google Docs API client could not be loaded.');
-        }
+      if (!user) return;
+      
+      const newDocument = {
+        id: doc.id,
+        name: doc.name,
+        uploaded: new Date().toISOString(),
+        textContent: textContent,
+        mimeType: doc.mimeType,
+      };
 
-        const response = await gapi.client.docs.documents.get({
-            documentId: doc.id,
-        });
+      const storageKey = `documents_${user.uid}`;
+      let existingDocuments = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      
+      const docIndex = existingDocuments.findIndex((d: any) => d.id === doc.id);
+      if (docIndex > -1) {
+        existingDocuments[docIndex] = newDocument;
+      } else {
+        existingDocuments = [newDocument, ...existingDocuments];
+      }
+      localStorage.setItem(storageKey, JSON.stringify(existingDocuments));
 
-        const textContent = extractTextFromDoc(response.result);
+      toast({
+        title: "Document Ready",
+        description: `${doc.name} content is now available for chat.`,
+      });
 
-        if (!textContent.trim()) {
-            toast({
-                variant: 'destructive',
-                title: "Import Failed",
-                description: "The document appears to be empty.",
-            });
-            return;
-        }
-        
-        const newDocument = {
-            id: doc.id,
-            name: doc.name,
-            uploaded: new Date().toISOString(),
-            textContent: textContent,
-            mimeType: doc.mimeType, // Preserve original mimeType
+      // Visually refresh list to show it's "local" now.
+      setDocuments(prevDocs => {
+        const otherDocs = prevDocs.filter(d => d.id !== doc.id);
+        const updatedDoc: Document = {
+          ...doc,
+          source: 'local',
+          webViewLink: `/documents/${doc.id}`,
+          icon: getFileIcon(doc.mimeType, 'local'),
         };
-
-        const storageKey = `documents_${user.uid}`;
-        let existingDocuments = JSON.parse(localStorage.getItem(storageKey) || '[]');
-        
-        const docIndex = existingDocuments.findIndex((d: any) => d.id === doc.id);
-        if (docIndex > -1) {
-            existingDocuments[docIndex] = newDocument;
-        } else {
-            existingDocuments = [newDocument, ...existingDocuments];
-        }
-
-        localStorage.setItem(storageKey, JSON.stringify(existingDocuments));
-
-        toast({
-            title: "Document Ready",
-            description: `${doc.name} content is now available for chat.`,
-        });
-
-        // Visually refresh list to show it's "local" now.
-        setDocuments(prevDocs => {
-            const otherDocs = prevDocs.filter(d => d.id !== doc.id);
-            const updatedDoc: Document = {
-                ...doc,
-                source: 'local',
-                webViewLink: `/documents/${doc.id}`, // Update link to local view
-                icon: getFileIcon(doc.mimeType, 'local'), // Update icon
-            };
-            return [...otherDocs, updatedDoc].sort((a,b) => new Date(b.modifiedTime).getTime() - new Date(a.modifiedTime).getTime());
-        });
+        return [...otherDocs, updatedDoc].sort((a,b) => new Date(b.modifiedTime).getTime() - new Date(a.modifiedTime).getTime());
+      });
 
     } catch (error: any) {
-        console.error("Error importing Google Doc:", error);
-        toast({
-            variant: 'destructive',
-            title: "Import Failed",
-            description: error.result?.error?.message || error.message || "Could not import the document. Ensure you have granted permission.",
-        });
+      console.error("Error importing Google Doc:", error);
+      toast({
+        variant: 'destructive',
+        title: "Import Failed",
+        description: error.message || "Could not import the document.",
+      });
     }
   };
 
@@ -353,6 +309,7 @@ function DocumentsPageContent() {
     <div className="flex flex-col min-h-dvh bg-background relative">
       <div className="bg-aurora"></div>
       <main className="flex-1 p-4 md:p-6 relative">
+      <TooltipProvider>
         <div className="container mx-auto pt-24">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
             <h1 className="text-3xl md:text-4xl font-bold font-headline">
@@ -375,20 +332,17 @@ function DocumentsPageContent() {
                         <SelectValue placeholder="Filter by type" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">All Types</SelectItem>
-                        <SelectItem value="local">Imported Files</SelectItem>
-                        <SelectItem value="document">Docs</SelectItem>
-                        <SelectItem value="spreadsheet">Sheets</SelectItem>
-                        <SelectItem value="presentation">Slides</SelectItem>
-                        <SelectItem value="pdf">PDFs</SelectItem>
+                        <SelectItem value="all">All Sources</SelectItem>
+                        <SelectItem value="local">Imported</SelectItem>
+                        <SelectItem value="drive">Google Drive</SelectItem>
                     </SelectContent>
                 </Select>
                 <Button 
                   variant="outline"
-                  onClick={() => toast({ title: "Coming Soon!", description: "The ability to sync a work account will be available in a future update."})}
+                  onClick={syncGoogleDrive}
                 >
-                    <Briefcase className="mr-2 h-4 w-4" />
-                    Sync Work Account
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Sync Google Drive
                 </Button>
             </div>
           </div>
@@ -416,16 +370,23 @@ function DocumentsPageContent() {
                         <div className="truncate">
                             <a href={doc.webViewLink} onClick={(e) => { e.preventDefault(); handleDocumentClick(e, doc); }} className="font-medium truncate hover:underline cursor-pointer">{doc.name}</a>
                             <p className="text-sm text-muted-foreground">
-                                Modified: {new Date(doc.modifiedTime).toLocaleDateString()} &middot; {getFileType(doc.mimeType, doc.source)}
+                                {doc.source === 'drive' ? 'Drive' : 'Imported'} &middot; Modified: {new Date(doc.modifiedTime).toLocaleDateString()}
                             </p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2 ml-4">
-                        {doc.source === 'drive' && doc.mimeType.includes('document') && (
-                            <Button variant="secondary" size="sm" onClick={() => handleImportAndAnalyze(doc)}>
-                                <Wand className="mr-2 h-4 w-4" />
-                                Import
-                            </Button>
+                        {doc.source === 'drive' && (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="secondary" size="sm" onClick={() => handleImportAndAnalyze(doc)}>
+                                        <Wand className="mr-2 h-4 w-4" />
+                                        Import
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Import this file to make its content available to the AI.</p>
+                                </TooltipContent>
+                           </Tooltip>
                         )}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -437,34 +398,22 @@ function DocumentsPageContent() {
                                 <DropdownMenuItem onSelect={() => handleDocumentClick(new MouseEvent('click') as any, doc)}>
                                     <ExternalLink className="mr-2 h-4 w-4" /> Open
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
-                                  <button
-                                    className="flex items-center w-full"
-                                    onClick={() => {
-                                      if (navigator.share && doc.source === 'drive') {
-                                        navigator.share({
-                                          title: doc.name,
-                                          text: `Check out this document: ${doc.name}`,
-                                          url: doc.webViewLink,
-                                        })
-                                        .catch((error) => {
-                                          if (error.name !== 'AbortError') {
-                                            console.error('Share failed, falling back to copy link:', error);
-                                            handleCopyLink(doc.webViewLink);
-                                          }
-                                        });
-                                      } else {
-                                        handleCopyLink(doc.webViewLink);
-                                      }
-                                    }}
-                                    disabled={doc.source === 'local'}
-                                  >
-                                    <Share2 className="mr-2 h-4 w-4" /> Share
-                                  </button>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => handleCopyLink(doc.webViewLink)} disabled={doc.source === 'local'}>
-                                    <Link2 className="mr-2 h-4 w-4" /> Copy Link
-                                </DropdownMenuItem>
+                               <Tooltip>
+                                 <TooltipTrigger asChild>
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} disabled={doc.source === 'local'}>
+                                        <Share2 className="mr-2 h-4 w-4" /> Share
+                                    </DropdownMenuItem>
+                                 </TooltipTrigger>
+                                 {doc.source === 'local' && <TooltipContent><p>You can't share a local file.</p></TooltipContent>}
+                               </Tooltip>
+                               <Tooltip>
+                                 <TooltipTrigger asChild>
+                                    <DropdownMenuItem onSelect={() => handleCopyLink(doc.webViewLink)} disabled={doc.source === 'local'}>
+                                        <Link2 className="mr-2 h-4 w-4" /> Copy Link
+                                    </DropdownMenuItem>
+                                 </TooltipTrigger>
+                                 {doc.source === 'local' && <TooltipContent><p>Local files do not have a shareable link.</p></TooltipContent>}
+                               </Tooltip>
                                 <DropdownMenuItem onSelect={() => handleTrash(doc)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
                                     <Trash2 className="mr-2 h-4 w-4" /> Trash
                                 </DropdownMenuItem>
@@ -484,13 +433,13 @@ function DocumentsPageContent() {
                 <p className="text-muted-foreground mb-6 max-w-sm">
                   {searchQuery || filterType !== 'all'
                     ? `Your search and filter criteria did not return any documents.`
-                    : 'Upload a document or connect a cloud account to get started.'
+                    : 'Upload a document or sync Google Drive to get started.'
                   }
                 </p>
                 <Button asChild>
                     <Link href="/add">
                         <PlusCircle className="mr-2 h-4 w-4" />
-                        Add Your First Document
+                        Add Document
                     </Link>
                 </Button>
             </div>
@@ -512,6 +461,7 @@ function DocumentsPageContent() {
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+      </TooltipProvider>
       </main>
     </div>
   );
@@ -527,5 +477,3 @@ function DocumentsPage() {
 }
 
 export default withAuth(DocumentsPage);
-
-    

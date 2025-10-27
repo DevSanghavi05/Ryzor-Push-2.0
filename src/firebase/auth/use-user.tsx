@@ -50,7 +50,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
     // The OAuth access token is handled separately during the sign-in flow.
     const unsubscribe = onFirebaseAuthStateChanged(auth, async (user) => {
       setUser(user);
-      if (!user) {
+      if (user) {
+        const idToken = await user.getIdToken();
+        setAccessToken(idToken);
+      } else {
         // Clear access token on sign out
         setAccessToken(null);
       }
@@ -62,19 +65,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     if (!auth) return;
+    // Scopes for Drive are no longer needed here, they are handled
+    // by the dedicated server-side sync flow.
     const provider = new GoogleAuthProvider();
-    provider.addScope('https://www.googleapis.com/auth/drive.readonly');
-    provider.addScope('https://www.googleapis.com/auth/documents.readonly');
     try {
-      const result = await signInWithPopup(auth, provider);
-      // This is the correct way to get the OAuth access token for Google APIs
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      if (credential) {
-        setAccessToken(credential.accessToken || null);
-      }
+      await signInWithPopup(auth, provider);
+      // The user state will be updated by the onFirebaseAuthStateChanged listener
     } catch (error: any) {
       // Don't log an error if the user simply closes the popup.
-      if (error.code === 'auth/cancelled-popup-request') {
+      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
         return;
       }
       console.error('Error signing in with Google', error);
@@ -84,11 +83,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const signInWithMicrosoft = async () => {
     if (!auth) return;
     const provider = new OAuthProvider('microsoft.com');
-    provider.addScope('Files.ReadWrite');
+    // Add scopes if necessary for Microsoft services
     try {
-      const result = await signInWithPopup(auth, provider);
-      const credential = OAuthProvider.credentialFromResult(result);
-      if (credential) setAccessToken(credential.accessToken || null);
+      await signInWithPopup(auth, provider);
     } catch (error) {
       console.error('Error signing in with Microsoft', error);
     }

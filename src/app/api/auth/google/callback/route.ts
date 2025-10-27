@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getGoogleOAuth2Client } from '@/lib/google-auth';
-import { setCookie } from 'nookies';
+import { serialize } from 'cookie';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -22,19 +22,19 @@ export async function GET(req: NextRequest) {
     const response = NextResponse.redirect(new URL('/documents', req.url));
 
     // Store tokens in secure, httpOnly cookies
-    setCookie({ res: response }, 'google_access_token', tokens.access_token, {
+    response.headers.append('Set-Cookie', serialize('google_access_token', tokens.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV !== 'development',
       path: '/',
       maxAge: tokens.expiry_date ? (tokens.expiry_date - Date.now()) / 1000 : 3599,
-    });
+    }));
 
-    setCookie({ res: response }, 'google_refresh_token', tokens.refresh_token, {
+    response.headers.append('Set-Cookie', serialize('google_refresh_token', tokens.refresh_token, {
         httpOnly: true,
         secure: process.env.NODE_ENV !== 'development',
         path: '/',
         maxAge: 30 * 24 * 60 * 60, // 30 days
-    });
+    }));
 
     return response;
 
