@@ -24,7 +24,7 @@ import {
     RefreshCw
 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState, useCallback, Suspense, useRef } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import { Input } from '@/components/ui/input';
 import { useRouter, useSearchParams } from 'next/navigation';
 import withAuth from '@/firebase/auth/with-auth';
@@ -107,43 +107,6 @@ function DocumentsPageContent() {
   const [showTrashConfirm, setShowTrashConfirm] = useState<Document | null>(null);
   const { toast } = useToast();
   
-  const hasFetchedDriveFiles = useRef(false);
-  
-  // This effect runs once on component mount to check for a cookie
-  // and fetch files if the cookie exists.
-  useEffect(() => {
-    const fetchInitialDriveFiles = async () => {
-        try {
-            // This is a simple check. We assume if a cookie exists, we can try fetching.
-            // A more robust solution might involve a dedicated endpoint to check token validity.
-            const res = await fetch('/api/drive/files');
-            if (res.ok) {
-                const driveFiles = await res.json();
-                if (driveFiles.length > 0 && !hasFetchedDriveFiles.current) {
-                    hasFetchedDriveFiles.current = true;
-                    const formattedDriveFiles: Document[] = driveFiles.map((file: any) => ({
-                      id: file.id,
-                      name: file.name,
-                      modifiedTime: file.modifiedTime,
-                      mimeType: file.mimeType,
-                      webViewLink: file.webViewLink,
-                      icon: getFileIcon(file.mimeType, 'drive'),
-                      source: 'drive' as const,
-                    }));
-                    setDocuments(prevDocs => {
-                       const localDocs = prevDocs.filter(d => d.source === 'local');
-                       return [...localDocs, ...formattedDriveFiles];
-                    });
-                }
-            }
-        } catch(e) {
-            // It's okay if this fails, it just means the user isn't authed with Drive
-            console.log("No initial Drive session found.");
-        }
-    }
-    fetchInitialDriveFiles();
-  }, [])
-
   const fetchLocalFiles = useCallback(() => {
     if (!user) return [];
     const storageKey = `documents_${user.uid}`;
@@ -160,19 +123,58 @@ function DocumentsPageContent() {
     }));
   }, [user]);
 
+  const fetchDriveFiles = useCallback(async () => {
+    setLoadingDrive(true);
+    try {
+      const res = await fetch('/api/drive/files');
+      if (res.ok) {
+        const driveFiles = await res.json();
+        if (driveFiles && driveFiles.length > 0) {
+            const formattedDriveFiles: Document[] = driveFiles.map((file: any) => ({
+                id: file.id,
+                name: file.name,
+                modifiedTime: file.modifiedTime,
+                mimeType: file.mimeType,
+                webViewLink: file.webViewLink,
+                icon: getFileIcon(file.mimeType, 'drive'),
+                source: 'drive' as const,
+            }));
+            setDocuments(prevDocs => {
+                const localDocs = prevDocs.filter(d => d.source === 'local');
+                const existingDriveIds = new Set(localDocs.map(d => d.id));
+                const newDriveFiles = formattedDriveFiles.filter(d => !existingDriveIds.has(d.id));
+                return [...localDocs, ...newDriveFiles];
+            });
+        }
+      } else if (res.status === 401) {
+          // This just means the user isn't authed with drive, which is fine.
+          console.log('User not authenticated with Google Drive.');
+      } else {
+        throw new Error('Failed to fetch Google Drive files.');
+      }
+    } catch (error) {
+        console.error(error);
+        toast({
+            variant: 'destructive',
+            title: 'Could not sync Google Drive',
+            description: 'There was a problem fetching your files. Please try again.',
+        });
+    } finally {
+        setLoadingDrive(false);
+    }
+  }, [toast]);
+
   useEffect(() => {
     if (user) {
+        setLoading(true);
         const localFiles = fetchLocalFiles();
-        setDocuments(prevDocs => {
-            const driveDocs = prevDocs.filter(p => p.source === 'drive');
-            return [...localFiles, ...driveDocs];
-        });
+        setDocuments(localFiles);
+        fetchDriveFiles();
         setLoading(false);
     }
-  }, [user, fetchLocalFiles]);
+  }, [user, fetchLocalFiles, fetchDriveFiles]);
 
   const syncGoogleDrive = async () => {
-    // Redirect to our backend route which will then redirect to Google
     router.push('/api/auth/google/signin');
   };
 
@@ -183,7 +185,7 @@ function DocumentsPageContent() {
         if (filterType === 'local') return doc.source === 'local';
         if (filterType === 'drive') return doc.source === 'drive';
         return doc.mimeType.includes(filterType);
-    });
+    }).sort((a, b) => new Date(b.modifiedTime).getTime() - new Date(a.modifiedTime).getTime());
 
   const getFileType = (mimeType: string, source: 'drive' | 'local') => {
     if (source === 'local') return 'Imported File';
@@ -340,8 +342,9 @@ function DocumentsPageContent() {
                 <Button 
                   variant="outline"
                   onClick={syncGoogleDrive}
+                  disabled={loadingDrive}
                 >
-                    <RefreshCw className="mr-2 h-4 w-4" />
+                    <RefreshCw className={`mr-2 h-4 w-4 ${loadingDrive ? 'animate-spin' : ''}`} />
                     Sync Google Drive
                 </Button>
             </div>
@@ -477,3 +480,5 @@ function DocumentsPage() {
 }
 
 export default withAuth(DocumentsPage);
+
+    
