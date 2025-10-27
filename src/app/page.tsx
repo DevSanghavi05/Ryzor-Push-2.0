@@ -232,68 +232,6 @@ function AnimatedSection({ children }: { children: React.ReactNode }) {
   );
 }
 
-const BentoCard = ({
-  name,
-  className,
-  background,
-  Icon,
-  description,
-  href,
-  cta,
-}: {
-  name: string;
-  className: string;
-  background: React.ReactNode;
-  Icon: any;
-  description: string;
-  href: string;
-  cta: string;
-}) => (
-  <motion.div
-    key={name}
-    variants={{
-      initial: {
-        filter: "blur(20px)",
-      },
-      animate: {
-        filter: "blur(0px)",
-      },
-    }}
-    className={cn(
-      "group relative col-span-3 flex flex-col justify-between overflow-hidden rounded-xl",
-      // light styles
-      "bg-white [box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)]",
-      // dark styles
-      "transform-gpu dark:bg-black dark:[border:1px_solid_rgba(255,255,255,.1)] dark:[box-shadow:0_-20px_80px_-20px_#ffffff1f_inset]",
-      className
-    )}
-  >
-    <div>{background}</div>
-    <div className="pointer-events-none z-10 flex transform-gpu flex-col gap-1 p-6 transition-all duration-300 group-hover:-translate-y-10">
-      <Icon className="h-12 w-12 origin-left transform-gpu text-neutral-700 -translate-y-12 transition-all duration-300 ease-in-out group-hover:scale-75 group-hover:text-primary" />
-      <h3 className="text-xl font-semibold text-neutral-700 dark:text-neutral-300">
-        {name}
-      </h3>
-      <p className="max-w-lg text-neutral-400">{description}</p>
-    </div>
-
-    <div
-      className={cn(
-        "pointer-events-none absolute bottom-0 flex w-full translate-y-10 transform-gpu flex-row items-center p-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100"
-      )}
-    >
-      <Button variant="ghost" asChild size="sm" className="pointer-events-auto">
-        <a href={href}>
-          {cta}
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </a>
-      </Button>
-    </div>
-    <div className="pointer-events-none absolute inset-0 transform-gpu transition-all duration-300 group-hover:bg-black/[.03] group-hover:dark:bg-neutral-800/10" />
-  </motion.div>
-);
-
-
 function LandingPage() {
   const { signInWithGoogle } = useUser();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -306,45 +244,6 @@ function LandingPage() {
       y: (clientY / innerHeight) * 2 - 1,
     });
   };
-  
-  const features = [
-    {
-      Icon: FileQuestion,
-      name: "Instant Answers",
-      description: "Ask questions and get immediate, synthesized answers from your documents.",
-      href: "/",
-      cta: "Learn more",
-      background: <motion.div
-        animate={{
-          backgroundPosition: `calc(${mousePosition.x * 40 + 50}%) calc(${mousePosition.y * 40 + 50}%)`,
-        }}
-        className="absolute inset-0 z-0 opacity-50"
-        style={{
-          backgroundImage: 'radial-gradient(circle at 50% 50%, hsl(var(--primary) / 0.1), transparent 50%)',
-          backgroundSize: '300% 300%',
-        }}
-        />,
-      className: "col-span-3 lg:col-span-2",
-    },
-    {
-      Icon: Upload,
-      name: "Simple Upload",
-      description: "Drag and drop PDFs to build your knowledge base in seconds.",
-      href: "/",
-      cta: "Learn more",
-      background: <motion.div
-        animate={{
-          backgroundPosition: `calc(${mousePosition.x * 40 + 50}%) calc(${mousePosition.y * 40 + 50}%)`,
-        }}
-        className="absolute inset-0 z-0 opacity-50"
-        style={{
-          backgroundImage: 'radial-gradient(circle at 50% 50%, hsl(var(--accent) / 0.05), transparent 50%)',
-          backgroundSize: '400% 400%',
-        }}
-      />,
-      className: "col-span-3 lg:col-span-1",
-    },
-  ];
   
   return (
     <div className="relative w-full overflow-x-hidden bg-black text-white">
@@ -368,31 +267,21 @@ function LandingPage() {
                 >
                     Upload your PDFs. Ask anything. Get instant, AI-powered insights from your documents.
                 </motion.p>
+                 <motion.div
+                    className="mt-8"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                >
+                    <Button 
+                        onClick={signInWithGoogle}
+                        size="lg"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_20px_rgba(var(--primary-hsl),0.4)] hover:shadow-[0_0_30px_rgba(var(--primary-hsl),0.6)] transition-all"
+                    >
+                        Get Started for Free
+                    </Button>
+                </motion.div>
             </div>
-            
-            <motion.div
-                variants={{
-                initial: {
-                    opacity: 0,
-                    y: 20,
-                },
-                animate: {
-                    opacity: 1,
-                    y: 0,
-                    transition: {
-                    staggerChildren: 0.1,
-                    delay: 0.2,
-                    },
-                },
-                }}
-                initial="initial"
-                animate="animate"
-                className="mt-12 grid grid-flow-dense grid-cols-3 gap-4"
-            >
-                {features.map((feature) => (
-                    <BentoCard key={feature.name} {...feature} />
-                ))}
-            </motion.div>
         </div>
         <div className="pointer-events-none absolute inset-0 z-0">
           <motion.div
@@ -400,7 +289,7 @@ function LandingPage() {
                 x: mousePosition.x * -20 - 100,
                 y: mousePosition.y * -20 - 100,
               }}
-              className="absolute -left-1/2 -top-1/2 h-[150%] w-[150%] bg-[radial-gradient(circle_at_center,rgba(129,140,248,0.1)_0%,rgba(129,140,248,0)_50%)]"
+              className="absolute inset-0 h-full w-full bg-[radial-gradient(circle_at_center,rgba(192,132,252,0.15)_0%,rgba(192,132,252,0)_50%)]"
           />
         </div>
       </div>
@@ -463,5 +352,3 @@ export default function Home() {
 
   return user ? <LoggedInView /> : <LandingPage />;
 }
-
-    
