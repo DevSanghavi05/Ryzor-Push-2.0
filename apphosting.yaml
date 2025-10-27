@@ -1,6 +1,14 @@
 # Settings to manage and configure a Firebase App Hosting backend.
 # https://firebase.google.com/docs/app-hosting/configure
 
+# Specifies the commands to build and start the application.
+build:
+  # Command to build the Next.js application for production.
+  - npm install
+  - npm run build
+start:
+  # Command to start the production Next.js server.
+  - npm start
 runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
