@@ -5,7 +5,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 0 0% 98%;
     --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
@@ -67,7 +67,7 @@
     width: 100vw;
     height: 100vh;
     z-index: -10;
-    background-color: #000;
+    background-color: hsl(var(--background));
     --gradient-1: hsl(var(--primary) / 0.3);
     --gradient-2: hsl(var(--accent) / 0.2);
     --gradient-3: hsl(var(--primary) / 0.2);
@@ -77,6 +77,10 @@
       radial-gradient(at 30% 80%, var(--gradient-3) 0px, transparent 50%);
     -webkit-animation: aurora 20s infinite alternate;
             animation: aurora 20s infinite alternate;
+  }
+
+  .dark .bg-aurora {
+    background-color: #000;
   }
 
   .bg-aurora::after {
