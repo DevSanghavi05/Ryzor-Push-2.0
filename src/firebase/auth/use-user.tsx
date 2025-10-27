@@ -72,7 +72,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
       if (credential) {
         setAccessToken(credential.accessToken || null);
       }
-    } catch (error) {
+    } catch (error: any) {
+      // Don't log an error if the user simply closes the popup.
+      if (error.code === 'auth/cancelled-popup-request') {
+        return;
+      }
       console.error('Error signing in with Google', error);
     }
   };
