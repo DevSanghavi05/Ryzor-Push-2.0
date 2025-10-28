@@ -153,7 +153,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     if (!currentToken) {
       console.error('Could not obtain access token. Please sign in again.');
-      return;
+      // This is an explicit user-facing error because re-auth failed.
+      throw new Error('Authentication failed. Please try signing in again.');
     }
 
 
@@ -174,6 +175,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         await signInWithGoogle(); // Gets new token
         const newCookies = parseCookies();
         const newToken = newCookies.google_access_token;
+
         if(newToken) {
             // Retry the fetch with the new token
             const retryResponse = await fetch(
@@ -182,7 +184,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
                     headers: { Authorization: `Bearer ${newToken}` },
                 }
             );
-            if (!retryResponse.ok) throw new Error(`Retry fetch failed: ${retryResponse.statusText}`);
+            if (!retryResponse.ok) {
+              const errorData = await retryResponse.json();
+              throw new Error(`Failed to fetch Drive files after refresh: ${errorData.error.message}`);
+            }
             const data = await retryResponse.json();
             return data.files;
         } else {
@@ -200,6 +205,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       return data.files;
     } catch (error) {
       console.error('Error fetching Google Drive files:', error);
+      // Re-throw the error so the calling component can handle it (e.g., show a toast)
       throw error;
     }
   };
