@@ -1,4 +1,3 @@
-
 'use client';
 import {
   useState,
@@ -24,7 +23,7 @@ import { setCookie, destroyCookie } from 'nookies';
 export interface UserContextValue {
   user: User | null;
   loading: boolean;
-  signInWithGoogle: () => Promise<UserCredential | undefined>;
+  signInWithGoogle: () => Promise<UserCredential | void>;
   signInWithMicrosoft: () => Promise<void>;
   signOut: () => Promise<void>;
   accessToken: string | null;
@@ -78,32 +77,30 @@ export function UserProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, [auth]);
 
-  const signInWithGoogle = async (): Promise<UserCredential | undefined> => {
-    if (!auth) return;
+  const signInWithGoogle = (): Promise<UserCredential | void> => {
+    if (!auth) return Promise.resolve();
+    
     const provider = new GoogleAuthProvider();
-    // These scopes are now requested on sign-in, ensuring the access token has the right permissions.
     provider.addScope('https://www.googleapis.com/auth/drive.readonly');
     provider.addScope('https://www.googleapis.com/auth/documents.readonly');
     
-    try {
-      const result = await signInWithPopup(auth, provider);
-      // Get the OAuth access token from the credential.
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      if (credential?.accessToken) {
-        setAccessToken(credential.accessToken);
-        // Store it in a cookie for API routes to use.
-        setAuthTokenCookie(credential.accessToken);
-      }
-      // The user state is updated by the onFirebaseAuthStateChanged listener.
-      return result;
-    } catch (error: any) {
-      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
-        // This is not an actual error, so we just return.
-        return;
-      }
-      console.error('Error signing in with Google', error);
-      throw error; // Re-throw for the caller to handle if needed
-    }
+    return signInWithPopup(auth, provider)
+      .then((result) => {
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (credential?.accessToken) {
+          setAccessToken(credential.accessToken);
+          setAuthTokenCookie(credential.accessToken);
+        }
+        return result;
+      })
+      .catch((error: any) => {
+        if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+          console.log(error.message);
+          return;
+        }
+        console.error('Error signing in with Google', error);
+        throw error; // Re-throw for the caller to handle if needed
+      });
   };
 
   const signInWithMicrosoft = async () => {
@@ -137,5 +134,3 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 }
-
-    
