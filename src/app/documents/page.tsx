@@ -73,7 +73,7 @@ const getFileIcon = (mimeType: string, source: 'drive' | 'local') => {
 }
 
 function DocumentsPageContent() {
-  const { user, loading: userLoading, fetchDriveFiles: fetchDriveFilesFromUser } = useUser();
+  const { user, loading: userLoading, fetchDriveFiles } = useUser();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingDrive, setLoadingDrive] = useState(false);
@@ -106,24 +106,24 @@ function DocumentsPageContent() {
   const syncGoogleDrive = useCallback(async () => {
     setLoadingDrive(true);
     try {
-      const driveFiles = await fetchDriveFilesFromUser();
-      if (driveFiles && driveFiles.length > 0) {
-          const formattedDriveFiles: Document[] = driveFiles.map((file: any) => ({
-              id: file.id,
-              name: file.name,
-              modifiedTime: file.modifiedTime,
-              mimeType: file.mimeType,
-              webViewLink: file.webViewLink,
-              icon: getFileIcon(file.mimeType, 'drive'),
-              source: 'drive' as const,
-          }));
-          setDocuments(prevDocs => {
-              const localDocs = prevDocs.filter(d => d.source === 'local');
-              const existingDriveIds = new Set(localDocs.map(d => d.id));
-              const newDriveFiles = formattedDriveFiles.filter(d => !existingDriveIds.has(d.id));
-              return [...localDocs, ...newDriveFiles];
-          });
-      }
+        const driveFiles = await fetchDriveFiles();
+        if (driveFiles && driveFiles.length > 0) {
+            const formattedDriveFiles: Document[] = driveFiles.map((file: any) => ({
+                id: file.id,
+                name: file.name,
+                modifiedTime: file.modifiedTime,
+                mimeType: file.mimeType,
+                webViewLink: file.webViewLink,
+                icon: getFileIcon(file.mimeType, 'drive'),
+                source: 'drive' as const,
+            }));
+            setDocuments(prevDocs => {
+                const localDocs = prevDocs.filter(d => d.source === 'local');
+                const existingDriveIds = new Set(localDocs.map(d => d.id));
+                const newDriveFiles = formattedDriveFiles.filter(d => !existingDriveIds.has(d.id));
+                return [...localDocs, ...newDriveFiles];
+            });
+        }
     } catch (error: any) {
         console.error(error);
         toast({
@@ -134,7 +134,7 @@ function DocumentsPageContent() {
     } finally {
         setLoadingDrive(false);
     }
-  }, [toast, fetchDriveFilesFromUser]);
+  }, [toast, fetchDriveFiles]);
 
   useEffect(() => {
     if (user) {
@@ -391,10 +391,14 @@ function DocumentsPageContent() {
 
 function DocumentsPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-background">
+        <Loader className="animate-spin h-8 w-8 text-primary" />
+      </div>}>
       <DocumentsPageContent />
     </Suspense>
   )
 }
 
 export default withAuth(DocumentsPage);
+
+    
