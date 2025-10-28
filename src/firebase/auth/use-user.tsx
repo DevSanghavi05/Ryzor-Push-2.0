@@ -144,7 +144,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     let currentToken = accessToken;
     
     if (!currentToken) {
-        // If token is missing, try to sign in to get a new one.
         console.warn('No access token, attempting to re-authenticate...');
         await signInWithGoogle();
         const cookies = parseCookies();
@@ -152,7 +151,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
 
     if (!currentToken) {
-      console.error('Could not obtain access token. Please sign in again.');
       // This is an explicit user-facing error because re-auth failed.
       throw new Error('Authentication failed. Please try signing in again.');
     }
@@ -170,29 +168,31 @@ export function UserProvider({ children }: { children: ReactNode }) {
       
       if (response.status === 401) {
         console.log('Access token expired or invalid. Refreshing...');
-        // Token is likely expired, clear it and re-authenticate
         await signOut(); // Clears bad token
-        await signInWithGoogle(); // Gets new token
-        const newCookies = parseCookies();
-        const newToken = newCookies.google_access_token;
+        const result = await signInWithGoogle(); // Gets new token
+        
+        if (result) {
+            const credential = GoogleAuthProvider.credentialFromResult(result);
+            const newToken = credential?.accessToken;
 
-        if(newToken) {
-            // Retry the fetch with the new token
-            const retryResponse = await fetch(
-                "https://www.googleapis.com/drive/v3/files?pageSize=50&fields=files(id,name,mimeType,modifiedTime,webViewLink,iconLink)&q=(mimeType='application/vnd.google-apps.document' or mimeType='application/vnd.google-apps.spreadsheet' or mimeType='application/vnd.google-apps.presentation' or mimeType='application/pdf')",
-                {
-                    headers: { Authorization: `Bearer ${newToken}` },
+            if(newToken) {
+                // Retry the fetch with the new token
+                const retryResponse = await fetch(
+                    "https://www.googleapis.com/drive/v3/files?pageSize=50&fields=files(id,name,mimeType,modifiedTime,webViewLink,iconLink)&q=(mimeType='application/vnd.google-apps.document' or mimeType='application/vnd.google-apps.spreadsheet' or mimeType='application/vnd.google-apps.presentation' or mimeType='application/pdf')",
+                    {
+                        headers: { Authorization: `Bearer ${newToken}` },
+                    }
+                );
+                if (!retryResponse.ok) {
+                  const errorData = await retryResponse.json();
+                  throw new Error(`Failed to fetch Drive files after refresh: ${errorData.error.message}`);
                 }
-            );
-            if (!retryResponse.ok) {
-              const errorData = await retryResponse.json();
-              throw new Error(`Failed to fetch Drive files after refresh: ${errorData.error.message}`);
+                const data = await retryResponse.json();
+                return data.files;
             }
-            const data = await retryResponse.json();
-            return data.files;
-        } else {
-            throw new Error('Failed to refresh authentication token.');
         }
+        
+        throw new Error('Failed to refresh authentication token.');
 
       }
 
