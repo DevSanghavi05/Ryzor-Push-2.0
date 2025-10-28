@@ -24,9 +24,8 @@ const extractTextFromDoc = (doc: any): string => {
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const fileId = params.id;
-  const cookieStore = cookies();
-  const accessToken = cookieStore.get('google_access_token')?.value;
-  const refreshToken = cookieStore.get('google_refresh_token')?.value;
+  const accessToken = cookies().get('google_access_token')?.value;
+  const refreshToken = cookies().get('google_refresh_token')?.value;
 
   if (!fileId) {
     return NextResponse.json({ error: 'Missing file ID' }, { status: 400 });

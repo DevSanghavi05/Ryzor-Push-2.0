@@ -5,9 +5,8 @@ import { google } from 'googleapis';
 import { cookies } from 'next/headers';
 
 export async function GET(req: NextRequest) {
-  const cookieStore = cookies();
-  const accessToken = cookieStore.get('google_access_token')?.value;
-  const refreshToken = cookieStore.get('google_refresh_token')?.value;
+  const accessToken = cookies().get('google_access_token')?.value;
+  const refreshToken = cookies().get('google_refresh_token')?.value;
 
   if (!accessToken || !refreshToken) {
     return NextResponse.json({ error: 'User not authenticated for Google Drive' }, { status: 401 });
