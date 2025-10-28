@@ -142,28 +142,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const fetchDriveFiles = async () => {
     let currentToken = accessToken;
 
-    if (!currentToken) {
-      try {
-        const result = await signInWithGoogle();
-        if(result) {
-            const credential = GoogleAuthProvider.credentialFromResult(result);
-            if (credential?.accessToken) {
-                currentToken = credential.accessToken;
-            }
-        }
-      } catch (error) {
-         console.error('Sign-in failed during fetchDriveFiles:', error);
-         throw new Error('Authentication failed. Please try signing in again.');
-      }
+    if (!user) {
+      throw new Error("User is not signed in.");
     }
 
     if (!currentToken) {
-      console.error('Could not obtain access token. Please sign in again.');
-      // This is an explicit user-facing error because re-auth failed.
-      throw new Error('Authentication failed. Please try signing in again.');
+        // This case can happen if the cookie is cleared but the user is still technically signed in.
+        // We throw a specific error to signal the caller to re-authenticate.
+        throw new Error("Authentication token is missing. Please sign in again.");
     }
-
-
+    
     try {
       const response = await fetch(
         "https://www.googleapis.com/drive/v3/files?pageSize=50&fields=files(id,name,mimeType,modifiedTime,webViewLink,iconLink)&q=(mimeType='application/vnd.google-apps.document' or mimeType='application/vnd.google-apps.spreadsheet' or mimeType='application/vnd.google-apps.presentation' or mimeType='application/pdf')",
@@ -175,36 +163,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
       );
       
       if (response.status === 401) {
-        console.log('Access token expired or invalid. Attempting to re-authenticate...');
-        
-        try {
-            await signOut(); // Force sign out to clear state
-            const result = await signInWithGoogle();
-            if(result) {
-                const credential = GoogleAuthProvider.credentialFromResult(result);
-                const newToken = credential?.accessToken;
-
-                if (newToken) {
-                    const retryResponse = await fetch(
-                        "https://www.googleapis.com/drive/v3/files?pageSize=50&fields=files(id,name,mimeType,modifiedTime,webViewLink,iconLink)&q=(mimeType='application/vnd.google-apps.document' or mimeType='application/vnd.google-apps.spreadsheet' or mimeType='application/vnd.google-apps.presentation' or mimeType='application/pdf')",
-                        {
-                            headers: { Authorization: `Bearer ${newToken}` },
-                        }
-                    );
-                    if (!retryResponse.ok) {
-                      const errorData = await retryResponse.json();
-                      throw new Error(`Failed to fetch Drive files after refresh: ${errorData.error.message}`);
-                    }
-                    const data = await retryResponse.json();
-                    return data.files;
-                }
-            }
-            throw new Error('Could not get new token after re-authentication.');
-
-        } catch (error) {
-            console.error('Re-authentication failed:', error);
-            throw new Error('Failed to refresh authentication token. Please sign out and sign in again.');
-        }
+        // Token is invalid or expired. Throw a specific error to the caller.
+        throw new Error("Authentication token is invalid. Please sign in again.");
       }
 
       if (!response.ok) {
@@ -216,7 +176,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       return data.files;
     } catch (error) {
       console.error('Error fetching Google Drive files:', error);
-      // Re-throw the error so the calling component can handle it (e.g., show a toast)
+      // Re-throw the error so the calling component can handle it
       throw error;
     }
   };
