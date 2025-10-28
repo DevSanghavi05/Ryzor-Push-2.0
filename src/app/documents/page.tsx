@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Header } from '@/components/layout/header';
@@ -158,11 +159,13 @@ function DocumentsPageContent() {
       }
     } catch (error: any) {
         console.error(error);
-        toast({
-            variant: 'destructive',
-            title: 'Could not sync Google Drive',
-            description: error.message || 'There was a problem fetching your files. Please try again.',
-        });
+        if (error.code !== 'auth/popup-closed-by-user') {
+            toast({
+                variant: 'destructive',
+                title: 'Could not sync Google Drive',
+                description: error.message || 'There was a problem fetching your files. Please try again.',
+            });
+        }
     } finally {
         setLoadingDrive(false);
     }
@@ -486,6 +489,8 @@ function DocumentsPage() {
 }
 
 export default withAuth(DocumentsPage);
+
+    
 
     
 
