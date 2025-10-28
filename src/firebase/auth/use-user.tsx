@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -120,7 +119,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   };
 
-
   // --- Sign In with Microsoft (optional) ---
   const signInWithMicrosoft = async () => {
     if (!auth) return;
@@ -150,21 +148,21 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (!user) {
       throw new Error("User is not signed in.");
     }
-    
+
     // Primary mechanism: Use token from state.
     if (!currentToken) {
-        // Fallback: If state is null, try to get from cookies one last time.
-        const cookies = parseCookies();
-        currentToken = cookies.google_access_token || null;
-        if(currentToken) {
-            setAccessToken(currentToken);
-        }
+      // Fallback: If state is null, try to get from cookies one last time.
+      const cookies = parseCookies();
+      currentToken = cookies.google_access_token || null;
+      if (currentToken) {
+        setAccessToken(currentToken);
+      }
     }
 
     if (!currentToken) {
-        throw new Error("Authentication token is missing. Please sign in again.");
+      throw new Error("Authentication token is missing. Please sign in again.");
     }
-    
+
     try {
       const response = await fetch(
         "https://www.googleapis.com/drive/v3/files?pageSize=50&fields=files(id,name,mimeType,modifiedTime,webViewLink,iconLink)&q=(mimeType='application/vnd.google-apps.document' or mimeType='application/vnd.google-apps.spreadsheet' or mimeType='application/vnd.google-apps.presentation' or mimeType='application/pdf')",
@@ -174,7 +172,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
           },
         }
       );
-      
+
       if (response.status === 401) {
         // Token is invalid or expired. Clear it and prompt for re-login.
         clearAuthTokenCookie();
