@@ -13,6 +13,8 @@ import {
   signInWithPopup,
   onAuthStateChanged as onFirebaseAuthStateChanged,
   signOut as firebaseSignOut,
+  getAdditionalUserInfo,
+  OAuthCredential,
 } from 'firebase/auth';
 import { useAuth } from '@/firebase/provider';
 
@@ -46,15 +48,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
-    // This effect only manages the user's login state with Firebase.
-    // The OAuth access token is handled separately during the sign-in flow.
     const unsubscribe = onFirebaseAuthStateChanged(auth, async (user) => {
       setUser(user);
-      if (user) {
-        const idToken = await user.getIdToken();
-        setAccessToken(idToken);
-      } else {
-        // Clear access token on sign out
+      // We no longer get the ID token here. We get the OAuth access token on sign-in.
+      if (!user) {
         setAccessToken(null);
       }
       setLoading(false);
@@ -66,15 +63,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = async () => {
     if (!auth) return;
     const provider = new GoogleAuthProvider();
-    // Add required scopes to get access to Drive and Docs APIs.
     provider.addScope('https://www.googleapis.com/auth/drive.readonly');
     provider.addScope('https://www.googleapis.com/auth/documents.readonly');
     
     try {
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      // This is the crucial part: get the OAuth access token from the credential.
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (credential?.accessToken) {
+        setAccessToken(credential.accessToken);
+      }
       // The user state will be updated by the onFirebaseAuthStateChanged listener
     } catch (error: any) {
-      // Don't log an error if the user simply closes the popup.
       if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
         return;
       }
@@ -85,7 +85,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const signInWithMicrosoft = async () => {
     if (!auth) return;
     const provider = new OAuthProvider('microsoft.com');
-    // Add scopes if necessary for Microsoft services
     try {
       await signInWithPopup(auth, provider);
     } catch (error) {
@@ -97,7 +96,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (!auth) return;
     try {
       await firebaseSignOut(auth);
-      // User state will be cleared by onFirebaseAuthStateChanged listener
     } catch (error) {
       console.error('Error signing out', error);
     }
