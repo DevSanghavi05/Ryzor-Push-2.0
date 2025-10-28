@@ -11,10 +11,6 @@ import { useRef } from 'react';
 import { useUser } from '@/firebase';
 import * as pdfjs from 'pdfjs-dist';
 
-// Required for pdfjs-dist
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.mjs`;
-
-
 type Source = {
   name: string;
   icon: React.ReactNode;
@@ -38,6 +34,11 @@ function AddDocumentPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
   const { user } = useUser();
+
+  // We need to set the workerSrc for pdfjs-dist
+  if (typeof window !== 'undefined') {
+    pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.mjs`;
+  }
 
   const extractTextFromPdf = async (file: File): Promise<string> => {
     const arrayBuffer = await file.arrayBuffer();
@@ -235,3 +236,5 @@ function AddDocumentPage() {
 }
 
 export default withAuth(AddDocumentPage);
+
+    
