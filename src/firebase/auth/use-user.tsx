@@ -81,9 +81,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }, [auth]);
 
   // --- Sign In with Google (with Drive access) ---
-  const signInWithGoogle = (): Promise<UserCredential | void> => {
+  const signInWithGoogle = async (): Promise<UserCredential | void> => {
     if (!auth) {
-      return Promise.resolve();
+      return;
     }
 
     const provider = new GoogleAuthProvider();
@@ -91,29 +91,27 @@ export function UserProvider({ children }: { children: ReactNode }) {
     provider.addScope('https://www.googleapis.com/auth/documents.readonly');
     provider.setCustomParameters({ prompt: 'select_account' });
 
-    return signInWithPopup(auth, provider)
-      .then((result) => {
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        if (credential?.accessToken) {
-          setAccessToken(credential.accessToken);
-          setAuthTokenCookie(credential.accessToken);
-        }
-        return result;
-      })
-      .catch((error: any) => {
-        if (
-          error.code === 'auth/popup-blocked' ||
-          error.code === 'auth/popup-closed-by-user' ||
-          error.code === 'auth/cancelled-popup-request'
-        ) {
-          console.warn(error.message);
-          // Return void for these specific, non-critical errors
-          return;
-        }
-        console.error('Error signing in with Google:', error);
-        // Re-throw other errors so they can be caught by the caller
-        throw error;
-      });
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (credential?.accessToken) {
+        setAccessToken(credential.accessToken);
+        setAuthTokenCookie(credential.accessToken);
+      }
+      return result;
+    } catch (error: any) {
+      if (
+        error.code === 'auth/popup-blocked' ||
+        error.code === 'auth/popup-closed-by-user' ||
+        error.code === 'auth/cancelled-popup-request'
+      ) {
+        console.warn(`Sign-in flow was interrupted: ${error.message}`);
+        return; // Explicitly return undefined, do not re-throw
+      }
+      // For other errors, log them and re-throw to allow callers to handle them.
+      console.error('Error signing in with Google:', error);
+      throw error;
+    }
   };
 
 
@@ -180,6 +178,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         console.log('Access token expired or invalid. Attempting to re-authenticate...');
         
         try {
+            await signOut(); // Force sign out to clear state
             const result = await signInWithGoogle();
             if(result) {
                 const credential = GoogleAuthProvider.credentialFromResult(result);
