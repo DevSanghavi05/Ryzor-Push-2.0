@@ -6,21 +6,19 @@ import { Loader } from 'lucide-react';
 
 export default function withAuth<P extends object>(WrappedComponent: ComponentType<P>) {
   const WithAuthComponent = (props: P) => {
-    const { user, loading, signInWithGoogle } = useUser();
+    const { user, loading } = useUser();
     const router = useRouter();
 
     useEffect(() => {
       if (!loading && !user) {
-        // Instead of routing, just trigger the sign-in.
-        // The `useUser` hook will update the state, and this component will re-render.
-        signInWithGoogle().catch(() => {
-            // If sign-in fails or is dismissed, you might want to redirect.
-            router.push('/');
-        });
+        // If the user is not logged in, redirect them to the homepage
+        // where they can click the sign-in button.
+        router.push('/');
       }
-    }, [user, loading, router, signInWithGoogle]);
+    }, [user, loading, router]);
 
     if (loading || !user) {
+      // Show a loading spinner while we check for the user or during redirection.
       return (
         <div className="flex items-center justify-center min-h-screen bg-background">
           <Loader className="animate-spin h-8 w-8 text-primary" />
@@ -28,6 +26,7 @@ export default function withAuth<P extends object>(WrappedComponent: ComponentTy
       );
     }
 
+    // If the user is logged in, show the component they were trying to access.
     return <WrappedComponent {...props} />;
   };
 
