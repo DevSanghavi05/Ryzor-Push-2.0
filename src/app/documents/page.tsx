@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Header } from '@/components/layout/header';
@@ -93,7 +92,7 @@ const extractTextFromDoc = (doc: any): string => {
 
 
 function DocumentsPageContent() {
-  const { user, loading: userLoading } = useUser();
+  const { user, loading: userLoading, signInWithGoogle } = useUser();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingDrive, setLoadingDrive] = useState(false);
@@ -147,22 +146,27 @@ function DocumentsPageContent() {
             });
         }
       } else if (res.status === 401) {
-          // This just means the user isn't authed with drive, which is fine.
-          console.log('User not authenticated with Google Drive.');
+          // This means the user's token is invalid or missing for the API call.
+          // Let's prompt them to sign in again to refresh it.
+          console.log('Google Drive authentication required. Prompting for sign-in.');
+          await signInWithGoogle();
+          // After sign-in, we can try fetching again.
+          await fetchDriveFiles();
       } else {
-        throw new Error('Failed to fetch Google Drive files.');
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to fetch Google Drive files.');
       }
-    } catch (error) {
+    } catch (error: any) {
         console.error(error);
         toast({
             variant: 'destructive',
             title: 'Could not sync Google Drive',
-            description: 'There was a problem fetching your files. Please try again.',
+            description: error.message || 'There was a problem fetching your files. Please try again.',
         });
     } finally {
         setLoadingDrive(false);
     }
-  }, [toast]);
+  }, [toast, signInWithGoogle]);
 
   useEffect(() => {
     if (user) {
@@ -175,7 +179,8 @@ function DocumentsPageContent() {
   }, [user, fetchLocalFiles, fetchDriveFiles]);
 
   const syncGoogleDrive = async () => {
-    router.push('/api/auth/google/signin');
+    // Now just re-triggers the fetch, which will handle auth.
+    await fetchDriveFiles();
   };
 
   const filteredDocuments = documents
@@ -249,7 +254,8 @@ function DocumentsPageContent() {
     try {
       const response = await fetch(`/api/drive/files/${doc.id}`);
       if (!response.ok) {
-        throw new Error('Failed to fetch document content.');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch document content.');
       }
       const { textContent } = await response.json();
       
@@ -480,5 +486,7 @@ function DocumentsPage() {
 }
 
 export default withAuth(DocumentsPage);
+
+    
 
     

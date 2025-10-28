@@ -15,13 +15,15 @@ import {
   signOut as firebaseSignOut,
   getAdditionalUserInfo,
   OAuthCredential,
+  UserCredential,
 } from 'firebase/auth';
 import { useAuth } from '@/firebase/provider';
+import { setCookie, destroyCookie } from 'nookies';
 
 export interface UserContextValue {
   user: User | null;
   loading: boolean;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: () => Promise<UserCredential | undefined>;
   signInWithMicrosoft: () => Promise<void>;
   signOut: () => Promise<void>;
   accessToken: string | null;
@@ -37,6 +39,21 @@ export function useUser() {
   return context;
 }
 
+// Helper to set a cookie on the client
+const setAuthTokenCookie = (token: string) => {
+    // This cookie is accessible by our API routes.
+    setCookie(null, 'google_access_token', token, {
+      maxAge: 30 * 24 * 60 * 60,
+      path: '/',
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    });
+};
+
+const clearAuthTokenCookie = () => {
+    destroyCookie(null, 'google_access_token', { path: '/' });
+}
+
 export function UserProvider({ children }: { children: ReactNode }) {
   const auth = useAuth();
   const [user, setUser] = useState<User | null>(null);
@@ -50,9 +67,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
     const unsubscribe = onFirebaseAuthStateChanged(auth, async (user) => {
       setUser(user);
-      // We no longer get the ID token here. We get the OAuth access token on sign-in.
       if (!user) {
         setAccessToken(null);
+        clearAuthTokenCookie();
       }
       setLoading(false);
     });
@@ -60,25 +77,31 @@ export function UserProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, [auth]);
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (): Promise<UserCredential | undefined> => {
     if (!auth) return;
     const provider = new GoogleAuthProvider();
+    // These scopes are now requested on sign-in, ensuring the access token has the right permissions.
     provider.addScope('https://www.googleapis.com/auth/drive.readonly');
     provider.addScope('https://www.googleapis.com/auth/documents.readonly');
     
     try {
       const result = await signInWithPopup(auth, provider);
-      // This is the crucial part: get the OAuth access token from the credential.
+      // Get the OAuth access token from the credential.
       const credential = GoogleAuthProvider.credentialFromResult(result);
       if (credential?.accessToken) {
         setAccessToken(credential.accessToken);
+        // Store it in a cookie for API routes to use.
+        setAuthTokenCookie(credential.accessToken);
       }
-      // The user state will be updated by the onFirebaseAuthStateChanged listener
+      // The user state is updated by the onFirebaseAuthStateChanged listener.
+      return result;
     } catch (error: any) {
       if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+        // This is not an actual error, so we just return.
         return;
       }
       console.error('Error signing in with Google', error);
+      throw error; // Re-throw for the caller to handle if needed
     }
   };
 
@@ -96,6 +119,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (!auth) return;
     try {
       await firebaseSignOut(auth);
+      clearAuthTokenCookie();
     } catch (error) {
       console.error('Error signing out', error);
     }
@@ -112,3 +136,5 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 }
+
+    

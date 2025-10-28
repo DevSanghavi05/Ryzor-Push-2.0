@@ -1,8 +1,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getGoogleOAuth2Client } from '@/lib/google-auth';
 import { google } from 'googleapis';
-import { cookies } from 'next/headers';
+import { getAuthenticatedClient } from '@/lib/google-auth-server';
+
 
 // Helper to extract text from a Google Doc response object
 const extractTextFromDoc = (doc: any): string => {
@@ -24,27 +24,17 @@ const extractTextFromDoc = (doc: any): string => {
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const fileId = params.id;
-  const accessToken = cookies().get('google_access_token')?.value;
-  const refreshToken = cookies().get('google_refresh_token')?.value;
 
   if (!fileId) {
     return NextResponse.json({ error: 'Missing file ID' }, { status: 400 });
   }
   
-  if (!accessToken || !refreshToken) {
-    return NextResponse.json({ error: 'User not authenticated for Google API' }, { status: 401 });
-  }
-
-  const oauth2Client = getGoogleOAuth2Client();
-  oauth2Client.setCredentials({
-    access_token: accessToken,
-    refresh_token: refreshToken,
-  });
-
-  const docs = google.docs({ version: 'v1', auth: oauth2Client });
-  const drive = google.drive({ version: 'v3', auth: oauth2Client });
-
   try {
+    const oauth2Client = await getAuthenticatedClient(req);
+    const docs = google.docs({ version: 'v1', auth: oauth2Client });
+    const drive = google.drive({ version: 'v3', auth: oauth2Client });
+
+
     // First, get the mime type to check if it's a Google Doc or something else
     const fileMetadata = await drive.files.get({
         fileId: fileId,
@@ -79,9 +69,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   } catch (error: any) {
     console.error('API Error:', error.response?.data || error.message);
-    if (error.response?.status === 401 || error.response?.status === 403) {
-        return NextResponse.json({ error: 'Google API authentication failed. Please re-sync.' }, { status: 401 });
+    if (error.code === 401 || error.code === 403) {
+        return NextResponse.json({ error: 'Google API authentication failed. Please sign in again.' }, { status: 401 });
     }
     return NextResponse.json({ error: `Failed to fetch document content: ${error.message}` }, { status: 500 });
   }
 }
+
+    
