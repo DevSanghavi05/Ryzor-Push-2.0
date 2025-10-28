@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { FileText, Sheet, Presentation, UploadCloud, FolderUp, ChevronRight } from 'lucide-react';
+import { FileText, Sheet, Presentation, UploadCloud, FolderUp, ChevronRight, Calendar } from 'lucide-react';
 import withAuth from '@/firebase/auth/with-auth';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
@@ -27,6 +27,7 @@ const sources: Source[] = [
   { name: 'Google Docs', icon: <FileText className="w-6 h-6 text-blue-500" />, description: 'Create a new document in Google Docs.', action: 'create', url: 'https://docs.google.com/document/create' },
   { name: 'Google Sheets', icon: <Sheet className="w-6 h-6 text-green-500" />, description: 'Create a new spreadsheet for data analysis.', action: 'create', url: 'https://docs.google.com/spreadsheets/create' },
   { name: 'Google Slides', icon: <Presentation className="w-6 h-6 text-yellow-500" />, description: 'Create a new presentation or slide deck.', action: 'create', url: 'https://docs.google.com/presentation/create' },
+  { name: 'Google Calendar', icon: <Calendar className="w-6 h-6 text-cyan-500" />, description: 'Connect to your Google Calendar.', action: 'create', url: 'https://calendar.google.com' },
   { name: 'Upload File', icon: <UploadCloud className="w-6 h-6 text-purple-500" />, description: 'Upload a single PDF file from your computer.', action: 'upload' },
   { name: 'Upload Folder', icon: <FolderUp className="w-6 h-6 text-orange-500" />, description: 'Upload all PDFs from a selected folder.', action: 'upload-folder' },
 ];
