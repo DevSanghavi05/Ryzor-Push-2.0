@@ -65,9 +65,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     if (!auth) return;
-    // Scopes for Drive are no longer needed here, they are handled
-    // by the dedicated server-side sync flow.
     const provider = new GoogleAuthProvider();
+    // Add required scopes to get access to Drive and Docs APIs.
+    provider.addScope('https://www.googleapis.com/auth/drive.readonly');
+    provider.addScope('https://www.googleapis.com/auth/documents.readonly');
+    
     try {
       await signInWithPopup(auth, provider);
       // The user state will be updated by the onFirebaseAuthStateChanged listener
