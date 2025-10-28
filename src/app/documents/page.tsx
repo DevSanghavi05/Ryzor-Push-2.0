@@ -19,8 +19,6 @@ import {
     Filter,
     HardDriveUpload,
     Wand,
-    Briefcase,
-    Globe,
     RefreshCw
 } from 'lucide-react';
 import Link from 'next/link';
@@ -74,26 +72,8 @@ const getFileIcon = (mimeType: string, source: 'drive' | 'local') => {
     return <File className="w-5 h-5 text-gray-500" />;
 }
 
-// Helper to extract text from a Google Doc response object
-const extractTextFromDoc = (doc: any): string => {
-    let text = '';
-    if (doc.body && doc.body.content) {
-        doc.body.content.forEach((element: any) => {
-            if (element.paragraph) {
-                element.paragraph.elements.forEach((paragraphElement: any) => {
-                    if (paragraphElement.textRun) {
-                        text += paragraphElement.textRun.content;
-                    }
-                });
-            }
-        });
-    }
-    return text;
-};
-
-
 function DocumentsPageContent() {
-  const { user, loading: userLoading, signInWithGoogle } = useUser();
+  const { user, loading: userLoading, fetchDriveFiles: fetchDriveFilesFromUser } = useUser();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingDrive, setLoadingDrive] = useState(false);
@@ -116,75 +96,55 @@ function DocumentsPageContent() {
       id: doc.id,
       name: doc.name,
       modifiedTime: doc.uploaded,
-      mimeType: doc.mimeType || 'application/pdf', // Preserve mimeType if it exists
-      webViewLink: `/documents/${doc.id}`, // All local docs use the local viewer
+      mimeType: doc.mimeType || 'application/pdf',
+      webViewLink: `/documents/${doc.id}`,
       icon: getFileIcon(doc.mimeType || 'application/pdf', 'local'),
       source: 'local' as const,
     }));
   }, [user]);
 
-  const fetchDriveFiles = useCallback(async () => {
+  const syncGoogleDrive = useCallback(async () => {
     setLoadingDrive(true);
     try {
-      const res = await fetch('/api/drive/files');
-      if (res.ok) {
-        const driveFiles = await res.json();
-        if (driveFiles && driveFiles.length > 0) {
-            const formattedDriveFiles: Document[] = driveFiles.map((file: any) => ({
-                id: file.id,
-                name: file.name,
-                modifiedTime: file.modifiedTime,
-                mimeType: file.mimeType,
-                webViewLink: file.webViewLink,
-                icon: getFileIcon(file.mimeType, 'drive'),
-                source: 'drive' as const,
-            }));
-            setDocuments(prevDocs => {
-                const localDocs = prevDocs.filter(d => d.source === 'local');
-                const existingDriveIds = new Set(localDocs.map(d => d.id));
-                const newDriveFiles = formattedDriveFiles.filter(d => !existingDriveIds.has(d.id));
-                return [...localDocs, ...newDriveFiles];
-            });
-        }
-      } else if (res.status === 401) {
-          // This means the user's token is invalid or missing for the API call.
-          // Let's prompt them to sign in again to refresh it.
-          console.log('Google Drive authentication required. Prompting for sign-in.');
-          await signInWithGoogle();
-          // After sign-in, we can try fetching again.
-          await fetchDriveFiles();
-      } else {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to fetch Google Drive files.');
+      const driveFiles = await fetchDriveFilesFromUser();
+      if (driveFiles && driveFiles.length > 0) {
+          const formattedDriveFiles: Document[] = driveFiles.map((file: any) => ({
+              id: file.id,
+              name: file.name,
+              modifiedTime: file.modifiedTime,
+              mimeType: file.mimeType,
+              webViewLink: file.webViewLink,
+              icon: getFileIcon(file.mimeType, 'drive'),
+              source: 'drive' as const,
+          }));
+          setDocuments(prevDocs => {
+              const localDocs = prevDocs.filter(d => d.source === 'local');
+              const existingDriveIds = new Set(localDocs.map(d => d.id));
+              const newDriveFiles = formattedDriveFiles.filter(d => !existingDriveIds.has(d.id));
+              return [...localDocs, ...newDriveFiles];
+          });
       }
     } catch (error: any) {
         console.error(error);
-        if (error.code !== 'auth/popup-closed-by-user') {
-            toast({
-                variant: 'destructive',
-                title: 'Could not sync Google Drive',
-                description: error.message || 'There was a problem fetching your files. Please try again.',
-            });
-        }
+        toast({
+            variant: 'destructive',
+            title: 'Could not sync Google Drive',
+            description: error.message || 'There was a problem fetching your files. Please try again.',
+        });
     } finally {
         setLoadingDrive(false);
     }
-  }, [toast, signInWithGoogle]);
+  }, [toast, fetchDriveFilesFromUser]);
 
   useEffect(() => {
     if (user) {
         setLoading(true);
         const localFiles = fetchLocalFiles();
         setDocuments(localFiles);
-        fetchDriveFiles();
+        syncGoogleDrive();
         setLoading(false);
     }
-  }, [user, fetchLocalFiles, fetchDriveFiles]);
-
-  const syncGoogleDrive = async () => {
-    // Now just re-triggers the fetch, which will handle auth.
-    await fetchDriveFiles();
-  };
+  }, [user, fetchLocalFiles, syncGoogleDrive]);
 
   const filteredDocuments = documents
     .filter(doc => doc.name.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -194,16 +154,6 @@ function DocumentsPageContent() {
         if (filterType === 'drive') return doc.source === 'drive';
         return doc.mimeType.includes(filterType);
     }).sort((a, b) => new Date(b.modifiedTime).getTime() - new Date(a.modifiedTime).getTime());
-
-  const getFileType = (mimeType: string, source: 'drive' | 'local') => {
-    if (source === 'local') return 'Imported File';
-    if (source === 'drive') return 'Google Drive';
-    if (mimeType.includes('pdf')) return 'PDF';
-    if (mimeType.includes('document')) return 'Doc';
-    if (mimeType.includes('spreadsheet')) return 'Sheet';
-    if (mimeType.includes('presentation')) return 'Slides';
-    return 'File';
-  }
 
   const handleCopyLink = (link: string) => {
     navigator.clipboard.writeText(link).then(() => {
@@ -228,7 +178,6 @@ function DocumentsPageContent() {
              localStorage.removeItem(contentKey);
              setDocuments(documents.filter(d => d.id !== showTrashConfirm.id));
         } else {
-            // Here you would call the API to move the Drive file to trash
              toast({ variant: 'destructive', title: "Not Implemented", description: "Deleting Drive files is not yet supported." });
         }
        
@@ -255,55 +204,15 @@ function DocumentsPageContent() {
       });
 
     try {
-      const response = await fetch(`/api/drive/files/${doc.id}`);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch document content.');
-      }
-      const { textContent } = await response.json();
-      
-      if (!textContent.trim()) {
-        toast({ variant: 'destructive', title: "Import Failed", description: "The document appears to be empty." });
-        return;
-      }
-
-      if (!user) return;
-      
-      const newDocument = {
-        id: doc.id,
-        name: doc.name,
-        uploaded: new Date().toISOString(),
-        textContent: textContent,
-        mimeType: doc.mimeType,
-      };
-
-      const storageKey = `documents_${user.uid}`;
-      let existingDocuments = JSON.parse(localStorage.getItem(storageKey) || '[]');
-      
-      const docIndex = existingDocuments.findIndex((d: any) => d.id === doc.id);
-      if (docIndex > -1) {
-        existingDocuments[docIndex] = newDocument;
-      } else {
-        existingDocuments = [newDocument, ...existingDocuments];
-      }
-      localStorage.setItem(storageKey, JSON.stringify(existingDocuments));
-
-      toast({
-        title: "Document Ready",
-        description: `${doc.name} content is now available for chat.`,
+      // The API route is no longer needed, we'd call a new function to get content
+      // This part needs a new implementation to get content for a specific file
+      // For now, let's simulate it.
+       toast({
+        variant: 'destructive',
+        title: "Import Not Fully Implemented",
+        description: "Fetching content for analysis is not connected yet.",
       });
 
-      // Visually refresh list to show it's "local" now.
-      setDocuments(prevDocs => {
-        const otherDocs = prevDocs.filter(d => d.id !== doc.id);
-        const updatedDoc: Document = {
-          ...doc,
-          source: 'local',
-          webViewLink: `/documents/${doc.id}`,
-          icon: getFileIcon(doc.mimeType, 'local'),
-        };
-        return [...otherDocs, updatedDoc].sort((a,b) => new Date(b.modifiedTime).getTime() - new Date(a.modifiedTime).getTime());
-      });
 
     } catch (error: any) {
       console.error("Error importing Google Doc:", error);
@@ -489,9 +398,3 @@ function DocumentsPage() {
 }
 
 export default withAuth(DocumentsPage);
-
-    
-
-    
-
-    
