@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -42,7 +43,7 @@ export function useUser() {
 // --- Cookie Helpers ---
 const setAuthTokenCookie = (token: string) => {
   setCookie(null, 'google_access_token', token, {
-    maxAge: 30 * 24 * 60 * 60,
+    maxAge: 3600, // 1 hour
     path: '/',
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
@@ -73,12 +74,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
       if (!user) {
         setAccessToken(null);
         clearAuthTokenCookie();
+      } else {
+        // When user is confirmed, ensure token is loaded from cookie if not already in state
+        const cookies = parseCookies();
+        if (cookies.google_access_token && !accessToken) {
+          setAccessToken(cookies.google_access_token);
+        }
       }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [auth]);
+  }, [auth, accessToken]);
 
   // --- Sign In with Google (with Drive access) ---
   const signInWithGoogle = async (): Promise<UserCredential | void> => {
@@ -106,11 +113,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
         error.code === 'auth/cancelled-popup-request'
       ) {
         console.warn(`Sign-in flow was interrupted: ${error.message}`);
-        return; // Explicitly return undefined, do not re-throw
+        return; // Do not re-throw, just exit.
       }
-      // For other errors, log them and re-throw to allow callers to handle them.
       console.error('Error signing in with Google:', error);
-      throw error;
+      throw error; // Re-throw other errors
     }
   };
 
@@ -131,8 +137,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (!auth) return;
     try {
       await firebaseSignOut(auth);
-      clearAuthTokenCookie();
-      setAccessToken(null);
+      // State and cookies are cleared by the onAuthStateChanged listener
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -145,10 +150,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (!user) {
       throw new Error("User is not signed in.");
     }
+    
+    // Primary mechanism: Use token from state.
+    if (!currentToken) {
+        // Fallback: If state is null, try to get from cookies one last time.
+        const cookies = parseCookies();
+        currentToken = cookies.google_access_token || null;
+        if(currentToken) {
+            setAccessToken(currentToken);
+        }
+    }
 
     if (!currentToken) {
-        // This case can happen if the cookie is cleared but the user is still technically signed in.
-        // We throw a specific error to signal the caller to re-authenticate.
         throw new Error("Authentication token is missing. Please sign in again.");
     }
     
@@ -163,21 +176,22 @@ export function UserProvider({ children }: { children: ReactNode }) {
       );
       
       if (response.status === 401) {
-        // Token is invalid or expired. Throw a specific error to the caller.
-        throw new Error("Authentication token is invalid. Please sign in again.");
+        // Token is invalid or expired. Clear it and prompt for re-login.
+        clearAuthTokenCookie();
+        setAccessToken(null);
+        throw new Error("Authentication token is invalid. Please sign in again to refresh it.");
       }
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(`Failed to fetch Drive files: ${errorData.error.message}`);
+        throw new Error(`Failed to fetch Drive files: ${errorData.error?.message || 'Unknown error'}`);
       }
 
       const data = await response.json();
       return data.files;
     } catch (error) {
       console.error('Error fetching Google Drive files:', error);
-      // Re-throw the error so the calling component can handle it
-      throw error;
+      throw error; // Re-throw the error so the calling component can handle it
     }
   };
 
