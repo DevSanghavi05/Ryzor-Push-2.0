@@ -116,6 +116,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       });
   };
 
+
   // --- Sign In with Microsoft (optional) ---
   const signInWithMicrosoft = async () => {
     if (!auth) return;
@@ -142,15 +143,24 @@ export function UserProvider({ children }: { children: ReactNode }) {
   // --- Fetch Google Drive Files ---
   const fetchDriveFiles = async () => {
     let currentToken = accessToken;
-    
+
     if (!currentToken) {
-        console.warn('No access token, attempting to re-authenticate...');
-        await signInWithGoogle();
-        const cookies = parseCookies();
-        currentToken = cookies.google_access_token || null;
+      try {
+        const result = await signInWithGoogle();
+        if(result) {
+            const credential = GoogleAuthProvider.credentialFromResult(result);
+            if (credential?.accessToken) {
+                currentToken = credential.accessToken;
+            }
+        }
+      } catch (error) {
+         console.error('Sign-in failed during fetchDriveFiles:', error);
+         throw new Error('Authentication failed. Please try signing in again.');
+      }
     }
 
     if (!currentToken) {
+      console.error('Could not obtain access token. Please sign in again.');
       // This is an explicit user-facing error because re-auth failed.
       throw new Error('Authentication failed. Please try signing in again.');
     }
@@ -167,33 +177,35 @@ export function UserProvider({ children }: { children: ReactNode }) {
       );
       
       if (response.status === 401) {
-        console.log('Access token expired or invalid. Refreshing...');
-        await signOut(); // Clears bad token
-        const result = await signInWithGoogle(); // Gets new token
+        console.log('Access token expired or invalid. Attempting to re-authenticate...');
         
-        if (result) {
-            const credential = GoogleAuthProvider.credentialFromResult(result);
-            const newToken = credential?.accessToken;
+        try {
+            const result = await signInWithGoogle();
+            if(result) {
+                const credential = GoogleAuthProvider.credentialFromResult(result);
+                const newToken = credential?.accessToken;
 
-            if(newToken) {
-                // Retry the fetch with the new token
-                const retryResponse = await fetch(
-                    "https://www.googleapis.com/drive/v3/files?pageSize=50&fields=files(id,name,mimeType,modifiedTime,webViewLink,iconLink)&q=(mimeType='application/vnd.google-apps.document' or mimeType='application/vnd.google-apps.spreadsheet' or mimeType='application/vnd.google-apps.presentation' or mimeType='application/pdf')",
-                    {
-                        headers: { Authorization: `Bearer ${newToken}` },
+                if (newToken) {
+                    const retryResponse = await fetch(
+                        "https://www.googleapis.com/drive/v3/files?pageSize=50&fields=files(id,name,mimeType,modifiedTime,webViewLink,iconLink)&q=(mimeType='application/vnd.google-apps.document' or mimeType='application/vnd.google-apps.spreadsheet' or mimeType='application/vnd.google-apps.presentation' or mimeType='application/pdf')",
+                        {
+                            headers: { Authorization: `Bearer ${newToken}` },
+                        }
+                    );
+                    if (!retryResponse.ok) {
+                      const errorData = await retryResponse.json();
+                      throw new Error(`Failed to fetch Drive files after refresh: ${errorData.error.message}`);
                     }
-                );
-                if (!retryResponse.ok) {
-                  const errorData = await retryResponse.json();
-                  throw new Error(`Failed to fetch Drive files after refresh: ${errorData.error.message}`);
+                    const data = await retryResponse.json();
+                    return data.files;
                 }
-                const data = await retryResponse.json();
-                return data.files;
             }
-        }
-        
-        throw new Error('Failed to refresh authentication token.');
+            throw new Error('Could not get new token after re-authentication.');
 
+        } catch (error) {
+            console.error('Re-authentication failed:', error);
+            throw new Error('Failed to refresh authentication token. Please sign out and sign in again.');
+        }
       }
 
       if (!response.ok) {
