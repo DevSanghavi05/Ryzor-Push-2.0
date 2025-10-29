@@ -319,31 +319,28 @@ function DocumentsPageContent() {
 
   const confirmTrash = () => {
     if (!showTrashConfirm || !user) return;
-
-    const trashKey = `trash_${user.uid}`;
+  
     const docsKey = `documents_${user.uid}`;
-
-    // 1. Get the document to be moved
-    const docToTrash = documents.find(d => d.id === showTrashConfirm.id && d.source === showTrashConfirm.source);
-    if (!docToTrash) return;
-
-    // 2. Add it to the trash in local storage
-    const existingTrash = JSON.parse(localStorage.getItem(trashKey) || '[]');
-    localStorage.setItem(trashKey, JSON.stringify([docToTrash, ...existingTrash]));
     
-    // 3. Remove it from the main documents list in state
+    // Remove from the main documents list in state
     const updatedDocuments = documents.filter(d => !(d.id === showTrashConfirm.id && d.source === showTrashConfirm.source));
     setDocuments(updatedDocuments);
+  
+    // If it's a local or imported file, it must be removed from the 'documents' storage as well
+    if (showTrashConfirm.isImported || showTrashConfirm.source === 'local') {
+        const existingDocs = JSON.parse(localStorage.getItem(docsKey) || '[]');
+        const updatedStoredDocs = existingDocs.filter((d: any) => d.id !== showTrashConfirm.id);
+        localStorage.setItem(docsKey, JSON.stringify(updatedStoredDocs));
 
-    // 4. If it's a local or imported file, remove it from the 'documents' storage as well
-    if (docToTrash.source === 'local' || docToTrash.isImported) {
-      const existingDocs = JSON.parse(localStorage.getItem(docsKey) || '[]');
-      const updatedStoredDocs = existingDocs.filter((d: any) => d.id !== showTrashConfirm.id);
-      localStorage.setItem(docsKey, JSON.stringify(updatedStoredDocs));
-      // Also remove content to clean up
-      localStorage.removeItem(`document_content_${showTrashConfirm.id}`);
+        // Also remove the content file to clean up storage
+        localStorage.removeItem(`document_content_${showTrashConfirm.id}`);
     }
-    
+  
+    // Add to a separate trash list if needed (optional, for undo functionality)
+    // const trashKey = `trash_${user.uid}`;
+    // const existingTrash = JSON.parse(localStorage.getItem(trashKey) || '[]');
+    // localStorage.setItem(trashKey, JSON.stringify([showTrashConfirm, ...existingTrash]));
+  
     toast({
         title: "Moved to Trash",
         description: `${showTrashConfirm.name} has been moved to trash.`,
