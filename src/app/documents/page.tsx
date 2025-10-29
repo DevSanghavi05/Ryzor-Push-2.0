@@ -76,7 +76,7 @@ const getFileIcon = (mimeType: string, source: 'drive' | 'local') => {
 }
 
 function DocumentsPageContent() {
-  const { user, loading: userLoading, fetchDriveFiles, accessToken } = useUser();
+  const { user, loading: userLoading, fetchDriveFiles, accessToken, signInWithGoogle } = useUser();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingDrive, setLoadingDrive] = useState(false);
@@ -308,7 +308,7 @@ function DocumentsPageContent() {
   };
 
   return (
-    <div className="flex flex-col min-h-dvh bg-background relative">
+    <div className="flex flex-col min-h-dvh bg-background relative pt-16">
       <div className="bg-aurora"></div>
       <main className="flex-1 p-4 md:p-6 relative">
       <TooltipProvider>

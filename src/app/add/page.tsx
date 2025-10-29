@@ -185,9 +185,9 @@ function AddDocumentPage() {
   };
 
   return (
-    <div className="relative min-h-screen w-full">
+    <div className="relative min-h-screen w-full pt-16">
       <div className="bg-aurora"></div>
-      <div className="relative container mx-auto py-12 pt-16">
+      <div className="relative container mx-auto py-12">
         <input
           type="file"
           ref={fileInputRef}

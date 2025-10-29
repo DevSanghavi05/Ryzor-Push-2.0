@@ -5,9 +5,9 @@ import Link from 'next/link';
 
 export default function AboutPage() {
   return (
-    <div className="relative min-h-screen w-full">
+    <div className="relative min-h-screen w-full pt-16">
       <div className="bg-aurora"></div>
-      <div className="relative container mx-auto py-12 px-4 md:px-6 pt-16">
+      <div className="relative container mx-auto py-12 px-4 md:px-6">
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">About Ryzor AI</h1>
           <p className="mt-4 text-lg text-muted-foreground max-w-3xl mx-auto">
