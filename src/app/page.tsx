@@ -105,7 +105,7 @@ function LoggedInView() {
   };
 
   return (
-    <div className="flex flex-col w-full h-full relative overflow-hidden pt-24">
+    <div className="flex flex-col w-full h-full relative overflow-hidden pt-16">
       {/* Consistent Background */}
       <div className="bg-aurora"></div>
 
@@ -307,6 +307,3 @@ export default function Home() {
 
   return user ? <LoggedInView /> : <LandingPage />;
 }
-
-
-    

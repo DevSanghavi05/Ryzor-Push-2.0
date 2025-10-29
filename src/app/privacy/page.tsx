@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="container mx-auto py-12 px-4 md:px-6 pt-24">
+    <div className="container mx-auto py-12 px-4 md:px-6 pt-16">
       <Card className="max-w-4xl mx-auto">
         <CardHeader>
           <CardTitle className="text-3xl font-headline">Privacy Policy for Ryzor AI</CardTitle>
@@ -59,5 +59,3 @@ export default function PrivacyPolicyPage() {
     </div>
   );
 }
-
-    

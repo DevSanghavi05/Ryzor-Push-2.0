@@ -7,7 +7,7 @@ import { FileText, Sheet, Presentation, UploadCloud, FolderUp, ChevronRight, Cal
 import withAuth from '@/firebase/auth/with-auth';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { useUser } from '@/firebase';
 import * as pdfjs from 'pdfjs-dist';
 
@@ -36,9 +36,11 @@ function AddDocumentPage() {
   const { user } = useUser();
 
   // We need to set the workerSrc for pdfjs-dist
-  if (typeof window !== 'undefined') {
-    pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.mjs`;
-  }
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.mjs`;
+    }
+  }, []);
 
   const extractTextFromPdf = async (file: File): Promise<string> => {
     const arrayBuffer = await file.arrayBuffer();
@@ -185,7 +187,7 @@ function AddDocumentPage() {
   return (
     <div className="relative min-h-screen w-full">
       <div className="bg-aurora"></div>
-      <div className="relative container mx-auto py-12 pt-24">
+      <div className="relative container mx-auto py-12 pt-16">
         <input
           type="file"
           ref={fileInputRef}
@@ -236,5 +238,3 @@ function AddDocumentPage() {
 }
 
 export default withAuth(AddDocumentPage);
-
-    

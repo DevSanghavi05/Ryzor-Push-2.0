@@ -253,7 +253,7 @@ function DocumentsPageContent() {
   return (
     <div className="flex flex-col min-h-dvh bg-background relative">
       <div className="bg-aurora"></div>
-      <main className="flex-1 p-4 md:p-6 relative pt-24">
+      <main className="flex-1 p-4 md:p-6 relative pt-16">
       <TooltipProvider>
         <div className="container mx-auto">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
@@ -414,13 +414,9 @@ function DocumentsPageContent() {
 }
 
 function DocumentsPage() {
-  return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-background">
-        <Loader className="animate-spin h-8 w-8 text-primary" />
-      </div>}>
+    return (
       <DocumentsPageContent />
-    </Suspense>
-  )
+    )
 }
 
 export default withAuth(DocumentsPage);

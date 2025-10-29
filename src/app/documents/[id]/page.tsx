@@ -47,7 +47,7 @@ export default function DocumentPage() {
   return (
     <div className="flex flex-col min-h-dvh bg-background relative">
         <div className="bg-aurora"></div>
-        <main className="flex-1 flex flex-col p-4 md:p-6 gap-6 relative pt-24">
+        <main className="flex-1 flex flex-col p-4 md:p-6 gap-6 relative pt-16">
             <div className="container mx-auto">
             <div>
                 <Button asChild variant="ghost">
