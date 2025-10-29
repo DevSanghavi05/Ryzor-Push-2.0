@@ -39,7 +39,7 @@ export default function LoginPage() {
     } catch (error: any) {
       let description = 'An unknown error occurred. Please try again.';
       if (error.code === 'auth/invalid-credential') {
-        description = 'The email or password you entered is incorrect. If you previously signed in with Google or Microsoft, please use that method instead.';
+        description = 'The email or password you entered is incorrect. If you previously signed in with Google or Microsoft, please use that method instead, or create a new account by signing up.';
       } else {
         description = error.message;
       }
