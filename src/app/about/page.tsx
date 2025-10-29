@@ -11,7 +11,7 @@ export default function AboutPage() {
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">About Ryzor AI</h1>
           <p className="mt-4 text-lg text-muted-foreground max-w-3xl mx-auto">
-            Unlock the collective intelligence of your documents. Ryzor AI transforms your static files into a dynamic knowledge base you can converse with.
+            Ryzor AI instantly transforms your scattered digital life into a unified, intelligent brain you can talk to. Seamlessly sync documents from both your work and personal accounts—whether it's PDFs from your desktop or files from your Google Drive—and ask complex questions to get immediate, synthesized answers. Need to share your findings? You can make documents public with a single click. We handle the chaos of finding information so you can focus on understanding it. Stop searching, start knowing.
           </p>
         </div>
 
