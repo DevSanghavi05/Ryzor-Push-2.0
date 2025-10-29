@@ -127,6 +127,7 @@ function DocumentsPageContent() {
   }, [user]);
 
   const syncGoogleDrive = async (existingImportedIds?: Set<string>) => {
+    if (!user) return;
     setLoadingDrive(true);
     let importedIds = existingImportedIds;
     if (!importedIds) {
@@ -309,7 +310,7 @@ function DocumentsPageContent() {
   return (
     <div className="flex flex-col min-h-dvh bg-background relative">
       <div className="bg-aurora"></div>
-      <main className="flex-1 p-4 md:p-6 relative pt-16">
+      <main className="flex-1 p-4 md:p-6 relative">
       <TooltipProvider>
         <div className="container mx-auto">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
