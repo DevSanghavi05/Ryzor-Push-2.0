@@ -10,7 +10,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { GoogleAuth } from 'google-auth-library';
 
 // Define Zod schemas for input and output
 const ExtractGoogleDocContentInputSchema = z.object({
@@ -43,20 +42,13 @@ const extractGoogleDocContentFlow = ai.defineFlow(
     const { fileId, mimeType, accessToken } = input;
     let content = '';
 
-    const auth = new GoogleAuth();
-    const oauth2Client = auth.fromJSON({
-      type: 'authorized_user',
-      client_id: '', // Not needed for user-provided token
-      client_secret: '', // Not needed
-      refresh_token: '', // Not provided
-    });
-    oauth2Client.setCredentials({ access_token: accessToken });
+    const authHeader = { 'Authorization': `Bearer ${accessToken}` };
 
     try {
       if (mimeType.includes('document')) {
         // Google Docs
         const docsResponse = await fetch(`https://docs.googleapis.com/v1/documents/${fileId}`, {
-          headers: { 'Authorization': `Bearer ${accessToken}` }
+          headers: authHeader
         });
         if (!docsResponse.ok) throw new Error(`Google Docs API error: ${docsResponse.statusText}`);
         const doc = await docsResponse.json();
@@ -70,7 +62,7 @@ const extractGoogleDocContentFlow = ai.defineFlow(
       } else if (mimeType.includes('spreadsheet')) {
         // Google Sheets
         const sheetsResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${fileId}?includeGridData=true`, {
-            headers: { 'Authorization': `Bearer ${accessToken}` }
+            headers: authHeader
         });
         if (!sheetsResponse.ok) throw new Error(`Google Sheets API error: ${sheetsResponse.statusText}`);
         const sheet = await sheetsResponse.json();
@@ -86,7 +78,7 @@ const extractGoogleDocContentFlow = ai.defineFlow(
       } else if (mimeType.includes('presentation')) {
         // Google Slides
         const slidesResponse = await fetch(`https://slides.googleapis.com/v1/presentations/${fileId}`, {
-            headers: { 'Authorization': `Bearer ${accessToken}` }
+            headers: authHeader
         });
         if (!slidesResponse.ok) throw new Error(`Google Slides API error: ${slidesResponse.statusText}`);
         const presentation = await slidesResponse.json();
