@@ -63,6 +63,9 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+      },
       keyframes: {
         'accordion-down': {
           from: {
@@ -76,7 +79,7 @@ export default {
           from: {
             height: 'var(--radix-accordion-content-height)',
           },
-          to: {
+to: {
             height: '0',
           },
         },
@@ -103,6 +106,11 @@ export default {
         pan: {
             '0%': { backgroundPosition: '0% 0%' },
             '100%': { backgroundPosition: '100% 100%' },
+        },
+        hyperdrive: {
+          '0%': { transform: 'scale(1)', opacity: 1 },
+          '50%': { transform: 'scale(1.2)', opacity: 0.8 },
+          '100%': { transform: 'scale(1)', opacity: 1 },
         }
       },
       animation: {
@@ -110,7 +118,8 @@ export default {
         'accordion-up': 'accordion-up 0.2s ease-out',
         'fade-in-down': 'fade-in-down 0.5s ease-out',
         'fade-in-up': 'fade-in-up 0.5s ease-out',
-        'pan': 'pan 120s linear infinite'
+        'pan': 'pan 120s linear infinite',
+        'hyperdrive': 'hyperdrive 2s ease-in-out infinite',
       },
     },
   },
@@ -118,5 +127,3 @@ export default {
     require('tailwindcss-animate'),
   ],
 } satisfies Config;
-
-    

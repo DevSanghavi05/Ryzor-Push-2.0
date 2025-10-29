@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Header } from '@/components/layout/header';
@@ -55,6 +54,7 @@ import {
 } from "@/components/ui/select"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { extractGoogleDocContent } from '@/ai/flows/extract-google-doc-content';
+import { HyperdriveAnimation } from '@/components/ui/hyperdrive-animation';
 
 type Document = {
   id: string;
@@ -83,6 +83,7 @@ function DocumentsPageContent() {
   const [loadingDrive, setLoadingDrive] = useState(false);
   const [importingDocId, setImportingDocId] = useState<string | null>(null);
   const [isImportingAll, setIsImportingAll] = useState(false);
+  const [isImportSuccess, setIsImportSuccess] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
   const searchParams = useSearchParams();
@@ -251,10 +252,12 @@ function DocumentsPageContent() {
     }
 
     setIsImportingAll(true);
+    setIsImportSuccess(false);
     let successCount = 0;
     
     toast({ title: 'Starting Bulk Import...', description: `Importing ${docsToImport.length} documents.`});
     
+    // Using a for...of loop to ensure sequential execution
     for (const doc of docsToImport) {
         const success = await importDocument(doc);
         if (success) {
@@ -262,11 +265,17 @@ function DocumentsPageContent() {
         }
     }
 
-    setIsImportingAll(false);
+    setIsImportSuccess(true);
     toast({
         title: 'Bulk Import Complete',
         description: `Successfully imported ${successCount} out of ${docsToImport.length} documents.`,
     });
+
+    // Hide the animation overlay after a short delay
+    setTimeout(() => {
+      setIsImportingAll(false);
+      setIsImportSuccess(false);
+    }, 2000);
   };
 
   const docsToImportCount = documents.filter(doc => doc.source === 'drive' && !doc.isImported).length;
@@ -342,6 +351,7 @@ function DocumentsPageContent() {
     <div className="flex flex-col min-h-dvh bg-background relative pt-16">
       <div className="bg-aurora"></div>
       <main className="flex-1 p-4 md:p-6 relative">
+      <HyperdriveAnimation isImporting={isImportingAll} isSuccess={isImportSuccess} />
       <TooltipProvider>
         <div className="container mx-auto">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
@@ -516,5 +526,3 @@ function DocumentsPage() {
 }
 
 export default withAuth(DocumentsPage);
-
-    
