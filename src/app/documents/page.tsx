@@ -404,7 +404,7 @@ function DocumentsPageContent() {
 
 
   return (
-    <div className="flex flex-col min-h-dvh bg-background relative pt-16">
+    <div className="relative min-h-dvh w-full pt-16">
       <div className="bg-aurora"></div>
       <main className="flex-1 p-4 md:p-6 relative">
       <HyperdriveAnimation isImporting={isImportingAll} isSuccess={isImportSuccess} />
@@ -612,6 +612,8 @@ function DocumentsPage() {
 }
 
 export default withAuth(DocumentsPage);
+
+    
 
     
 
