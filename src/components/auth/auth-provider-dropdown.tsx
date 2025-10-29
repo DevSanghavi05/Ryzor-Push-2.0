@@ -45,10 +45,14 @@ const MicrosoftIcon = () => (
 
 
 export function AuthProviderDropdown({ isHeader = false }: { isHeader?: boolean }) {
-  const { signInWithGoogle } = useUser();
+  const { signInWithGoogle, signInWithMicrosoft } = useUser();
 
-  const handleSignIn = (accountType: AccountType) => {
+  const handleGoogleSignIn = (accountType: AccountType) => {
     signInWithGoogle(accountType);
+  }
+
+  const handleMicrosoftSignIn = (accountType: AccountType) => {
+    signInWithMicrosoft(accountType);
   }
 
   return (
@@ -66,17 +70,26 @@ export function AuthProviderDropdown({ isHeader = false }: { isHeader?: boolean 
         )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => handleSignIn('work')}>
+        <DropdownMenuItem onClick={() => handleGoogleSignIn('work')}>
             <GoogleIcon />
             <Briefcase className="mr-2 h-4 w-4"/>
             <span>Sign in with Google (Work)</span>
         </DropdownMenuItem>
-         <DropdownMenuItem onClick={() => handleSignIn('personal')}>
+         <DropdownMenuItem onClick={() => handleGoogleSignIn('personal')}>
             <GoogleIcon />
             <User className="mr-2 h-4 w-4"/>
             <span>Sign in with Google (Personal)</span>
         </DropdownMenuItem>
-        {/* Microsoft sign-in can be added here with similar multi-account logic if needed */}
+        <DropdownMenuItem onClick={() => handleMicrosoftSignIn('work')}>
+            <MicrosoftIcon />
+            <Briefcase className="mr-2 h-4 w-4"/>
+            <span>Sign in with Microsoft (Work)</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleMicrosoftSignIn('personal')}>
+            <MicrosoftIcon />
+            <User className="mr-2 h-4 w-4"/>
+            <span>Sign in with Microsoft (Personal)</span>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

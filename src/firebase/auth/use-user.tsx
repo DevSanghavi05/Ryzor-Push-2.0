@@ -27,7 +27,7 @@ export interface UserContextValue {
   user: User | null;
   loading: boolean;
   signInWithGoogle: (accountType: AccountType) => Promise<UserCredential | void>;
-  signInWithMicrosoft: () => Promise<void>;
+  signInWithMicrosoft: (accountType: AccountType) => Promise<UserCredential | void>;
   signOut: () => Promise<void>;
   workAccessToken: string | null;
   personalAccessToken: string | null;
@@ -45,8 +45,8 @@ export function useUser() {
 }
 
 // --- Cookie Helpers ---
-const setAuthTokenCookie = (token: string, accountType: AccountType) => {
-  const cookieName = `google_access_token_${accountType}`;
+const setAuthTokenCookie = (token: string, provider: 'google' | 'microsoft', accountType: AccountType) => {
+  const cookieName = `${provider}_access_token_${accountType}`;
   setCookie(null, cookieName, token, {
     maxAge: 3600, // 1 hour
     path: '/',
@@ -58,6 +58,8 @@ const setAuthTokenCookie = (token: string, accountType: AccountType) => {
 const clearAuthTokenCookies = () => {
   destroyCookie(null, 'google_access_token_work', { path: '/' });
   destroyCookie(null, 'google_access_token_personal', { path: '/' });
+  destroyCookie(null, 'microsoft_access_token_work', { path: '/' });
+  destroyCookie(null, 'microsoft_access_token_personal', { path: '/' });
 };
 
 
@@ -68,11 +70,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
   
   const [workAccessToken, setWorkAccessToken] = useState<string | null>(() => {
     const cookies = parseCookies();
-    return cookies.google_access_token_work || null;
+    return cookies.google_access_token_work || cookies.microsoft_access_token_work || null;
   });
   const [personalAccessToken, setPersonalAccessToken] = useState<string | null>(() => {
     const cookies = parseCookies();
-    return cookies.google_access_token_personal || null;
+    return cookies.google_access_token_personal || cookies.microsoft_access_token_personal || null;
   });
 
   // --- Listen to Auth State ---
@@ -92,8 +94,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
         if (cookies.google_access_token_work && !workAccessToken) {
           setWorkAccessToken(cookies.google_access_token_work);
         }
+         if (cookies.microsoft_access_token_work && !workAccessToken) {
+          setWorkAccessToken(cookies.microsoft_access_token_work);
+        }
         if (cookies.google_access_token_personal && !personalAccessToken) {
           setPersonalAccessToken(cookies.google_access_token_personal);
+        }
+         if (cookies.microsoft_access_token_personal && !personalAccessToken) {
+          setPersonalAccessToken(cookies.microsoft_access_token_personal);
         }
       }
       setLoading(false);
@@ -126,7 +134,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         } else {
           setPersonalAccessToken(token);
         }
-        setAuthTokenCookie(token, accountType);
+        setAuthTokenCookie(token, 'google', accountType);
       }
       // If this is the first sign-in, set the primary user object
       if (!user) {
@@ -148,16 +156,47 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   }, [auth, user]);
 
-  // --- Sign In with Microsoft (optional) ---
-  const signInWithMicrosoft = async () => {
+  // --- Sign In with Microsoft (with OneDrive/365 access) ---
+  const signInWithMicrosoft = useCallback(async (accountType: AccountType): Promise<UserCredential | void> => {
     if (!auth) return;
     const provider = new OAuthProvider('microsoft.com');
+    // Add scopes for Microsoft Graph API
+    provider.addScope('Files.Read.All');
+    provider.addScope('User.Read');
+    provider.addScope('Mail.Read');
+    provider.addScope('Calendars.Read');
+    
     try {
-      await signInWithPopup(auth, provider);
-    } catch (error) {
+      const result = await signInWithPopup(auth, provider);
+      const credential = OAuthProvider.credentialFromResult(result);
+
+      if (credential?.accessToken) {
+        const token = credential.accessToken;
+        if (accountType === 'work') {
+          setWorkAccessToken(token);
+        } else {
+          setPersonalAccessToken(token);
+        }
+        setAuthTokenCookie(token, 'microsoft', accountType);
+      }
+      
+      if (!user) {
+        setUser(result.user);
+      }
+      return result;
+    } catch (error: any) {
+      if (
+        error.code === 'auth/popup-blocked' ||
+        error.code === 'auth/popup-closed-by-user' ||
+        error.code === 'auth/cancelled-popup-request'
+      ) {
+        console.warn(`Microsoft sign-in flow for ${accountType} account was interrupted: ${error.message}`);
+        return;
+      }
       console.error('Error signing in with Microsoft:', error);
+      throw error;
     }
-  };
+  }, [auth, user]);
 
   // --- Sign Out ---
   const signOut = async () => {
