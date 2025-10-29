@@ -71,13 +71,12 @@ function LoggedInView() {
       setMessages(prev => [...prev, { role: 'model', content: '' }]);
       
       const reader = stream.getReader();
-      const decoder = new TextDecoder();
       
       let done = false;
       while (!done) {
           const { value, done: readerDone } = await reader.read();
           done = readerDone;
-          const chunk = decoder.decode(value, { stream: true });
+          const chunk = value || ''; // The value is already a string
           fullResponse += chunk;
           setMessages(prev => {
               const newMsgs = [...prev];
