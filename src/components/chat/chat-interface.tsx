@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Paperclip, Send, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { useUser } from '@/firebase';
-import { AuthProviderDropdown } from '@/components/auth/auth-provider-dropdown';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';

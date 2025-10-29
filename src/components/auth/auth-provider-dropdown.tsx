@@ -2,9 +2,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { useUser, AccountType } from '@/firebase';
-import { Briefcase } from 'lucide-react';
-import Link from 'next/link';
+import { useUser } from '@/firebase';
 
 const GoogleIcon = () => (
     <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2">
@@ -42,23 +40,15 @@ const MicrosoftIcon = () => (
 export function AuthProviderButtons() {
   const { signInWithGoogle, signInWithMicrosoft } = useUser();
 
-  const handleGoogleSignIn = () => {
-    signInWithGoogle('work');
-  }
-
-  const handleMicrosoftSignIn = () => {
-    signInWithMicrosoft('work');
-  }
-
   return (
     <div className="space-y-2 w-full">
-        <Button variant="outline" className="w-full" onClick={handleGoogleSignIn}>
+        <Button variant="outline" className="w-full" onClick={() => signInWithGoogle('work')}>
             <GoogleIcon />
-            <span>Sign in with Google</span>
+            <span>Continue with Google</span>
         </Button>
-        <Button variant="outline" className="w-full" onClick={handleMicrosoftSignIn}>
+        <Button variant="outline" className="w-full" onClick={() => signInWithMicrosoft('work')}>
             <MicrosoftIcon />
-            <span>Sign in with Microsoft</span>
+            <span>Continue with Microsoft</span>
         </Button>
     </div>
   );
