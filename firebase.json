@@ -1,10 +1,17 @@
 {
   "hosting": {
+    "site": "studio-2148148002-bc8ae",
     "public": "out",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
     ]
   }
 }
