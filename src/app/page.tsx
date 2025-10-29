@@ -107,7 +107,7 @@ function LoggedInView() {
       {/* Chat Area */}
       <div
         ref={chatContainerRef}
-        className="flex-1 p-6 pb-64 overflow-y-auto space-y-6"
+        className="flex-1 p-6 pb-72 overflow-y-auto space-y-6"
       >
         {messages.length === 0 && !loading && (
           <div className="text-center mt-24">
@@ -158,7 +158,7 @@ function LoggedInView() {
       </div>
 
       {/* Chat Bar - raised higher */}
-      <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-[92%] max-w-3xl z-50">
+      <div className="fixed bottom-32 left-1/2 -translate-x-1/2 w-[92%] max-w-3xl z-50">
         <div className="bg-background/80 dark:bg-neutral-900/80 backdrop-blur-xl rounded-full border border-border dark:border-neutral-700 shadow-lg dark:shadow-[0_0_40px_10px_rgba(129,140,248,0.6)]">
           <div className="p-3 flex items-center gap-3">
             <Button
