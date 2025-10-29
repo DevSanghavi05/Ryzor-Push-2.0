@@ -464,6 +464,11 @@ function DocumentsPageContent() {
                     <RefreshCw className={`mr-2 h-4 w-4 ${loadingDrive ? 'animate-spin' : ''}`} />
                     Sync
                 </Button>
+                {!workAccessToken && (
+                    <Button onClick={() => handleSyncAccount('work')}>
+                        <Briefcase className="mr-2 h-4 w-4" /> Sync Work Account
+                    </Button>
+                )}
                 {workAccessToken && !personalAccessToken && (
                      <Button onClick={() => handleSyncAccount('personal')}>
                         <User className="mr-2 h-4 w-4" /> Sync Personal Account
@@ -636,3 +641,5 @@ function DocumentsPage() {
 }
 
 export default withAuth(DocumentsPage);
+
+    
