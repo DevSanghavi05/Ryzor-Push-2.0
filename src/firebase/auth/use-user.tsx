@@ -160,11 +160,17 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const signInWithMicrosoft = useCallback(async (accountType: AccountType): Promise<UserCredential | void> => {
     if (!auth) return;
     const provider = new OAuthProvider('microsoft.com');
+    
     // Add scopes for Microsoft Graph API
     provider.addScope('Files.Read.All');
     provider.addScope('User.Read');
     provider.addScope('Mail.Read');
     provider.addScope('Calendars.Read');
+
+    // Set the tenant ID for the authentication request
+    provider.setCustomParameters({
+      tenant: 'edb93353-33cc-4551-a2f5-170be96d8b9d',
+    });
     
     try {
       const result = await signInWithPopup(auth, provider);
