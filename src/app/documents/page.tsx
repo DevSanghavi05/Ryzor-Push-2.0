@@ -22,7 +22,7 @@ import {
     RefreshCw
 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { Input } from '@/components/ui/input';
 import { useRouter, useSearchParams } from 'next/navigation';
 import withAuth from '@/firebase/auth/with-auth';
@@ -73,7 +73,7 @@ const getFileIcon = (mimeType: string, source: 'drive' | 'local') => {
 }
 
 function DocumentsPageContent() {
-  const { user, loading: userLoading, fetchDriveFiles } = useUser();
+  const { user, loading: userLoading, fetchDriveFiles, signInWithGoogle } = useUser();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingDrive, setLoadingDrive] = useState(false);
@@ -87,12 +87,15 @@ function DocumentsPageContent() {
   const [showTrashConfirm, setShowTrashConfirm] = useState<Document | null>(null);
   const { toast } = useToast();
   
-  const fetchLocalFiles = useCallback(() => {
-    if (!user) return [];
+  const loadDocuments = () => {
+    if (!user) return;
+    setLoading(true);
+
+    // Fetch local files
     const storageKey = `documents_${user.uid}`;
     const localDocsString = localStorage.getItem(storageKey);
     const localDocs = localDocsString ? JSON.parse(localDocsString) : [];
-    return localDocs.map((doc: any) => ({
+    const formattedLocalDocs = localDocs.map((doc: any) => ({
       id: doc.id,
       name: doc.name,
       modifiedTime: doc.uploaded,
@@ -101,13 +104,26 @@ function DocumentsPageContent() {
       icon: getFileIcon(doc.mimeType || 'application/pdf', 'local'),
       source: 'local' as const,
     }));
+
+    setDocuments(formattedLocalDocs);
+    setLoading(false);
+    
+    // Fetch drive files
+    syncGoogleDrive();
+  };
+
+  useEffect(() => {
+    if (user) {
+      loadDocuments();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  const syncGoogleDrive = useCallback(async () => {
+  const syncGoogleDrive = async () => {
     setLoadingDrive(true);
     try {
         const driveFiles = await fetchDriveFiles();
-        if (driveFiles && driveFiles.length > 0) {
+        if (driveFiles) {
             const formattedDriveFiles: Document[] = driveFiles.map((file: any) => ({
                 id: file.id,
                 name: file.name,
@@ -117,34 +133,32 @@ function DocumentsPageContent() {
                 icon: getFileIcon(file.mimeType, 'drive'),
                 source: 'drive' as const,
             }));
+            
+            // Combine with existing local files, avoiding duplicates
             setDocuments(prevDocs => {
                 const localDocs = prevDocs.filter(d => d.source === 'local');
-                const existingDriveIds = new Set(localDocs.map(d => d.id));
-                const newDriveFiles = formattedDriveFiles.filter(d => !existingDriveIds.has(d.id));
-                return [...localDocs, ...newDriveFiles];
+                return [...localDocs, ...formattedDriveFiles];
             });
         }
     } catch (error: any) {
-        console.error(error);
-        toast({
-            variant: 'destructive',
-            title: 'Could not sync Google Drive',
-            description: error.message || 'There was a problem fetching your files. Please try again.',
-        });
+        if (error.message.includes("Authentication token is invalid")) {
+            toast({
+                variant: 'destructive',
+                title: 'Session Expired',
+                description: 'Your Google session has expired. Please sign in again to sync your Drive.',
+            });
+        } else {
+             toast({
+                variant: 'destructive',
+                title: 'Could not sync Google Drive',
+                description: error.message || 'There was a problem fetching your files. Please try again.',
+            });
+        }
     } finally {
         setLoadingDrive(false);
     }
-  }, [toast, fetchDriveFiles]);
+  };
 
-  useEffect(() => {
-    if (user) {
-        setLoading(true);
-        const localFiles = fetchLocalFiles();
-        setDocuments(localFiles);
-        syncGoogleDrive();
-        setLoading(false);
-    }
-  }, [user, fetchLocalFiles, syncGoogleDrive]);
 
   const filteredDocuments = documents
     .filter(doc => doc.name.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -168,25 +182,37 @@ function DocumentsPageContent() {
   }
 
   const confirmTrash = () => {
-    if (showTrashConfirm && user) {
-        if (showTrashConfirm.source === 'local') {
-             const storageKey = `documents_${user.uid}`;
-             const contentKey = `document_content_${showTrashConfirm.id}`;
-             const existingDocuments = JSON.parse(localStorage.getItem(storageKey) || '[]');
-             const updatedDocuments = existingDocuments.filter((d: any) => d.id !== showTrashConfirm.id);
-             localStorage.setItem(storageKey, JSON.stringify(updatedDocuments));
-             localStorage.removeItem(contentKey);
-             setDocuments(documents.filter(d => d.id !== showTrashConfirm.id));
-        } else {
-             toast({ variant: 'destructive', title: "Not Implemented", description: "Deleting Drive files is not yet supported." });
-        }
-       
-        toast({
-            title: "Moved to Trash",
-            description: `${showTrashConfirm.name} has been moved to trash.`
-        });
-        setShowTrashConfirm(null);
+    if (!showTrashConfirm || !user) return;
+
+    const trashKey = `trash_${user.uid}`;
+    const docsKey = `documents_${user.uid}`;
+
+    // 1. Get the document to be moved
+    const docToTrash = documents.find(d => d.id === showTrashConfirm.id && d.source === showTrashConfirm.source);
+    if (!docToTrash) return;
+
+    // 2. Add it to the trash in local storage
+    const existingTrash = JSON.parse(localStorage.getItem(trashKey) || '[]');
+    localStorage.setItem(trashKey, JSON.stringify([docToTrash, ...existingTrash]));
+    
+    // 3. Remove it from the main documents list in state
+    const updatedDocuments = documents.filter(d => !(d.id === showTrashConfirm.id && d.source === showTrashConfirm.source));
+    setDocuments(updatedDocuments);
+
+    // 4. If it's a local file, remove it from the 'documents' storage as well
+    if (docToTrash.source === 'local') {
+      const existingDocs = JSON.parse(localStorage.getItem(docsKey) || '[]');
+      const updatedStoredDocs = existingDocs.filter((d: any) => d.id !== showTrashConfirm.id);
+      localStorage.setItem(docsKey, JSON.stringify(updatedStoredDocs));
+      // The content itself remains, allowing for restoration
     }
+    
+    toast({
+        title: "Moved to Trash",
+        description: `${showTrashConfirm.name} has been moved to trash.`,
+    });
+    
+    setShowTrashConfirm(null);
   }
 
   const handleDocumentClick = (e: React.MouseEvent, doc: Document) => {
@@ -371,7 +397,7 @@ function DocumentsPageContent() {
                 <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This will move the document "{showTrashConfirm?.name}" to the trash. This action is not easily reversible for local documents.
+                        This will move the document "{showTrashConfirm?.name}" to the trash. This action can be undone later.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -381,8 +407,7 @@ function DocumentsPageContent() {
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
-        </AlertDialog>
-      </TooltipProvider>
+        </TooltipProvider>
       </main>
     </div>
   );
@@ -400,5 +425,3 @@ function DocumentsPage() {
 }
 
 export default withAuth(DocumentsPage);
-
-    
