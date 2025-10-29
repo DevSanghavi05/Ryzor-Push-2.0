@@ -1,10 +1,9 @@
-
 'use client';
 
-import { useState, useEffect, useRef, MouseEvent } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, Loader2, User, Bot, PlusCircle, Brain, MessageSquare, Wand, Upload, FileQuestion, ArrowRight } from 'lucide-react';
+import { Send, Loader2, User, Bot, PlusCircle, Brain, MessageSquare, Wand } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { ask } from '@/app/actions';
 import withAuth from '@/firebase/auth/with-auth';
@@ -13,7 +12,6 @@ import { MarkdownContent } from '@/components/chat/markdown-content';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { motion, useInView } from 'framer-motion';
-import { cn } from '@/lib/utils';
 
 export interface Message {
   role: 'user' | 'model';
@@ -69,29 +67,27 @@ function LoggedInView() {
       let fullResponse = '';
       const modelMessageIndex = messages.length + 1;
       setMessages(prev => [...prev, { role: 'model', content: '' }]);
-      
+
       const reader = stream.getReader();
-      
       let done = false;
       while (!done) {
-          const { value, done: readerDone } = await reader.read();
-          done = readerDone;
-          const chunk = value || ''; // The value is already a string
-          fullResponse += chunk;
-          setMessages(prev => {
-              const newMsgs = [...prev];
-              newMsgs[modelMessageIndex] = { role: 'model', content: fullResponse + '▋' };
-              return newMsgs;
-          });
-          await new Promise(resolve => setTimeout(resolve, 20)); // Typewriter delay
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        const chunk = value || '';
+        fullResponse += chunk;
+        setMessages(prev => {
+          const newMsgs = [...prev];
+          newMsgs[modelMessageIndex] = { role: 'model', content: fullResponse + '▋' };
+          return newMsgs;
+        });
+        await new Promise(resolve => setTimeout(resolve, 20));
       }
-      
+
       setMessages(prev => {
         const newMsgs = [...prev];
         newMsgs[modelMessageIndex] = { role: 'model', content: fullResponse };
         return newMsgs;
       });
-
     } catch (error) {
       console.error(error);
       setMessages(prev => [
@@ -99,32 +95,46 @@ function LoggedInView() {
         { role: 'model', content: 'Something went wrong. Try again.' },
       ]);
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
   return (
     <div className="flex flex-col w-full h-full relative overflow-hidden">
-      {/* Consistent Background */}
+      {/* Background */}
       <div className="bg-aurora"></div>
 
       {/* Chat Area */}
-      <div ref={chatContainerRef} className="flex-1 p-6 pb-40 overflow-y-auto space-y-6">
+      <div
+        ref={chatContainerRef}
+        className="flex-1 p-6 pb-56 overflow-y-auto space-y-6"
+      >
         {messages.length === 0 && !loading && (
           <div className="text-center mt-24">
             <h1 className="text-3xl font-bold text-foreground/80">Workspace</h1>
-            <p className="mt-2 text-muted-foreground">Ask a question to start analyzing your documents.</p>
+            <p className="mt-2 text-muted-foreground">
+              Ask a question to start analyzing your documents.
+            </p>
           </div>
         )}
 
         {messages.map((msg, i) => (
-          <div key={i} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+          <div
+            key={i}
+            className={`flex items-start gap-3 ${
+              msg.role === 'user' ? 'justify-end' : 'justify-start'
+            }`}
+          >
             {msg.role === 'model' && (
               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                 <Bot size={16} />
               </div>
             )}
-            <div className={`p-3 rounded-lg max-w-[85%] ${msg.role === 'user' ? 'bg-primary/20' : 'bg-card'}`}>
+            <div
+              className={`p-3 rounded-lg max-w-[85%] ${
+                msg.role === 'user' ? 'bg-primary/20' : 'bg-card'
+              }`}
+            >
               <MarkdownContent content={msg.content} />
             </div>
             {msg.role === 'user' && (
@@ -135,20 +145,20 @@ function LoggedInView() {
           </div>
         ))}
 
-        {loading && messages[messages.length-1]?.role === 'user' && (
+        {loading && messages[messages.length - 1]?.role === 'user' && (
           <div className="flex items-start gap-3 justify-start">
             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
               <Bot size={16} />
             </div>
             <div className="p-3 rounded-lg max-w-[85%] bg-card flex items-center">
-               <MarkdownContent content={'▋'} />
+              <MarkdownContent content={'▋'} />
             </div>
           </div>
         )}
       </div>
 
-      {/* Chat Bar */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-[92%] max-w-3xl z-50 mb-12">
+      {/* Chat Bar - raised higher */}
+      <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-[92%] max-w-3xl z-50">
         <div className="bg-background/80 dark:bg-neutral-900/80 backdrop-blur-xl rounded-full border border-border dark:border-neutral-700 shadow-lg dark:shadow-[0_0_40px_10px_rgba(129,140,248,0.6)]">
           <div className="p-3 flex items-center gap-3">
             <Button
