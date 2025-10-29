@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -198,3 +199,5 @@ function TrashPage() {
 }
 
 export default withAuth(TrashPage);
+
+    
