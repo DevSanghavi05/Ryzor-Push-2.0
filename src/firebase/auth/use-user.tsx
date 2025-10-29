@@ -224,12 +224,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
     
     if (!currentToken) {
-      const cookies = parseCookies();
-      currentToken = cookies[`google_access_token_${accountType}`] || null;
-      if (currentToken) {
-        if (accountType === 'work') setWorkAccessToken(currentToken);
-        else setPersonalAccessToken(currentToken);
-      }
+        const cookies = parseCookies();
+        currentToken = cookies[`google_access_token_${accountType}`] || cookies[`microsoft_access_token_${accountType}`] || null;
+        if (currentToken) {
+            if (accountType === 'work') setWorkAccessToken(currentToken);
+            else setPersonalAccessToken(currentToken);
+        }
     }
 
     if (!currentToken) {
@@ -247,9 +247,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
       );
 
       if (response.status === 401) {
-        if (accountType === 'work') setWorkAccessToken(null);
-        else setPersonalAccessToken(null);
-        destroyCookie(null, `google_access_token_${accountType}`, { path: '/' });
+        if (accountType === 'work') {
+            setWorkAccessToken(null);
+            destroyCookie(null, 'google_access_token_work', { path: '/' });
+            destroyCookie(null, 'microsoft_access_token_work', { path: '/' });
+        } else {
+            setPersonalAccessToken(null);
+            destroyCookie(null, 'google_access_token_personal', { path: '/' });
+            destroyCookie(null, 'microsoft_access_token_personal', { path: '/' });
+        }
         throw new Error(`Authentication token for ${accountType} account is invalid. Please sign in again to refresh it.`);
       }
 
