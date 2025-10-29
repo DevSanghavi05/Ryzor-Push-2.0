@@ -8,8 +8,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useUser } from '@/firebase';
-import { LogIn } from 'lucide-react';
+import { useUser, AccountType } from '@/firebase';
+import { LogIn, User, Briefcase } from 'lucide-react';
 
 const GoogleIcon = () => (
     <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2">
@@ -45,7 +45,11 @@ const MicrosoftIcon = () => (
 
 
 export function AuthProviderDropdown({ isHeader = false }: { isHeader?: boolean }) {
-  const { signInWithGoogle, signInWithMicrosoft } = useUser();
+  const { signInWithGoogle } = useUser();
+
+  const handleSignIn = (accountType: AccountType) => {
+    signInWithGoogle(accountType);
+  }
 
   return (
     <DropdownMenu>
@@ -62,17 +66,18 @@ export function AuthProviderDropdown({ isHeader = false }: { isHeader?: boolean 
         )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={signInWithGoogle}>
+        <DropdownMenuItem onClick={() => handleSignIn('work')}>
             <GoogleIcon />
-            <span>Sign in with Google</span>
+            <Briefcase className="mr-2 h-4 w-4"/>
+            <span>Sign in with Google (Work)</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={signInWithMicrosoft}>
-            <MicrosoftIcon />
-            <span>Sign in with Microsoft</span>
+         <DropdownMenuItem onClick={() => handleSignIn('personal')}>
+            <GoogleIcon />
+            <User className="mr-2 h-4 w-4"/>
+            <span>Sign in with Google (Personal)</span>
         </DropdownMenuItem>
+        {/* Microsoft sign-in can be added here with similar multi-account logic if needed */}
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
-
-    

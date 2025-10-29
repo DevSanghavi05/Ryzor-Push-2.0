@@ -7,6 +7,7 @@ import {
   createContext,
   useContext,
   ReactNode,
+  useCallback,
 } from 'react';
 import type { User } from 'firebase/auth';
 import {
@@ -20,14 +21,17 @@ import {
 import { useAuth } from '@/firebase/provider';
 import { setCookie, destroyCookie, parseCookies } from 'nookies';
 
+export type AccountType = 'work' | 'personal';
+
 export interface UserContextValue {
   user: User | null;
   loading: boolean;
-  signInWithGoogle: () => Promise<UserCredential | void>;
+  signInWithGoogle: (accountType: AccountType) => Promise<UserCredential | void>;
   signInWithMicrosoft: () => Promise<void>;
   signOut: () => Promise<void>;
-  accessToken: string | null;
-  fetchDriveFiles: () => Promise<any[] | void>;
+  workAccessToken: string | null;
+  personalAccessToken: string | null;
+  fetchDriveFiles: (accountType: AccountType) => Promise<any[] | void>;
 }
 
 const UserContext = createContext<UserContextValue | undefined>(undefined);
@@ -41,8 +45,9 @@ export function useUser() {
 }
 
 // --- Cookie Helpers ---
-const setAuthTokenCookie = (token: string) => {
-  setCookie(null, 'google_access_token', token, {
+const setAuthTokenCookie = (token: string, accountType: AccountType) => {
+  const cookieName = `google_access_token_${accountType}`;
+  setCookie(null, cookieName, token, {
     maxAge: 3600, // 1 hour
     path: '/',
     secure: process.env.NODE_ENV === 'production',
@@ -50,17 +55,24 @@ const setAuthTokenCookie = (token: string) => {
   });
 };
 
-const clearAuthTokenCookie = () => {
-  destroyCookie(null, 'google_access_token', { path: '/' });
+const clearAuthTokenCookies = () => {
+  destroyCookie(null, 'google_access_token_work', { path: '/' });
+  destroyCookie(null, 'google_access_token_personal', { path: '/' });
 };
+
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const auth = useAuth();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [accessToken, setAccessToken] = useState<string | null>(() => {
+  
+  const [workAccessToken, setWorkAccessToken] = useState<string | null>(() => {
     const cookies = parseCookies();
-    return cookies.google_access_token || null;
+    return cookies.google_access_token_work || null;
+  });
+  const [personalAccessToken, setPersonalAccessToken] = useState<string | null>(() => {
+    const cookies = parseCookies();
+    return cookies.google_access_token_personal || null;
   });
 
   // --- Listen to Auth State ---
@@ -72,23 +84,26 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onFirebaseAuthStateChanged(auth, async (user) => {
       setUser(user);
       if (!user) {
-        setAccessToken(null);
-        clearAuthTokenCookie();
+        setWorkAccessToken(null);
+        setPersonalAccessToken(null);
+        clearAuthTokenCookies();
       } else {
-        // When user is confirmed, ensure token is loaded from cookie if not already in state
         const cookies = parseCookies();
-        if (cookies.google_access_token && !accessToken) {
-          setAccessToken(cookies.google_access_token);
+        if (cookies.google_access_token_work && !workAccessToken) {
+          setWorkAccessToken(cookies.google_access_token_work);
+        }
+        if (cookies.google_access_token_personal && !personalAccessToken) {
+          setPersonalAccessToken(cookies.google_access_token_personal);
         }
       }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [auth, accessToken]);
+  }, [auth, workAccessToken, personalAccessToken]);
 
   // --- Sign In with Google (with Drive access) ---
-  const signInWithGoogle = async (): Promise<UserCredential | void> => {
+  const signInWithGoogle = useCallback(async (accountType: AccountType): Promise<UserCredential | void> => {
     if (!auth) {
       return;
     }
@@ -103,10 +118,21 @@ export function UserProvider({ children }: { children: ReactNode }) {
     try {
       const result = await signInWithPopup(auth, provider);
       const credential = GoogleAuthProvider.credentialFromResult(result);
+
       if (credential?.accessToken) {
-        setAccessToken(credential.accessToken);
-        setAuthTokenCookie(credential.accessToken);
+        const token = credential.accessToken;
+        if (accountType === 'work') {
+          setWorkAccessToken(token);
+        } else {
+          setPersonalAccessToken(token);
+        }
+        setAuthTokenCookie(token, accountType);
       }
+      // If this is the first sign-in, set the primary user object
+      if (!user) {
+        setUser(result.user);
+      }
+
       return result;
     } catch (error: any) {
       if (
@@ -114,13 +140,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
         error.code === 'auth/popup-closed-by-user' ||
         error.code === 'auth/cancelled-popup-request'
       ) {
-        console.warn(`Sign-in flow was interrupted: ${error.message}`);
+        console.warn(`Sign-in flow for ${accountType} account was interrupted: ${error.message}`);
         return; // Do not re-throw, just exit.
       }
-      console.error('Error signing in with Google:', error);
+      console.error(`Error signing in with Google for ${accountType} account:`, error);
       throw error; // Re-throw other errors
     }
-  };
+  }, [auth, user]);
 
   // --- Sign In with Microsoft (optional) ---
   const signInWithMicrosoft = async () => {
@@ -145,25 +171,24 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   // --- Fetch Google Drive Files ---
-  const fetchDriveFiles = async () => {
-    let currentToken = accessToken;
-
+  const fetchDriveFiles = useCallback(async (accountType: AccountType) => {
+    let currentToken = accountType === 'work' ? workAccessToken : personalAccessToken;
+    
     if (!user) {
       throw new Error("User is not signed in.");
     }
-
-    // Primary mechanism: Use token from state.
+    
     if (!currentToken) {
-      // Fallback: If state is null, try to get from cookies one last time.
       const cookies = parseCookies();
-      currentToken = cookies.google_access_token || null;
+      currentToken = cookies[`google_access_token_${accountType}`] || null;
       if (currentToken) {
-        setAccessToken(currentToken);
+        if (accountType === 'work') setWorkAccessToken(currentToken);
+        else setPersonalAccessToken(currentToken);
       }
     }
 
     if (!currentToken) {
-      throw new Error("Authentication token is missing. Please sign in again.");
+      throw new Error(`Authentication token for ${accountType} account is missing. Please sign in again.`);
     }
 
     try {
@@ -177,24 +202,24 @@ export function UserProvider({ children }: { children: ReactNode }) {
       );
 
       if (response.status === 401) {
-        // Token is invalid or expired. Clear it and prompt for re-login.
-        clearAuthTokenCookie();
-        setAccessToken(null);
-        throw new Error("Authentication token is invalid. Please sign in again to refresh it.");
+        if (accountType === 'work') setWorkAccessToken(null);
+        else setPersonalAccessToken(null);
+        destroyCookie(null, `google_access_token_${accountType}`, { path: '/' });
+        throw new Error(`Authentication token for ${accountType} account is invalid. Please sign in again to refresh it.`);
       }
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(`Failed to fetch Drive files: ${errorData.error?.message || 'Unknown error'}`);
+        throw new Error(`Failed to fetch Drive files for ${accountType} account: ${errorData.error?.message || 'Unknown error'}`);
       }
 
       const data = await response.json();
       return data.files;
     } catch (error) {
-      console.error('Error fetching Google Drive files:', error);
-      throw error; // Re-throw the error so the calling component can handle it
+      console.error(`Error fetching Google Drive files for ${accountType} account:`, error);
+      throw error;
     }
-  };
+  }, [user, workAccessToken, personalAccessToken]);
 
   const value: UserContextValue = {
     user,
@@ -202,7 +227,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
     signInWithGoogle,
     signInWithMicrosoft,
     signOut,
-    accessToken,
+    workAccessToken,
+    personalAccessToken,
     fetchDriveFiles,
   };
 

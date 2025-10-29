@@ -22,14 +22,16 @@ import {
     RefreshCw,
     CheckCircle2,
     DownloadCloud,
-    FilePenLine
+    FilePenLine,
+    User,
+    Briefcase
 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { useRouter, useSearchParams } from 'next/navigation';
 import withAuth from '@/firebase/auth/with-auth';
-import { useUser } from '@/firebase/auth/use-user';
+import { useUser, AccountType } from '@/firebase/auth/use-user';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -75,6 +77,7 @@ type Document = {
   webViewLink: string;
   icon: React.ReactNode;
   source: 'drive' | 'local';
+  accountType: AccountType;
   isImported?: boolean;
 };
 
@@ -88,7 +91,7 @@ const getFileIcon = (mimeType: string, source: 'drive' | 'local') => {
 }
 
 function DocumentsPageContent() {
-  const { user, loading: userLoading, fetchDriveFiles, accessToken, signInWithGoogle } = useUser();
+  const { user, loading: userLoading, fetchDriveFiles, workAccessToken, personalAccessToken, signInWithGoogle } = useUser();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingDrive, setLoadingDrive] = useState(false);
@@ -108,89 +111,98 @@ function DocumentsPageContent() {
   const [renamingDoc, setRenamingDoc] = useState<Document | null>(null);
   const [newName, setNewName] = useState("");
   
-  const loadDocuments = () => {
-    if (!user) return;
-    setLoading(true);
-
+  const loadLocalDocuments = useCallback(() => {
+    if (!user) return { localDocs: [], importedIds: new Set() };
     const storageKey = `documents_${user.uid}`;
     const localDocsString = localStorage.getItem(storageKey);
     const localDocs = localDocsString ? JSON.parse(localDocsString) : [];
-    
-    // Mark which Drive files are already imported
     const importedIds = new Set(localDocs.map((doc: any) => doc.id));
+    return { localDocs, importedIds };
+  }, [user]);
 
-    const formattedLocalDocs = localDocs.map((doc: any) => ({
-      id: doc.id,
-      name: doc.name,
-      modifiedTime: doc.uploaded,
-      mimeType: doc.mimeType || 'application/pdf',
-      webViewLink: doc.source === 'local' ? `/documents/${doc.id}` : doc.webViewLink,
-      icon: getFileIcon(doc.mimeType || 'application/pdf', doc.source),
-      source: doc.source,
-      isImported: true,
+  const syncGoogleDrive = useCallback(async () => {
+    if (!user) return;
+    setLoadingDrive(true);
+    
+    const { localDocs, importedIds } = loadLocalDocuments();
+    let allDriveFiles: Document[] = [];
+
+    const fetchPromises: Promise<void>[] = [];
+
+    if (workAccessToken) {
+        fetchPromises.push(
+            fetchDriveFiles('work').then(files => {
+                if (files) {
+                    const formatted: Document[] = files.map((file: any) => ({
+                        id: file.id, name: file.name, modifiedTime: file.modifiedTime, mimeType: file.mimeType, webViewLink: file.webViewLink,
+                        icon: getFileIcon(file.mimeType, 'drive'),
+                        source: 'drive', accountType: 'work', isImported: importedIds.has(file.id),
+                    }));
+                    allDriveFiles.push(...formatted);
+                }
+            }).catch(error => {
+                toast({ variant: 'destructive', title: 'Could not sync Work account', description: error.message });
+            })
+        );
+    }
+    if (personalAccessToken) {
+         fetchPromises.push(
+            fetchDriveFiles('personal').then(files => {
+                if (files) {
+                    const formatted: Document[] = files.map((file: any) => ({
+                        id: file.id, name: file.name, modifiedTime: file.modifiedTime, mimeType: file.mimeType, webViewLink: file.webViewLink,
+                        icon: getFileIcon(file.mimeType, 'drive'),
+                        source: 'drive', accountType: 'personal', isImported: importedIds.has(file.id),
+                    }));
+                    allDriveFiles.push(...formatted);
+                }
+            }).catch(error => {
+                toast({ variant: 'destructive', title: 'Could not sync Personal account', description: error.message });
+            })
+        );
+    }
+
+    await Promise.all(fetchPromises);
+
+    const formattedLocalDocs: Document[] = localDocs.map((doc: any) => ({
+        ...doc,
+        icon: getFileIcon(doc.mimeType || 'application/pdf', doc.source),
+        isImported: true,
+        accountType: doc.accountType || 'work', // default legacy local uploads to 'work'
     }));
 
-    setDocuments(formattedLocalDocs);
+    // Combine all sources, ensuring Drive files don't duplicate imported local records
+    const localIds = new Set(formattedLocalDocs.map(d => d.id));
+    const uniqueDriveFiles = allDriveFiles.filter(d => !localIds.has(d.id));
+
+    setDocuments([...formattedLocalDocs, ...uniqueDriveFiles]);
+    setLoadingDrive(false);
     setLoading(false);
-    
-    syncGoogleDrive(importedIds);
-  };
+
+  }, [user, workAccessToken, personalAccessToken, fetchDriveFiles, toast, loadLocalDocuments]);
+
 
   useEffect(() => {
     if (user) {
-      loadDocuments();
+      syncGoogleDrive();
+    } else if (!userLoading) {
+      setLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, userLoading, syncGoogleDrive]);
 
-  const syncGoogleDrive = async (existingImportedIds?: Set<string>) => {
-    if (!user) return;
-    setLoadingDrive(true);
-    let importedIds = existingImportedIds;
-    if (!importedIds) {
-        const storageKey = `documents_${user!.uid}`;
-        const localDocsString = localStorage.getItem(storageKey);
-        const localDocs = localDocsString ? JSON.parse(localDocsString) : [];
-        importedIds = new Set(localDocs.map((doc: any) => doc.id));
-    }
-    
-    try {
-        const driveFiles = await fetchDriveFiles();
-        if (driveFiles) {
-            const formattedDriveFiles: Document[] = driveFiles.map((file: any) => ({
-                id: file.id,
-                name: file.name,
-                modifiedTime: file.modifiedTime,
-                mimeType: file.mimeType,
-                webViewLink: file.webViewLink,
-                icon: getFileIcon(file.mimeType, 'drive'),
-                source: 'drive' as const,
-                isImported: importedIds!.has(file.id),
-            }));
-            
-            // Combine with existing local/imported files, avoiding duplicates from Drive
-            setDocuments(prevDocs => {
-                const nonDriveDocs = prevDocs.filter(d => d.source !== 'drive');
-                return [...nonDriveDocs, ...formattedDriveFiles];
-            });
-        }
-    } catch (error: any) {
-         toast({
-            variant: 'destructive',
-            title: 'Could not sync Google Drive',
-            description: error.message || 'There was a problem fetching your files. Please try again.',
-        });
-    } finally {
-        setLoadingDrive(false);
-    }
-  };
 
   const importDocument = async (doc: Document): Promise<boolean> => {
-    if (!accessToken || !user) {
+    if (!user) {
        toast({ variant: 'destructive', title: "Authentication Error", description: "Cannot import document without a valid session." });
        return false;
     }
     
+    const accessToken = doc.accountType === 'work' ? workAccessToken : personalAccessToken;
+    if (!accessToken) {
+        toast({ variant: 'destructive', title: `Not connected`, description: `Please connect your ${doc.accountType} account to import.` });
+        return false;
+    }
+
     setImportingDocId(doc.id);
 
     try {
@@ -215,6 +227,7 @@ function DocumentsPageContent() {
             source: 'drive',
             mimeType: doc.mimeType,
             webViewLink: doc.webViewLink,
+            accountType: doc.accountType,
         };
 
         const contentKey = `document_content_${doc.id}`;
@@ -300,8 +313,10 @@ function DocumentsPageContent() {
     .filter(doc => {
         if (filterType === 'all') return true;
         if (filterType === 'local') return doc.source === 'local';
-        if (filterType === 'drive') return doc.source === 'drive' && !doc.isImported;
+        if (filterType === 'drive') return doc.source === 'drive';
         if (filterType === 'imported') return doc.isImported;
+        if (filterType === 'work') return doc.accountType === 'work';
+        if (filterType === 'personal') return doc.accountType === 'personal';
         return doc.mimeType.includes(filterType);
     }).sort((a, b) => new Date(b.modifiedTime).getTime() - new Date(a.modifiedTime).getTime());
 
@@ -317,12 +332,6 @@ function DocumentsPageContent() {
     setShowTrashConfirm(doc);
   }
 
-  const loadTrash = () => {
-    if (!user) return [];
-    const trashKey = `trash_${user.uid}`;
-    return JSON.parse(localStorage.getItem(trashKey) || '[]');
-  };
-
   const confirmTrash = () => {
     if (!showTrashConfirm || !user) return;
   
@@ -331,7 +340,7 @@ function DocumentsPageContent() {
   
     // Get stored docs and trash
     let existingDocs = JSON.parse(localStorage.getItem(docsKey) || '[]');
-    const existingTrash = loadTrash();
+    const existingTrash = JSON.parse(localStorage.getItem(trashKey) || '[]');
   
     const docToTrash = documents.find(d => d.id === showTrashConfirm.id);
   
@@ -345,15 +354,13 @@ function DocumentsPageContent() {
     localStorage.setItem(trashKey, JSON.stringify([trashedDoc, ...existingTrash]));
   
     // If it's an imported file, remove it from the main documents list in storage.
-    // If it's just a Drive reference, we don't need to touch the main storage list, just the UI state.
-    if (docToTrash.isImported) {
-      existingDocs = existingDocs.filter((d: any) => d.id !== showTrashConfirm.id);
-      localStorage.setItem(docsKey, JSON.stringify(existingDocs));
-       // Also remove the content file
-      localStorage.removeItem(`document_content_${showTrashConfirm.id}`);
-    }
-  
-    // Update UI state by removing the trashed item
+    // This is now the standard behavior for all trashed items.
+    existingDocs = existingDocs.filter((d: any) => d.id !== showTrashConfirm.id);
+    localStorage.setItem(docsKey, JSON.stringify(existingDocs));
+    // Also remove the content file if it exists
+    localStorage.removeItem(`document_content_${showTrashConfirm.id}`);
+    
+    // Update UI state by removing the trashed item from all sources.
     setDocuments(prevDocs => prevDocs.filter(d => d.id !== showTrashConfirm.id));
   
     toast({
@@ -407,7 +414,12 @@ function DocumentsPageContent() {
         router.push(`/documents/${doc.id}`);
     }
   };
-
+  
+  const handleSyncAccount = async (accountType: AccountType) => {
+      toast({ title: `Connecting to your ${accountType} account...`});
+      await signInWithGoogle(accountType);
+      // The useEffect watching the tokens will trigger the sync
+  }
 
   return (
     <div className="relative min-h-dvh w-full pt-16">
@@ -439,25 +451,24 @@ function DocumentsPageContent() {
                     <SelectContent>
                         <SelectItem value="all">All Sources</SelectItem>
                         <SelectItem value="imported">Imported</SelectItem>
-                        <SelectItem value="drive">Google Drive</SelectItem>
+                        <SelectItem value="work">Work Account</SelectItem>
+                        <SelectItem value="personal">Personal Account</SelectItem>
                         <SelectItem value="local">Local Uploads</SelectItem>
                     </SelectContent>
                 </Select>
                 <Button 
                   variant="outline"
-                  onClick={() => syncGoogleDrive()}
+                  onClick={syncGoogleDrive}
                   disabled={loadingDrive}
                 >
                     <RefreshCw className={`mr-2 h-4 w-4 ${loadingDrive ? 'animate-spin' : ''}`} />
                     Sync
                 </Button>
-                <Button
-                    onClick={handleImportAll}
-                    disabled={loadingDrive || isImportingAll || docsToImportCount === 0}
-                >
-                    {isImportingAll ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <DownloadCloud className="mr-2 h-4 w-4" />}
-                    Import All ({docsToImportCount})
-                </Button>
+                {workAccessToken && !personalAccessToken && (
+                     <Button onClick={() => handleSyncAccount('personal')}>
+                        <User className="mr-2 h-4 w-4" /> Sync Personal Account
+                    </Button>
+                )}
             </div>
           </div>
           {(loading || userLoading) ? (
@@ -478,13 +489,20 @@ function DocumentsPageContent() {
                     </li>
                 )}
                 {filteredDocuments.map(doc => (
-                  <li key={`${doc.id}-${doc.source}`} className="flex items-center justify-between p-4 group hover:bg-accent/50 transition-colors">
+                  <li key={`${doc.id}-${doc.source}-${doc.accountType}`} className="flex items-center justify-between p-4 group hover:bg-accent/50 transition-colors">
                     <div className="flex items-center gap-4 truncate">
                         {doc.icon}
                         <div className="truncate">
                             <a href={doc.webViewLink} onClick={(e) => { e.preventDefault(); handleDocumentClick(e, doc); }} className="font-medium truncate hover:underline cursor-pointer">{doc.name}</a>
-                            <p className="text-sm text-muted-foreground">
-                                {doc.isImported ? 'Imported' : doc.source === 'drive' ? 'Drive' : 'Local'} &middot; Modified: {new Date(doc.modifiedTime).toLocaleDateString()}
+                            <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                <span className="flex items-center gap-1">
+                                  {doc.accountType === 'work' ? <Briefcase size={12} /> : <User size={12} />}
+                                  {doc.accountType.charAt(0).toUpperCase() + doc.accountType.slice(1)}
+                                </span>
+                                &middot; 
+                                {doc.isImported ? 'Imported' : 'Drive'}
+                                &middot; 
+                                Modified: {new Date(doc.modifiedTime).toLocaleDateString()}
                             </p>
                         </div>
                     </div>
@@ -618,9 +636,3 @@ function DocumentsPage() {
 }
 
 export default withAuth(DocumentsPage);
-
-    
-
-    
-
-    

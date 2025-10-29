@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, Loader2, User, Bot, PlusCircle, Brain, MessageSquare, Wand } from 'lucide-react';
-import { useUser } from '@/firebase';
+import { Send, Loader2, User, Bot, PlusCircle, Brain, MessageSquare, Wand, Briefcase } from 'lucide-react';
+import { useUser, AccountType } from '@/firebase';
 import { ask } from '@/app/actions';
 import withAuth from '@/firebase/auth/with-auth';
 import Link from 'next/link';
@@ -216,6 +217,11 @@ function AnimatedSection({ children }: { children: React.ReactNode }) {
 function LandingPage() {
   const { signInWithGoogle } = useUser();
   
+  const handleGetStarted = () => {
+    // By default, the first sign-in is for the 'work' account.
+    signInWithGoogle('work');
+  }
+
   return (
     <div className="relative w-full overflow-x-hidden text-foreground">
       <div className="bg-aurora"></div>
@@ -238,7 +244,7 @@ function LandingPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.1 }}
                 >
-                    Upload your PDFs. Ask anything. Get instant, AI-powered insights from your documents.
+                    Connect your work and personal accounts. Get instant, AI-powered insights from all your documents, securely separated.
                 </motion.p>
                  <motion.div
                     className="mt-8"
@@ -247,11 +253,11 @@ function LandingPage() {
                     transition={{ duration: 0.5, delay: 0.2 }}
                 >
                     <Button 
-                        onClick={signInWithGoogle}
+                        onClick={handleGetStarted}
                         size="lg"
                         className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg dark:shadow-[0_0_20px_rgba(var(--primary-hsl),0.4)] hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(var(--primary-hsl),0.6)] transition-all"
                     >
-                        Get Started for Free
+                        <Briefcase className="mr-2" /> Connect Your Work Account
                     </Button>
                 </motion.div>
             </div>
@@ -266,18 +272,18 @@ function LandingPage() {
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-card/50 dark:bg-neutral-900/50 p-8 rounded-2xl border border-border dark:border-neutral-800 shadow-sm dark:shadow-[0_0_20px_rgba(129,140,248,0.2)]">
               <Brain className="w-12 h-12 text-primary mx-auto mb-4" />
-              <h3 className="text-2xl font-semibold mb-2">Upload</h3>
-              <p className="text-muted-foreground">Drop your PDFs into Ryzor.</p>
+              <h3 className="text-2xl font-semibold mb-2">Connect</h3>
+              <p className="text-muted-foreground">Securely link your work and personal Google accounts.</p>
             </div>
             <div className="bg-card/50 dark:bg-neutral-900/50 p-8 rounded-2xl border border-border dark:border-neutral-800 shadow-sm dark:shadow-[0_0_20px_rgba(129,140,248,0.2)]">
               <MessageSquare className="w-12 h-12 text-primary mx-auto mb-4" />
               <h3 className="text-2xl font-semibold mb-2">Ask</h3>
-              <p className="text-muted-foreground">Type natural questions like “Summarize Chapter 3.”</p>
+              <p className="text-muted-foreground">Type natural questions like “Summarize my Q3 reports from work.”</p>
             </div>
             <div className="bg-card/50 dark:bg-neutral-900/50 p-8 rounded-2xl border border-border dark:border-neutral-800 shadow-sm dark:shadow-[0_0_20px_rgba(129,140,248,0.2)]">
               <Wand className="w-12 h-12 text-primary mx-auto mb-4" />
               <h3 className="text-2xl font-semibold mb-2">Get Answers</h3>
-              <p className="text-muted-foreground">AI finds and explains instantly.</p>
+              <p className="text-muted-foreground">AI finds and explains instantly, keeping your data separate.</p>
             </div>
           </div>
         </div>
@@ -291,7 +297,7 @@ function LandingPage() {
             Ryzor AI turns messy documents into living intelligence. No folders. No chaos. Just clarity — instantly. Read our <Link href="/privacy" className="underline hover:text-primary">Privacy Policy</Link> to learn more.
           </p>
           <Button 
-            onClick={signInWithGoogle}
+            onClick={handleGetStarted}
             size="lg"
             className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg dark:shadow-[0_0_20px_rgba(var(--primary-hsl),0.4)] hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(var(--primary-hsl),0.6)] transition-all"
           >
