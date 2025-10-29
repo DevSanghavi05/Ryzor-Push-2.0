@@ -16,6 +16,8 @@ import {
   onAuthStateChanged as onFirebaseAuthStateChanged,
   signOut as firebaseSignOut,
   UserCredential,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
 } from 'firebase/auth';
 import { useAuth } from '@/firebase/provider';
 import { setCookie, destroyCookie, parseCookies } from 'nookies';
@@ -29,6 +31,8 @@ export interface UserContextValue {
   signInWithGoogle: (accountType: AccountType) => Promise<UserCredential | void>;
   signInWithMicrosoft: (accountType: AccountType) => Promise<UserCredential | void>;
   signOut: () => Promise<void>;
+  signUpWithEmail: (email: string, password: string) => Promise<UserCredential | void>;
+  signInWithEmail: (email: string, password: string) => Promise<UserCredential | void>;
   workAccessToken: string | null;
   personalAccessToken: string | null;
   fetchDriveFiles: (accountType: AccountType) => Promise<any[] | void>;
@@ -212,6 +216,32 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   }, [auth, user, router, searchParams]);
 
+  // --- Sign Up with Email/Password ---
+  const signUpWithEmail = useCallback(async (email: string, password: string): Promise<UserCredential | void> => {
+    if (!auth) return;
+    try {
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      // The onAuthStateChanged listener will handle setting the user and redirection
+      return result;
+    } catch (error: any) {
+      console.error('Error signing up with email:', error);
+      throw error;
+    }
+  }, [auth]);
+
+  // --- Sign In with Email/Password ---
+  const signInWithEmail = useCallback(async (email: string, password: string): Promise<UserCredential | void> => {
+    if (!auth) return;
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      // The onAuthStateChanged listener will handle setting the user and redirection
+      return result;
+    } catch (error: any) {
+      console.error('Error signing in with email:', error);
+      throw error;
+    }
+  }, [auth]);
+
   // --- Sign Out ---
   const signOut = async () => {
     if (!auth) return;
@@ -226,28 +256,27 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   // --- Fetch Google Drive Files ---
   const fetchDriveFiles = useCallback(async (accountType: AccountType) => {
-    let currentToken = accountType === 'work' ? workAccessToken : personalAccessToken;
     const cookies = parseCookies();
     const googleToken = cookies[`google_access_token_${accountType}`];
-    // We only care about google drive files for now
-    currentToken = googleToken || null;
+    const microsoftToken = cookies[`microsoft_access_token_${accountType}`];
     
+    // Determine which token to use, preferring Google for now as Drive is implemented
+    let currentToken = googleToken || microsoftToken || null;
+    let providerName = googleToken ? 'Google' : (microsoftToken ? 'Microsoft' : null);
+
     if (!user) {
-      throw new Error("User is not signed in.");
-    }
-    
-    if (!currentToken) {
-        if (googleToken) {
-            if (accountType === 'work') setWorkAccessToken(googleToken);
-            else setPersonalAccessToken(googleToken);
-            currentToken = googleToken;
-        }
+        throw new Error("User is not signed in.");
     }
 
     if (!currentToken) {
-      // Don't throw an error, just return nothing, as the user may not have connected this account type.
-      console.log(`Authentication token for Google ${accountType} account is missing.`);
-      return;
+        console.log(`Authentication token for ${accountType} account is missing.`);
+        return;
+    }
+
+    // Currently only Google Drive is implemented
+    if (!googleToken) {
+        console.log(`Skipping file fetch for ${accountType} account as it is not a Google account.`);
+        return [];
     }
 
     try {
@@ -263,12 +292,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
       if (response.status === 401) {
         if (accountType === 'work') {
             setWorkAccessToken(null);
-            destroyCookie(null, 'google_access_token_work', { path: '/' });
+            destroyCookie(null, `google_access_token_work`, { path: '/' });
+            destroyCookie(null, `microsoft_access_token_work`, { path: '/' });
         } else {
             setPersonalAccessToken(null);
-            destroyCookie(null, 'google_access_token_personal', { path: '/' });
+            destroyCookie(null, `google_access_token_personal`, { path: '/' });
+            destroyCookie(null, `microsoft_access_token_personal`, { path: '/' });
         }
-        throw new Error(`Authentication token for Google ${accountType} account is invalid. Please sign in again to refresh it.`);
+        throw new Error(`Authentication token for ${providerName} ${accountType} account is invalid. Please sign in again to refresh it.`);
       }
 
       if (!response.ok) {
@@ -279,10 +310,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
       return data.files;
     } catch (error) {
-      console.error(`Error fetching Google Drive files for ${accountType} account:`, error);
+      console.error(`Error fetching files for ${accountType} account:`, error);
       throw error;
     }
-  }, [user, workAccessToken, personalAccessToken]);
+  }, [user]);
 
   const value: UserContextValue = {
     user,
@@ -290,6 +321,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
     signInWithGoogle,
     signInWithMicrosoft,
     signOut,
+    signUpWithEmail,
+    signInWithEmail,
     workAccessToken,
     personalAccessToken,
     fetchDriveFiles,
