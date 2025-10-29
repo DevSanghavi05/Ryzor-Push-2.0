@@ -19,10 +19,11 @@ import {
     Filter,
     HardDriveUpload,
     Wand,
-    RefreshCw
+    RefreshCw,
+    CheckCircle2
 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { useRouter, useSearchParams } from 'next/navigation';
 import withAuth from '@/firebase/auth/with-auth';
@@ -52,6 +53,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { extractGoogleDocContent } from '@/ai/flows/extract-google-doc-content';
 
 type Document = {
   id: string;
@@ -61,6 +63,7 @@ type Document = {
   webViewLink: string;
   icon: React.ReactNode;
   source: 'drive' | 'local';
+  isImported?: boolean;
 };
 
 const getFileIcon = (mimeType: string, source: 'drive' | 'local') => {
@@ -73,10 +76,11 @@ const getFileIcon = (mimeType: string, source: 'drive' | 'local') => {
 }
 
 function DocumentsPageContent() {
-  const { user, loading: userLoading, fetchDriveFiles, signInWithGoogle } = useUser();
+  const { user, loading: userLoading, fetchDriveFiles, accessToken } = useUser();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingDrive, setLoadingDrive] = useState(false);
+  const [importingDocId, setImportingDocId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   
   const searchParams = useSearchParams();
@@ -91,25 +95,28 @@ function DocumentsPageContent() {
     if (!user) return;
     setLoading(true);
 
-    // Fetch local files
     const storageKey = `documents_${user.uid}`;
     const localDocsString = localStorage.getItem(storageKey);
     const localDocs = localDocsString ? JSON.parse(localDocsString) : [];
+    
+    // Mark which Drive files are already imported
+    const importedIds = new Set(localDocs.map((doc: any) => doc.id));
+
     const formattedLocalDocs = localDocs.map((doc: any) => ({
       id: doc.id,
       name: doc.name,
       modifiedTime: doc.uploaded,
       mimeType: doc.mimeType || 'application/pdf',
-      webViewLink: `/documents/${doc.id}`,
-      icon: getFileIcon(doc.mimeType || 'application/pdf', 'local'),
-      source: 'local' as const,
+      webViewLink: doc.source === 'local' ? `/documents/${doc.id}` : doc.webViewLink,
+      icon: getFileIcon(doc.mimeType || 'application/pdf', doc.source),
+      source: doc.source,
+      isImported: true,
     }));
 
     setDocuments(formattedLocalDocs);
     setLoading(false);
     
-    // Fetch drive files
-    syncGoogleDrive();
+    syncGoogleDrive(importedIds);
   };
 
   useEffect(() => {
@@ -119,8 +126,16 @@ function DocumentsPageContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  const syncGoogleDrive = async () => {
+  const syncGoogleDrive = async (existingImportedIds?: Set<string>) => {
     setLoadingDrive(true);
+    let importedIds = existingImportedIds;
+    if (!importedIds) {
+        const storageKey = `documents_${user!.uid}`;
+        const localDocsString = localStorage.getItem(storageKey);
+        const localDocs = localDocsString ? JSON.parse(localDocsString) : [];
+        importedIds = new Set(localDocs.map((doc: any) => doc.id));
+    }
+    
     try {
         const driveFiles = await fetchDriveFiles();
         if (driveFiles) {
@@ -132,28 +147,21 @@ function DocumentsPageContent() {
                 webViewLink: file.webViewLink,
                 icon: getFileIcon(file.mimeType, 'drive'),
                 source: 'drive' as const,
+                isImported: importedIds!.has(file.id),
             }));
             
-            // Combine with existing local files, avoiding duplicates
+            // Combine with existing local/imported files, avoiding duplicates from Drive
             setDocuments(prevDocs => {
-                const localDocs = prevDocs.filter(d => d.source === 'local');
-                return [...localDocs, ...formattedDriveFiles];
+                const nonDriveDocs = prevDocs.filter(d => d.source !== 'drive');
+                return [...nonDriveDocs, ...formattedDriveFiles];
             });
         }
     } catch (error: any) {
-        if (error.message.includes("Authentication token is invalid")) {
-            toast({
-                variant: 'destructive',
-                title: 'Session Expired',
-                description: 'Your Google session has expired. Please sign in again to sync your Drive.',
-            });
-        } else {
-             toast({
-                variant: 'destructive',
-                title: 'Could not sync Google Drive',
-                description: error.message || 'There was a problem fetching your files. Please try again.',
-            });
-        }
+         toast({
+            variant: 'destructive',
+            title: 'Could not sync Google Drive',
+            description: error.message || 'There was a problem fetching your files. Please try again.',
+        });
     } finally {
         setLoadingDrive(false);
     }
@@ -165,7 +173,8 @@ function DocumentsPageContent() {
     .filter(doc => {
         if (filterType === 'all') return true;
         if (filterType === 'local') return doc.source === 'local';
-        if (filterType === 'drive') return doc.source === 'drive';
+        if (filterType === 'drive') return doc.source === 'drive' && !doc.isImported;
+        if (filterType === 'imported') return doc.isImported;
         return doc.mimeType.includes(filterType);
     }).sort((a, b) => new Date(b.modifiedTime).getTime() - new Date(a.modifiedTime).getTime());
 
@@ -199,12 +208,13 @@ function DocumentsPageContent() {
     const updatedDocuments = documents.filter(d => !(d.id === showTrashConfirm.id && d.source === showTrashConfirm.source));
     setDocuments(updatedDocuments);
 
-    // 4. If it's a local file, remove it from the 'documents' storage as well
-    if (docToTrash.source === 'local') {
+    // 4. If it's a local or imported file, remove it from the 'documents' storage as well
+    if (docToTrash.source === 'local' || docToTrash.isImported) {
       const existingDocs = JSON.parse(localStorage.getItem(docsKey) || '[]');
       const updatedStoredDocs = existingDocs.filter((d: any) => d.id !== showTrashConfirm.id);
       localStorage.setItem(docsKey, JSON.stringify(updatedStoredDocs));
-      // The content itself remains, allowing for restoration
+      // Also remove content to clean up
+      localStorage.removeItem(`document_content_${showTrashConfirm.id}`);
     }
     
     toast({
@@ -216,29 +226,73 @@ function DocumentsPageContent() {
   }
 
   const handleDocumentClick = (e: React.MouseEvent, doc: Document) => {
-    if (doc.source === 'drive') {
+    if (doc.source === 'drive' && !doc.isImported) {
         window.open(doc.webViewLink, '_blank');
     } else {
-        router.push(doc.webViewLink);
+        router.push(`/documents/${doc.id}`);
     }
   };
 
   const handleImportAndAnalyze = async (doc: Document) => {
+     if (!accessToken) {
+        toast({ variant: 'destructive', title: "Authentication Error", description: "Cannot import document without a valid session." });
+        return;
+     }
+     
+     setImportingDocId(doc.id);
      toast({
         title: 'Importing Document...',
-        description: 'This may take a moment.',
+        description: 'Extracting content. This may take a moment.',
       });
 
     try {
-      // The API route is no longer needed, we'd call a new function to get content
-      // This part needs a new implementation to get content for a specific file
-      // For now, let's simulate it.
-       toast({
-        variant: 'destructive',
-        title: "Import Not Fully Implemented",
-        description: "Fetching content for analysis is not connected yet.",
+      const result = await extractGoogleDocContent({
+          fileId: doc.id,
+          mimeType: doc.mimeType,
+          accessToken: accessToken,
       });
 
+      if (!result.content) {
+        throw new Error("No content was extracted from the document.");
+      }
+
+      // Save the extracted content and metadata to local storage
+      const storageKey = `documents_${user!.uid}`;
+      const existingDocuments = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      
+      const newDocRecord = {
+        id: doc.id,
+        name: doc.name,
+        uploaded: new Date().toISOString(),
+        textContent: result.content,
+        source: 'drive', // It's from drive, but now it's "imported"
+        mimeType: doc.mimeType,
+        webViewLink: doc.webViewLink,
+      };
+
+      // Store content in a separate key
+      const contentKey = `document_content_${doc.id}`;
+      // For Drive docs, we don't have a viewable Data URL, so we store the text content itself as a proxy.
+      // A more advanced implementation might create a viewable representation.
+      localStorage.setItem(contentKey, `data:text/plain;base64,${btoa(unescape(encodeURIComponent(result.content)))}`);
+
+
+      // Add or update the document in the main list
+      const docIndex = existingDocuments.findIndex((d: any) => d.id === doc.id);
+      if (docIndex > -1) {
+          existingDocuments[docIndex] = newDocRecord;
+      } else {
+          existingDocuments.unshift(newDocRecord);
+      }
+      localStorage.setItem(storageKey, JSON.stringify(existingDocuments));
+
+      // Update the UI state
+      setDocuments(prevDocs => prevDocs.map(d => d.id === doc.id ? {...d, isImported: true } : d));
+
+      toast({
+        title: "Import Successful",
+        description: `${doc.name} is now available for analysis.`,
+      });
 
     } catch (error: any) {
       console.error("Error importing Google Doc:", error);
@@ -247,6 +301,8 @@ function DocumentsPageContent() {
         title: "Import Failed",
         description: error.message || "Could not import the document.",
       });
+    } finally {
+        setImportingDocId(null);
     }
   };
 
@@ -278,13 +334,14 @@ function DocumentsPageContent() {
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All Sources</SelectItem>
-                        <SelectItem value="local">Imported</SelectItem>
+                        <SelectItem value="imported">Imported</SelectItem>
                         <SelectItem value="drive">Google Drive</SelectItem>
+                        <SelectItem value="local">Local Uploads</SelectItem>
                     </SelectContent>
                 </Select>
                 <Button 
                   variant="outline"
-                  onClick={syncGoogleDrive}
+                  onClick={() => syncGoogleDrive()}
                   disabled={loadingDrive}
                 >
                     <RefreshCw className={`mr-2 h-4 w-4 ${loadingDrive ? 'animate-spin' : ''}`} />
@@ -316,7 +373,7 @@ function DocumentsPageContent() {
                         <div className="truncate">
                             <a href={doc.webViewLink} onClick={(e) => { e.preventDefault(); handleDocumentClick(e, doc); }} className="font-medium truncate hover:underline cursor-pointer">{doc.name}</a>
                             <p className="text-sm text-muted-foreground">
-                                {doc.source === 'drive' ? 'Drive' : 'Imported'} &middot; Modified: {new Date(doc.modifiedTime).toLocaleDateString()}
+                                {doc.isImported ? 'Imported' : doc.source === 'drive' ? 'Drive' : 'Local'} &middot; Modified: {new Date(doc.modifiedTime).toLocaleDateString()}
                             </p>
                         </div>
                     </div>
@@ -324,13 +381,13 @@ function DocumentsPageContent() {
                         {doc.source === 'drive' && (
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Button variant="secondary" size="sm" onClick={() => handleImportAndAnalyze(doc)}>
-                                        <Wand className="mr-2 h-4 w-4" />
-                                        Import
+                                    <Button variant="secondary" size="sm" onClick={() => handleImportAndAnalyze(doc)} disabled={importingDocId === doc.id || doc.isImported}>
+                                        {importingDocId === doc.id ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : doc.isImported ? <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" /> : <Wand className="mr-2 h-4 w-4" />}
+                                        {doc.isImported ? 'Imported' : 'Import'}
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                    <p>Import this file to make its content available to the AI.</p>
+                                    <p>{doc.isImported ? 'This file has already been imported.' : 'Import this file to make its content available to the AI.'}</p>
                                 </TooltipContent>
                            </Tooltip>
                         )}

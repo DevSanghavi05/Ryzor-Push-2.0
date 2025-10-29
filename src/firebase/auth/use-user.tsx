@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -95,6 +96,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const provider = new GoogleAuthProvider();
     provider.addScope('https://www.googleapis.com/auth/drive.readonly');
     provider.addScope('https://www.googleapis.com/auth/documents.readonly');
+    provider.addScope('https://www.googleapis.com/auth/spreadsheets.readonly');
+    provider.addScope('https://www.googleapis.com/auth/presentations.readonly');
     provider.setCustomParameters({ prompt: 'select_account' });
 
     try {
