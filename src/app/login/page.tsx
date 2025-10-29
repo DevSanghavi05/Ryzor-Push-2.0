@@ -37,10 +37,17 @@ export default function LoginPage() {
       await signInWithEmail(email, password);
       // The useEffect will handle redirection on successful sign-in
     } catch (error: any) {
+      let description = 'An unknown error occurred. Please try again.';
+      if (error.code === 'auth/invalid-credential') {
+        description = 'The email or password you entered is incorrect. If you previously signed in with Google or Microsoft, please use that method instead.';
+      } else {
+        description = error.message;
+      }
+      
       toast({
         variant: 'destructive',
         title: 'Sign In Failed',
-        description: error.message || 'An unknown error occurred.',
+        description: description,
       });
       setIsSubmitting(false);
     }
