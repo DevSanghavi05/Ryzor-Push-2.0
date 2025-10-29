@@ -148,7 +148,7 @@ function LoggedInView() {
       </div>
 
       {/* Chat Bar */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-[92%] max-w-3xl z-50 mb-8">
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-[92%] max-w-3xl z-50 mb-12">
         <div className="bg-background/80 dark:bg-neutral-900/80 backdrop-blur-xl rounded-full border border-border dark:border-neutral-700 shadow-lg dark:shadow-[0_0_40px_10px_rgba(129,140,248,0.6)]">
           <div className="p-3 flex items-center gap-3">
             <Button
