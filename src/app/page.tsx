@@ -105,7 +105,7 @@ function LoggedInView() {
   };
 
   return (
-    <div className="flex flex-col w-full h-full relative overflow-hidden pt-16">
+    <div className="flex flex-col w-full h-full relative overflow-hidden">
       {/* Consistent Background */}
       <div className="bg-aurora"></div>
 
@@ -208,7 +208,7 @@ function LandingPage() {
   const { signInWithGoogle } = useUser();
   
   return (
-    <div className="relative w-full overflow-x-hidden text-foreground pt-16">
+    <div className="relative w-full overflow-x-hidden text-foreground">
       <div className="bg-aurora"></div>
 
       {/* Hero Section */}
