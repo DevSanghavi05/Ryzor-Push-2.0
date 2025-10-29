@@ -1,14 +1,9 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useUser, AccountType } from '@/firebase';
-import { LogIn, User, Briefcase, Phone } from 'lucide-react';
+import { Briefcase } from 'lucide-react';
 import Link from 'next/link';
 
 const GoogleIcon = () => (
@@ -47,49 +42,23 @@ const MicrosoftIcon = () => (
 export function AuthProviderButtons() {
   const { signInWithGoogle, signInWithMicrosoft } = useUser();
 
-  const handleGoogleSignIn = (accountType: AccountType) => {
-    signInWithGoogle(accountType);
+  const handleGoogleSignIn = () => {
+    signInWithGoogle('work');
   }
 
-  const handleMicrosoftSignIn = (accountType: AccountType) => {
-    signInWithMicrosoft(accountType);
+  const handleMicrosoftSignIn = () => {
+    signInWithMicrosoft('work');
   }
 
   return (
     <div className="space-y-2 w-full">
-        <p className="text-sm text-muted-foreground text-center">First, connect your primary work account.</p>
-        <Button variant="outline" className="w-full" onClick={() => handleGoogleSignIn('work')}>
+        <Button variant="outline" className="w-full" onClick={handleGoogleSignIn}>
             <GoogleIcon />
-            <Briefcase className="mr-2 h-4 w-4"/>
-            <span>Sign in with Google (Work)</span>
+            <span>Sign in with Google</span>
         </Button>
-        <Button variant="outline" className="w-full" onClick={() => handleMicrosoftSignIn('work')}>
+        <Button variant="outline" className="w-full" onClick={handleMicrosoftSignIn}>
             <MicrosoftIcon />
-            <Briefcase className="mr-2 h-4 w-4"/>
-            <span>Sign in with Microsoft (Work)</span>
-        </Button>
-
-        <div className="relative py-2">
-            <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">
-                Or
-                </span>
-            </div>
-        </div>
-
-         <p className="text-sm text-muted-foreground text-center">You can connect a personal account later.</p>
-         <Button variant="secondary" className="w-full" onClick={() => handleGoogleSignIn('personal')}>
-            <GoogleIcon />
-            <User className="mr-2 h-4 w-4"/>
-            <span>Sign in with Google (Personal)</span>
-        </Button>
-        <Button variant="secondary" className="w-full" onClick={() => handleMicrosoftSignIn('personal')}>
-            <MicrosoftIcon />
-            <User className="mr-2 h-4 w-4"/>
-            <span>Sign in with Microsoft (Personal)</span>
+            <span>Sign in with Microsoft</span>
         </Button>
     </div>
   );

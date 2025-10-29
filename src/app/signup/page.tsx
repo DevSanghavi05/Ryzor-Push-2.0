@@ -14,12 +14,13 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 
-export default function LoginPage() {
-  const { user, loading, signInWithEmail } = useUser();
+export default function SignUpPage() {
+  const { user, loading, signUpWithEmail } = useUser();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -30,16 +31,24 @@ export default function LoginPage() {
     }
   }, [user, loading, router, searchParams]);
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (password !== confirmPassword) {
+      toast({
+        variant: 'destructive',
+        title: 'Passwords do not match',
+        description: 'Please re-enter your password.',
+      });
+      return;
+    }
     setIsSubmitting(true);
     try {
-      await signInWithEmail(email, password);
-      // The useEffect will handle redirection on successful sign-in
+      await signUpWithEmail(email, password);
+      // The useEffect will handle redirection on successful sign-up
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: 'Sign In Failed',
+        title: 'Sign Up Failed',
         description: error.message || 'An unknown error occurred.',
       });
       setIsSubmitting(false);
@@ -61,11 +70,11 @@ export default function LoginPage() {
             <Card className="w-full max-w-sm">
                 <CardHeader className="text-center">
                     <Logo className="h-10 w-10 mx-auto mb-4" />
-                    <CardTitle className="font-headline text-2xl">Welcome Back</CardTitle>
-                    <CardDescription>Sign in to unlock your intelligent workspace.</CardDescription>
+                    <CardTitle className="font-headline text-2xl">Create an Account</CardTitle>
+                    <CardDescription>Join Ryzor AI to unlock your intelligent workspace.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
-                    <form onSubmit={handleSignIn} className="space-y-4">
+                    <form onSubmit={handleSignUp} className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="email">Email</Label>
                             <Input
@@ -84,14 +93,26 @@ export default function LoginPage() {
                                 id="password"
                                 type="password"
                                 required
+                                minLength={6}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 disabled={isSubmitting}
                             />
                         </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="confirm-password">Confirm Password</Label>
+                            <Input
+                                id="confirm-password"
+                                type="password"
+                                required
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                disabled={isSubmitting}
+                            />
+                        </div>
                         <Button type="submit" className="w-full" disabled={isSubmitting}>
                             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Sign In
+                            Sign Up
                         </Button>
                     </form>
 
@@ -101,7 +122,7 @@ export default function LoginPage() {
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
                             <span className="bg-card px-2 text-muted-foreground">
-                                Or continue with
+                                Or sign up with
                             </span>
                         </div>
                     </div>
@@ -109,12 +130,12 @@ export default function LoginPage() {
                     <AuthProviderButtons />
 
                     <p className="px-8 text-center text-sm text-muted-foreground">
-                        Don't have an account?{' '}
+                        Already have an account?{' '}
                         <Link
-                            href="/signup"
+                            href="/login"
                             className="underline underline-offset-4 hover:text-primary"
                         >
-                            Sign Up
+                            Sign In
                         </Link>
                     </p>
                 </CardContent>
@@ -123,3 +144,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
