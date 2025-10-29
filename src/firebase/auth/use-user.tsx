@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -20,6 +19,7 @@ import {
 } from 'firebase/auth';
 import { useAuth } from '@/firebase/provider';
 import { setCookie, destroyCookie, parseCookies } from 'nookies';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export type AccountType = 'work' | 'personal';
 
@@ -67,6 +67,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const auth = useAuth();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const searchParams = useSearchParams();
   
   const [workAccessToken, setWorkAccessToken] = useState<string | null>(() => {
     const cookies = parseCookies();
@@ -110,6 +112,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, [auth, workAccessToken, personalAccessToken]);
 
+  const handleSuccessfulSignIn = () => {
+    const redirectUrl = searchParams.get('redirect') || '/';
+    router.push(redirectUrl);
+  }
+
   // --- Sign In with Google (with Drive access) ---
   const signInWithGoogle = useCallback(async (accountType: AccountType): Promise<UserCredential | void> => {
     if (!auth) {
@@ -140,7 +147,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       if (!user) {
         setUser(result.user);
       }
-
+      handleSuccessfulSignIn();
       return result;
     } catch (error: any) {
       if (
@@ -154,7 +161,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       console.error(`Error signing in with Google for ${accountType} account:`, error);
       throw error; // Re-throw other errors
     }
-  }, [auth, user]);
+  }, [auth, user, router, searchParams]);
 
   // --- Sign In with Microsoft (with OneDrive/365 access) ---
   const signInWithMicrosoft = useCallback(async (accountType: AccountType): Promise<UserCredential | void> => {
@@ -189,6 +196,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       if (!user) {
         setUser(result.user);
       }
+      handleSuccessfulSignIn();
       return result;
     } catch (error: any) {
       if (
@@ -202,7 +210,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       console.error('Error signing in with Microsoft:', error);
       throw error;
     }
-  }, [auth, user]);
+  }, [auth, user, router, searchParams]);
 
   // --- Sign Out ---
   const signOut = async () => {
@@ -210,6 +218,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     try {
       await firebaseSignOut(auth);
       // State and cookies are cleared by the onAuthStateChanged listener
+      router.push('/');
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -218,22 +227,27 @@ export function UserProvider({ children }: { children: ReactNode }) {
   // --- Fetch Google Drive Files ---
   const fetchDriveFiles = useCallback(async (accountType: AccountType) => {
     let currentToken = accountType === 'work' ? workAccessToken : personalAccessToken;
+    const cookies = parseCookies();
+    const googleToken = cookies[`google_access_token_${accountType}`];
+    // We only care about google drive files for now
+    currentToken = googleToken || null;
     
     if (!user) {
       throw new Error("User is not signed in.");
     }
     
     if (!currentToken) {
-        const cookies = parseCookies();
-        currentToken = cookies[`google_access_token_${accountType}`] || cookies[`microsoft_access_token_${accountType}`] || null;
-        if (currentToken) {
-            if (accountType === 'work') setWorkAccessToken(currentToken);
-            else setPersonalAccessToken(currentToken);
+        if (googleToken) {
+            if (accountType === 'work') setWorkAccessToken(googleToken);
+            else setPersonalAccessToken(googleToken);
+            currentToken = googleToken;
         }
     }
 
     if (!currentToken) {
-      throw new Error(`Authentication token for ${accountType} account is missing. Please sign in again.`);
+      // Don't throw an error, just return nothing, as the user may not have connected this account type.
+      console.log(`Authentication token for Google ${accountType} account is missing.`);
+      return;
     }
 
     try {
@@ -250,13 +264,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
         if (accountType === 'work') {
             setWorkAccessToken(null);
             destroyCookie(null, 'google_access_token_work', { path: '/' });
-            destroyCookie(null, 'microsoft_access_token_work', { path: '/' });
         } else {
             setPersonalAccessToken(null);
             destroyCookie(null, 'google_access_token_personal', { path: '/' });
-            destroyCookie(null, 'microsoft_access_token_personal', { path: '/' });
         }
-        throw new Error(`Authentication token for ${accountType} account is invalid. Please sign in again to refresh it.`);
+        throw new Error(`Authentication token for Google ${accountType} account is invalid. Please sign in again to refresh it.`);
       }
 
       if (!response.ok) {

@@ -1,6 +1,6 @@
 'use client';
 import { useUser } from '@/firebase/auth/use-user';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, ComponentType } from 'react';
 import { Loader } from 'lucide-react';
 
@@ -8,14 +8,16 @@ export default function withAuth<P extends object>(WrappedComponent: ComponentTy
   const WithAuthComponent = (props: P) => {
     const { user, loading } = useUser();
     const router = useRouter();
+    const pathname = usePathname();
 
     useEffect(() => {
       if (!loading && !user) {
-        // If the user is not logged in, redirect them to the homepage
-        // where they can click the sign-in button.
-        router.push('/');
+        // If the user is not logged in, redirect them to the login page,
+        // preserving the page they were trying to access.
+        const redirectUrl = `/login?redirect=${encodeURIComponent(pathname)}`;
+        router.push(redirectUrl);
       }
-    }, [user, loading, router]);
+    }, [user, loading, router, pathname]);
 
     if (loading || !user) {
       // Show a loading spinner while we check for the user or during redirection.

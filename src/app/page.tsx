@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -215,12 +214,6 @@ function AnimatedSection({ children }: { children: React.ReactNode }) {
 }
 
 function LandingPage() {
-  const { signInWithGoogle } = useUser();
-  
-  const handleGetStarted = () => {
-    // By default, the first sign-in is for the 'work' account.
-    signInWithGoogle('work');
-  }
 
   return (
     <div className="relative w-full overflow-x-hidden text-foreground">
@@ -253,11 +246,13 @@ function LandingPage() {
                     transition={{ duration: 0.5, delay: 0.2 }}
                 >
                     <Button 
-                        onClick={handleGetStarted}
+                        asChild
                         size="lg"
                         className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg dark:shadow-[0_0_20px_rgba(var(--primary-hsl),0.4)] hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(var(--primary-hsl),0.6)] transition-all"
                     >
-                        <Briefcase className="mr-2" /> Connect Your Work Account
+                        <Link href="/login">
+                         <Briefcase className="mr-2" /> Get Started
+                        </Link>
                     </Button>
                 </motion.div>
             </div>
@@ -296,13 +291,15 @@ function LandingPage() {
           <p className="text-lg text-muted-foreground mb-8">
             Ryzor AI turns messy documents into living intelligence. No folders. No chaos. Just clarity — instantly. Read our <Link href="/privacy" className="underline hover:text-primary">Privacy Policy</Link> to learn more.
           </p>
-          <Button 
-            onClick={handleGetStarted}
-            size="lg"
-            className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg dark:shadow-[0_0_20px_rgba(var(--primary-hsl),0.4)] hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(var(--primary-hsl),0.6)] transition-all"
-          >
-            Try Ryzor AI Now
-          </Button>
+           <Button 
+                asChild
+                size="lg"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg dark:shadow-[0_0_20px_rgba(var(--primary-hsl),0.4)] hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(var(--primary-hsl),0.6)] transition-all"
+            >
+                <Link href="/login">
+                    Try Ryzor AI Now
+                </Link>
+            </Button>
         </div>
       </AnimatedSection>
     </div>

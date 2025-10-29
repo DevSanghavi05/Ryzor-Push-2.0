@@ -5,8 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { AuthProviderDropdown } from '../auth/auth-provider-dropdown';
-import { BookCopy } from 'lucide-react';
+import { BookCopy, LogIn } from 'lucide-react';
 import { ThemeToggleButton } from '../theme-toggle';
 import { Logo } from './logo';
 
@@ -51,7 +50,12 @@ export function Header() {
               {user ? (
                   <UserAvatar />
               ) : (
-                  <AuthProviderDropdown isHeader={true} />
+                  <Button asChild variant="outline" size="sm">
+                    <Link href="/login">
+                        <LogIn className="mr-2 h-4 w-4" />
+                        Sign In
+                    </Link>
+                 </Button>
               )}
               <ThemeToggleButton />
             </div>

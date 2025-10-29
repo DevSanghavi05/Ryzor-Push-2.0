@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -9,7 +8,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useUser, AccountType } from '@/firebase';
-import { LogIn, User, Briefcase } from 'lucide-react';
+import { LogIn, User, Briefcase, Phone } from 'lucide-react';
+import Link from 'next/link';
 
 const GoogleIcon = () => (
     <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2">
@@ -44,7 +44,7 @@ const MicrosoftIcon = () => (
 );
 
 
-export function AuthProviderDropdown({ isHeader = false }: { isHeader?: boolean }) {
+export function AuthProviderButtons() {
   const { signInWithGoogle, signInWithMicrosoft } = useUser();
 
   const handleGoogleSignIn = (accountType: AccountType) => {
@@ -56,41 +56,41 @@ export function AuthProviderDropdown({ isHeader = false }: { isHeader?: boolean 
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        {isHeader ? (
-             <Button variant="outline" size="sm">
-                <LogIn className="mr-2 h-4 w-4" />
-                Sign In
-            </Button>
-        ) : (
-            <Button variant="link" className="text-muted-foreground hover:text-primary p-0 h-auto">
-                Sign In
-            </Button>
-        )}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => handleGoogleSignIn('work')}>
+    <div className="space-y-2 w-full">
+        <p className="text-sm text-muted-foreground text-center">First, connect your primary work account.</p>
+        <Button variant="outline" className="w-full" onClick={() => handleGoogleSignIn('work')}>
             <GoogleIcon />
             <Briefcase className="mr-2 h-4 w-4"/>
             <span>Sign in with Google (Work)</span>
-        </DropdownMenuItem>
-         <DropdownMenuItem onClick={() => handleGoogleSignIn('personal')}>
-            <GoogleIcon />
-            <User className="mr-2 h-4 w-4"/>
-            <span>Sign in with Google (Personal)</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleMicrosoftSignIn('work')}>
+        </Button>
+        <Button variant="outline" className="w-full" onClick={() => handleMicrosoftSignIn('work')}>
             <MicrosoftIcon />
             <Briefcase className="mr-2 h-4 w-4"/>
             <span>Sign in with Microsoft (Work)</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleMicrosoftSignIn('personal')}>
+        </Button>
+
+        <div className="relative py-2">
+            <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">
+                Or
+                </span>
+            </div>
+        </div>
+
+         <p className="text-sm text-muted-foreground text-center">You can connect a personal account later.</p>
+         <Button variant="secondary" className="w-full" onClick={() => handleGoogleSignIn('personal')}>
+            <GoogleIcon />
+            <User className="mr-2 h-4 w-4"/>
+            <span>Sign in with Google (Personal)</span>
+        </Button>
+        <Button variant="secondary" className="w-full" onClick={() => handleMicrosoftSignIn('personal')}>
             <MicrosoftIcon />
             <User className="mr-2 h-4 w-4"/>
             <span>Sign in with Microsoft (Personal)</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        </Button>
+    </div>
   );
 }
