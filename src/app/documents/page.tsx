@@ -20,7 +20,8 @@ import {
     HardDriveUpload,
     Wand,
     RefreshCw,
-    CheckCircle2
+    CheckCircle2,
+    DownloadCloud
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -81,6 +82,7 @@ function DocumentsPageContent() {
   const [loading, setLoading] = useState(true);
   const [loadingDrive, setLoadingDrive] = useState(false);
   const [importingDocId, setImportingDocId] = useState<string | null>(null);
+  const [isImportingAll, setIsImportingAll] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
   const searchParams = useSearchParams();
@@ -168,6 +170,107 @@ function DocumentsPageContent() {
     }
   };
 
+  const importDocument = async (doc: Document): Promise<boolean> => {
+    if (!accessToken || !user) {
+       toast({ variant: 'destructive', title: "Authentication Error", description: "Cannot import document without a valid session." });
+       return false;
+    }
+    
+    setImportingDocId(doc.id);
+
+    try {
+        const result = await extractGoogleDocContent({
+            fileId: doc.id,
+            mimeType: doc.mimeType,
+            accessToken: accessToken,
+        });
+
+        if (!result.content) {
+            throw new Error("No content was extracted from the document.");
+        }
+
+        const storageKey = `documents_${user.uid}`;
+        const existingDocuments = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        
+        const newDocRecord = {
+            id: doc.id,
+            name: doc.name,
+            uploaded: new Date().toISOString(),
+            textContent: result.content,
+            source: 'drive',
+            mimeType: doc.mimeType,
+            webViewLink: doc.webViewLink,
+        };
+
+        const contentKey = `document_content_${doc.id}`;
+        localStorage.setItem(contentKey, `data:text/plain;base64,${btoa(unescape(encodeURIComponent(result.content)))}`);
+
+        const docIndex = existingDocuments.findIndex((d: any) => d.id === doc.id);
+        if (docIndex > -1) {
+            existingDocuments[docIndex] = newDocRecord;
+        } else {
+            existingDocuments.unshift(newDocRecord);
+        }
+        localStorage.setItem(storageKey, JSON.stringify(existingDocuments));
+
+        setDocuments(prevDocs => prevDocs.map(d => d.id === doc.id ? {...d, isImported: true } : d));
+        return true;
+
+    } catch (error: any) {
+        console.error(`Error importing ${doc.name}:`, error);
+        toast({
+            variant: 'destructive',
+            title: `Import Failed for ${doc.name}`,
+            description: error.message || "Could not import the document.",
+        });
+        return false;
+    } finally {
+        setImportingDocId(null);
+    }
+  };
+
+  const handleImportAndAnalyze = async (doc: Document) => {
+    toast({
+       title: 'Importing Document...',
+       description: `Extracting content from ${doc.name}. This may take a moment.`,
+     });
+    const success = await importDocument(doc);
+    if (success) {
+      toast({
+        title: "Import Successful",
+        description: `${doc.name} is now available for analysis.`,
+      });
+    }
+  };
+
+  const handleImportAll = async () => {
+    const docsToImport = documents.filter(doc => doc.source === 'drive' && !doc.isImported);
+    if (docsToImport.length === 0) {
+        toast({ title: 'Nothing to Import', description: 'All Google Drive files have already been imported.' });
+        return;
+    }
+
+    setIsImportingAll(true);
+    let successCount = 0;
+    
+    toast({ title: 'Starting Bulk Import...', description: `Importing ${docsToImport.length} documents.`});
+    
+    for (const doc of docsToImport) {
+        const success = await importDocument(doc);
+        if (success) {
+            successCount++;
+        }
+    }
+
+    setIsImportingAll(false);
+    toast({
+        title: 'Bulk Import Complete',
+        description: `Successfully imported ${successCount} out of ${docsToImport.length} documents.`,
+    });
+  };
+
+  const docsToImportCount = documents.filter(doc => doc.source === 'drive' && !doc.isImported).length;
+
 
   const filteredDocuments = documents
     .filter(doc => doc.name.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -234,78 +337,6 @@ function DocumentsPageContent() {
     }
   };
 
-  const handleImportAndAnalyze = async (doc: Document) => {
-     if (!accessToken) {
-        toast({ variant: 'destructive', title: "Authentication Error", description: "Cannot import document without a valid session." });
-        return;
-     }
-     
-     setImportingDocId(doc.id);
-     toast({
-        title: 'Importing Document...',
-        description: 'Extracting content. This may take a moment.',
-      });
-
-    try {
-      const result = await extractGoogleDocContent({
-          fileId: doc.id,
-          mimeType: doc.mimeType,
-          accessToken: accessToken,
-      });
-
-      if (!result.content) {
-        throw new Error("No content was extracted from the document.");
-      }
-
-      // Save the extracted content and metadata to local storage
-      const storageKey = `documents_${user!.uid}`;
-      const existingDocuments = JSON.parse(localStorage.getItem(storageKey) || '[]');
-      
-      const newDocRecord = {
-        id: doc.id,
-        name: doc.name,
-        uploaded: new Date().toISOString(),
-        textContent: result.content,
-        source: 'drive', // It's from drive, but now it's "imported"
-        mimeType: doc.mimeType,
-        webViewLink: doc.webViewLink,
-      };
-
-      // Store content in a separate key
-      const contentKey = `document_content_${doc.id}`;
-      // For Drive docs, we don't have a viewable Data URL, so we store the text content itself as a proxy.
-      // A more advanced implementation might create a viewable representation.
-      localStorage.setItem(contentKey, `data:text/plain;base64,${btoa(unescape(encodeURIComponent(result.content)))}`);
-
-
-      // Add or update the document in the main list
-      const docIndex = existingDocuments.findIndex((d: any) => d.id === doc.id);
-      if (docIndex > -1) {
-          existingDocuments[docIndex] = newDocRecord;
-      } else {
-          existingDocuments.unshift(newDocRecord);
-      }
-      localStorage.setItem(storageKey, JSON.stringify(existingDocuments));
-
-      // Update the UI state
-      setDocuments(prevDocs => prevDocs.map(d => d.id === doc.id ? {...d, isImported: true } : d));
-
-      toast({
-        title: "Import Successful",
-        description: `${doc.name} is now available for analysis.`,
-      });
-
-    } catch (error: any) {
-      console.error("Error importing Google Doc:", error);
-      toast({
-        variant: 'destructive',
-        title: "Import Failed",
-        description: error.message || "Could not import the document.",
-      });
-    } finally {
-        setImportingDocId(null);
-    }
-  };
 
   return (
     <div className="flex flex-col min-h-dvh bg-background relative pt-16">
@@ -346,7 +377,14 @@ function DocumentsPageContent() {
                   disabled={loadingDrive}
                 >
                     <RefreshCw className={`mr-2 h-4 w-4 ${loadingDrive ? 'animate-spin' : ''}`} />
-                    Sync Google Drive
+                    Sync
+                </Button>
+                <Button
+                    onClick={handleImportAll}
+                    disabled={loadingDrive || isImportingAll || docsToImportCount === 0}
+                >
+                    {isImportingAll ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <DownloadCloud className="mr-2 h-4 w-4" />}
+                    Import All ({docsToImportCount})
                 </Button>
             </div>
           </div>
@@ -382,7 +420,7 @@ function DocumentsPageContent() {
                         {doc.source === 'drive' && (
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Button variant="secondary" size="sm" onClick={() => handleImportAndAnalyze(doc)} disabled={importingDocId === doc.id || doc.isImported}>
+                                    <Button variant="secondary" size="sm" onClick={() => handleImportAndAnalyze(doc)} disabled={importingDocId === doc.id || doc.isImported || isImportingAll}>
                                         {importingDocId === doc.id ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : doc.isImported ? <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" /> : <Wand className="mr-2 h-4 w-4" />}
                                         {doc.isImported ? 'Imported' : 'Import'}
                                     </Button>
@@ -478,3 +516,5 @@ function DocumentsPage() {
 }
 
 export default withAuth(DocumentsPage);
+
+    
