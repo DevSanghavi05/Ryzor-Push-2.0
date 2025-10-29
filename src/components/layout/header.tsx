@@ -1,7 +1,6 @@
-
 'use client';
 
-import { LogOut } from 'lucide-react';
+import { LogOut, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/firebase';
@@ -37,6 +36,12 @@ export function Header() {
                         <Link href="/documents">
                             <BookCopy />
                             My Documents
+                        </Link>
+                    </Button>
+                    <Button asChild variant="ghost" >
+                        <Link href="/trash">
+                            <Trash2 />
+                            Trash
                         </Link>
                     </Button>
                 </>
