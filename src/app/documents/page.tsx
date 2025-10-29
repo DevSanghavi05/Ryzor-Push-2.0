@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Header } from '@/components/layout/header';
@@ -20,7 +21,8 @@ import {
     Wand,
     RefreshCw,
     CheckCircle2,
-    DownloadCloud
+    DownloadCloud,
+    FilePenLine
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -45,6 +47,15 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -93,6 +104,9 @@ function DocumentsPageContent() {
 
   const [showTrashConfirm, setShowTrashConfirm] = useState<Document | null>(null);
   const { toast } = useToast();
+
+  const [renamingDoc, setRenamingDoc] = useState<Document | null>(null);
+  const [newName, setNewName] = useState("");
   
   const loadDocuments = () => {
     if (!user) return;
@@ -338,6 +352,41 @@ function DocumentsPageContent() {
     setShowTrashConfirm(null);
   }
 
+  const handleOpenRenameDialog = (doc: Document) => {
+    setRenamingDoc(doc);
+    setNewName(doc.name);
+  };
+
+  const handleConfirmRename = () => {
+    if (!renamingDoc || !newName.trim() || !user) return;
+
+    const docsKey = `documents_${user.uid}`;
+    const existingDocs = JSON.parse(localStorage.getItem(docsKey) || '[]');
+    
+    const updatedStoredDocs = existingDocs.map((d: any) => {
+        if (d.id === renamingDoc.id) {
+            return { ...d, name: newName.trim() };
+        }
+        return d;
+    });
+
+    localStorage.setItem(docsKey, JSON.stringify(updatedStoredDocs));
+
+    setDocuments(prevDocs => 
+        prevDocs.map(d => 
+            d.id === renamingDoc.id ? { ...d, name: newName.trim() } : d
+        )
+    );
+
+    toast({
+        title: "Rename Successful",
+        description: `Renamed to "${newName.trim()}".`,
+    });
+
+    setRenamingDoc(null);
+    setNewName("");
+  };
+
   const handleDocumentClick = (e: React.MouseEvent, doc: Document) => {
     if (doc.source === 'drive' && !doc.isImported) {
         window.open(doc.webViewLink, '_blank');
@@ -450,6 +499,9 @@ function DocumentsPageContent() {
                                 <DropdownMenuItem onSelect={() => handleDocumentClick(new MouseEvent('click') as any, doc)}>
                                     <ExternalLink className="mr-2 h-4 w-4" /> Open
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => handleOpenRenameDialog(doc)} disabled={!doc.isImported}>
+                                    <FilePenLine className="mr-2 h-4 w-4" /> Rename
+                                </DropdownMenuItem>
                                <Tooltip>
                                  <TooltipTrigger asChild>
                                     <DropdownMenuItem onSelect={(e) => e.preventDefault()} disabled={doc.source === 'local'}>
@@ -513,6 +565,33 @@ function DocumentsPageContent() {
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+        <Dialog open={!!renamingDoc} onOpenChange={(open) => !open && setRenamingDoc(null)}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Rename Document</DialogTitle>
+                    <DialogDescription>
+                        Enter a new name for the document "{renamingDoc?.name}".
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="name" className="text-right">
+                            Name
+                        </Label>
+                        <Input
+                            id="name"
+                            value={newName}
+                            onChange={(e) => setNewName(e.target.value)}
+                            className="col-span-3"
+                        />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setRenamingDoc(null)}>Cancel</Button>
+                    <Button onClick={handleConfirmRename}>Save</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
       </TooltipProvider>
       </main>
     </div>
@@ -526,3 +605,5 @@ function DocumentsPage() {
 }
 
 export default withAuth(DocumentsPage);
+
+    
