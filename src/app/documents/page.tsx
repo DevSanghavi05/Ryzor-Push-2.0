@@ -325,36 +325,42 @@ function DocumentsPageContent() {
 
   const confirmTrash = () => {
     if (!showTrashConfirm || !user) return;
-
+  
     const docsKey = `documents_${user.uid}`;
     const trashKey = `trash_${user.uid}`;
-
+  
     // Get stored docs and trash
-    const existingDocs = JSON.parse(localStorage.getItem(docsKey) || '[]');
-    const existingTrash = JSON.parse(localStorage.getItem(trashKey) || '[]');
-
-    // Find and remove doc from stored docs
-    const updatedStoredDocs = existingDocs.filter((d: any) => d.id !== showTrashConfirm.id);
-    localStorage.setItem(docsKey, JSON.stringify(updatedStoredDocs));
-
-    // Remove content from storage (optional)
-    localStorage.removeItem(`document_content_${showTrashConfirm.id}`);
-
+    let existingDocs = JSON.parse(localStorage.getItem(docsKey) || '[]');
+    const existingTrash = loadTrash();
+  
+    const docToTrash = documents.find(d => d.id === showTrashConfirm.id);
+  
+    if (!docToTrash) return;
+  
     // Add to trash
     const trashedDoc = {
-        ...showTrashConfirm,
-        trashedAt: new Date().toISOString(),
+      ...docToTrash,
+      trashedAt: new Date().toISOString(),
     };
     localStorage.setItem(trashKey, JSON.stringify([trashedDoc, ...existingTrash]));
-
-    // Update state
+  
+    // If it's an imported file, remove it from the main documents list in storage.
+    // If it's just a Drive reference, we don't need to touch the main storage list, just the UI state.
+    if (docToTrash.isImported) {
+      existingDocs = existingDocs.filter((d: any) => d.id !== showTrashConfirm.id);
+      localStorage.setItem(docsKey, JSON.stringify(existingDocs));
+       // Also remove the content file
+      localStorage.removeItem(`document_content_${showTrashConfirm.id}`);
+    }
+  
+    // Update UI state by removing the trashed item
     setDocuments(prevDocs => prevDocs.filter(d => d.id !== showTrashConfirm.id));
-
+  
     toast({
-        title: "Moved to Trash",
-        description: `${showTrashConfirm.name} has been moved to trash.`,
+      title: "Moved to Trash",
+      description: `${showTrashConfirm.name} has been moved to trash.`,
     });
-
+  
     setShowTrashConfirm(null);
   };
 
