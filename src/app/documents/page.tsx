@@ -317,37 +317,47 @@ function DocumentsPageContent() {
     setShowTrashConfirm(doc);
   }
 
+  const loadTrash = () => {
+    if (!user) return [];
+    const trashKey = `trash_${user.uid}`;
+    return JSON.parse(localStorage.getItem(trashKey) || '[]');
+  };
+
   const confirmTrash = () => {
     if (!showTrashConfirm || !user) return;
-  
-    const docsKey = `documents_${user.uid}`;
-    
-    // Remove from the main documents list in state
-    const updatedDocuments = documents.filter(d => !(d.id === showTrashConfirm.id && d.source === showTrashConfirm.source));
-    setDocuments(updatedDocuments);
-  
-    // If it's a local or imported file, it must be removed from the 'documents' storage as well
-    if (showTrashConfirm.isImported || showTrashConfirm.source === 'local') {
-        const existingDocs = JSON.parse(localStorage.getItem(docsKey) || '[]');
-        const updatedStoredDocs = existingDocs.filter((d: any) => d.id !== showTrashConfirm.id);
-        localStorage.setItem(docsKey, JSON.stringify(updatedStoredDocs));
 
-        // Also remove the content file to clean up storage
-        localStorage.removeItem(`document_content_${showTrashConfirm.id}`);
-    }
-  
-    // Add to a separate trash list if needed (optional, for undo functionality)
-    // const trashKey = `trash_${user.uid}`;
-    // const existingTrash = JSON.parse(localStorage.getItem(trashKey) || '[]');
-    // localStorage.setItem(trashKey, JSON.stringify([showTrashConfirm, ...existingTrash]));
-  
+    const docsKey = `documents_${user.uid}`;
+    const trashKey = `trash_${user.uid}`;
+
+    // Get stored docs and trash
+    const existingDocs = JSON.parse(localStorage.getItem(docsKey) || '[]');
+    const existingTrash = JSON.parse(localStorage.getItem(trashKey) || '[]');
+
+    // Find and remove doc from stored docs
+    const updatedStoredDocs = existingDocs.filter((d: any) => d.id !== showTrashConfirm.id);
+    localStorage.setItem(docsKey, JSON.stringify(updatedStoredDocs));
+
+    // Remove content from storage (optional)
+    localStorage.removeItem(`document_content_${showTrashConfirm.id}`);
+
+    // Add to trash
+    const trashedDoc = {
+        ...showTrashConfirm,
+        trashedAt: new Date().toISOString(),
+    };
+    localStorage.setItem(trashKey, JSON.stringify([trashedDoc, ...existingTrash]));
+
+    // Update state
+    setDocuments(prevDocs => prevDocs.filter(d => d.id !== showTrashConfirm.id));
+
     toast({
         title: "Moved to Trash",
         description: `${showTrashConfirm.name} has been moved to trash.`,
     });
-    
+
     setShowTrashConfirm(null);
-  }
+  };
+
 
   const handleOpenRenameDialog = (doc: Document) => {
     setRenamingDoc(doc);
