@@ -168,7 +168,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
     
     provider.addScope('Files.Read.All');
     provider.addScope('User.Read');
-    provider.setCustomParameters({ tenant: 'edb93353-33cc-4551-a2f5-170be96d8b9d' });
+    // Use 'common' to allow work, school, and personal accounts.
+    provider.setCustomParameters({ tenant: 'common' });
     
     try {
       const result = await signInWithPopup(auth, provider);
@@ -214,7 +215,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const signInWithEmail = useCallback(async (email: string, password: string): Promise<UserCredential | void> => {
     if (!auth) return;
     try {
-      return await signInWithEmailAndPassword(auth, email, password);
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      // The onAuthStateChanged listener will handle setting the user and redirection
+      return result;
     } catch (error: any) {
       console.error('Error signing in with email:', error);
       throw error;
