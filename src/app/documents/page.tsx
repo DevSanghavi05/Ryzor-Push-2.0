@@ -523,7 +523,7 @@ function DocumentsPageContent() {
                             <p className="text-sm text-muted-foreground flex items-center gap-2">
                                 <span className="flex items-center gap-1">
                                   {doc.accountType === 'work' ? <Briefcase size={12} /> : <User size={12} />}
-                                  {doc.accountType.charAt(0).toUpperCase() + doc.accountType.slice(1)}
+                                  {doc.accountType && doc.accountType.charAt(0).toUpperCase() + doc.accountType.slice(1)}
                                 </span>
                                 {doc.source === 'drive' && doc.sourceProvider && (
                                     <>

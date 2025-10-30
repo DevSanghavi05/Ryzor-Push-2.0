@@ -118,6 +118,7 @@ function AddDocumentPage() {
             textContent: textContent,
             source: 'local',
             mimeType: 'application/pdf',
+            accountType: 'personal',
           };
           
           const viewableContent = e.target?.result;
