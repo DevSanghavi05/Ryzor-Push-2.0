@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, Loader2, User, Bot, PlusCircle, Brain, MessageSquare, Wand, Briefcase } from 'lucide-react';
+import { Send, Loader2, User, PlusCircle, Brain, MessageSquare, Wand, Briefcase } from 'lucide-react';
 import { useUser, AccountType } from '@/firebase';
 import { ask } from '@/app/actions';
 import withAuth from '@/firebase/auth/with-auth';
@@ -12,6 +13,7 @@ import { MarkdownContent } from '@/components/chat/markdown-content';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { motion, useInView } from 'framer-motion';
+import { Logo } from '@/components/layout/logo';
 
 export interface Message {
   role: 'user' | 'model';
@@ -126,8 +128,8 @@ function LoggedInView() {
             }`}
           >
             {msg.role === 'model' && (
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                <Bot size={16} />
+              <div className="w-8 h-8 rounded-full bg-card flex items-center justify-center text-primary p-1.5">
+                <Logo />
               </div>
             )}
             <div
@@ -147,8 +149,8 @@ function LoggedInView() {
 
         {loading && messages[messages.length - 1]?.role === 'user' && (
           <div className="flex items-start gap-3 justify-start">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-              <Bot size={16} />
+            <div className="w-8 h-8 rounded-full bg-card flex items-center justify-center text-primary p-1.5">
+              <Logo />
             </div>
             <div className="p-3 rounded-lg max-w-[85%] bg-card flex items-center">
               <MarkdownContent content={'▋'} />
