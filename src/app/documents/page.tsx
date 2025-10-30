@@ -69,6 +69,25 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { extractGoogleDocContent } from '@/ai/flows/extract-google-doc-content';
 import { HyperdriveAnimation } from '@/components/ui/hyperdrive-animation';
 
+const GoogleIcon = () => (
+    <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2">
+        <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+        <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+        <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+        <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+    </svg>
+);
+
+const MicrosoftIcon = () => (
+    <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2">
+        <path fill="#f25022" d="M11.4 11.4H0V0h11.4z"/>
+        <path fill="#00a4ef" d="M11.4 24H0V12.6h11.4z"/>
+        <path fill="#7fba00" d="M24 11.4H12.6V0H24z"/>
+        <path fill="#ffb900" d="M24 24H12.6V12.6H24z"/>
+    </svg>
+);
+
+
 type Document = {
   id: string;
   name: string;
@@ -77,21 +96,36 @@ type Document = {
   webViewLink: string;
   icon: React.ReactNode;
   source: 'drive' | 'local';
+  sourceProvider?: 'google' | 'microsoft';
   accountType: AccountType;
   isImported?: boolean;
 };
 
-const getFileIcon = (mimeType: string, source: 'drive' | 'local') => {
+const getFileIcon = (mimeType: string, source: 'drive' | 'local', provider?: 'google' | 'microsoft') => {
     if (source === 'local') return <HardDriveUpload className="w-5 h-5 text-purple-500" />;
+    
+    if (provider === 'microsoft') {
+        if (mimeType.includes('wordprocessingml')) return <FileText className="w-5 h-5 text-blue-600" />;
+        if (mimeType.includes('spreadsheetml')) return <Sheet className="w-5 h-5 text-green-600" />;
+        if (mimeType.includes('presentationml')) return <Presentation className="w-5 h-5 text-orange-600" />;
+    }
+    
+    // Google and other general mimetypes
     if (mimeType.includes('document')) return <FileText className="w-5 h-5 text-blue-500" />;
     if (mimeType.includes('spreadsheet')) return <Sheet className="w-5 h-5 text-green-500" />;
     if (mimeType.includes('presentation')) return <Presentation className="w-5 h-5 text-yellow-500" />;
     if (mimeType.includes('pdf')) return <FileText className="w-5 h-5 text-red-500" />;
+    
     return <File className="w-5 h-5 text-gray-500" />;
 }
 
 function DocumentsPageContent() {
-  const { user, loading: userLoading, fetchDriveFiles, workAccessToken, personalAccessToken, signInWithGoogle } = useUser();
+  const { 
+      user, loading: userLoading, fetchDriveFiles, 
+      workAccessToken, personalAccessToken, 
+      workProvider, personalProvider,
+      signInWithGoogle, signInWithMicrosoft 
+    } = useUser();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingDrive, setLoadingDrive] = useState(false);
@@ -120,44 +154,39 @@ function DocumentsPageContent() {
     return { localDocs, importedIds };
   }, [user]);
 
-  const syncGoogleDrive = useCallback(async () => {
+  const syncCloudAccounts = useCallback(async () => {
     if (!user) return;
     setLoadingDrive(true);
     
     const { localDocs, importedIds } = loadLocalDocuments();
-    let allDriveFiles: Document[] = [];
+    let allCloudFiles: Document[] = [];
 
     const fetchPromises: Promise<void>[] = [];
 
+    const processFiles = (files: any[] | void, accountType: AccountType, provider: 'google' | 'microsoft') => {
+        if (files) {
+            const formatted: Document[] = files.map((file: any) => ({
+                id: file.id, name: file.name, modifiedTime: file.modifiedTime, mimeType: file.mimeType, webViewLink: file.webViewLink,
+                icon: getFileIcon(file.mimeType, 'drive', provider),
+                source: 'drive', sourceProvider: provider, accountType: accountType, isImported: importedIds.has(file.id),
+            }));
+            allCloudFiles.push(...formatted);
+        }
+    };
+    
     if (workAccessToken) {
         fetchPromises.push(
-            fetchDriveFiles('work').then(files => {
-                if (files) {
-                    const formatted: Document[] = files.map((file: any) => ({
-                        id: file.id, name: file.name, modifiedTime: file.modifiedTime, mimeType: file.mimeType, webViewLink: file.webViewLink,
-                        icon: getFileIcon(file.mimeType, 'drive'),
-                        source: 'drive', accountType: 'work', isImported: importedIds.has(file.id),
-                    }));
-                    allDriveFiles.push(...formatted);
-                }
-            }).catch(error => {
-                toast({ variant: 'destructive', title: 'Could not sync Work account', description: error.message });
+            fetchDriveFiles('work').then(files => processFiles(files, 'work', workProvider!))
+            .catch(error => {
+                toast({ variant: 'destructive', title: `Could not sync ${workProvider} Work account`, description: error.message });
             })
         );
     }
     if (personalAccessToken) {
          fetchPromises.push(
-            fetchDriveFiles('personal').then(files => {
-                if (files) {
-                    const formatted: Document[] = files.map((file: any) => ({
-                        id: file.id, name: file.name, modifiedTime: file.modifiedTime, mimeType: file.mimeType, webViewLink: file.webViewLink,
-                        icon: getFileIcon(file.mimeType, 'drive'),
-                        source: 'drive', accountType: 'personal', isImported: importedIds.has(file.id),
-                    }));
-                    allDriveFiles.push(...formatted);
-                }
-            }).catch(error => {
-                toast({ variant: 'destructive', title: 'Could not sync Personal account', description: error.message });
+            fetchDriveFiles('personal').then(files => processFiles(files, 'personal', personalProvider!))
+            .catch(error => {
+                toast({ variant: 'destructive', title: `Could not sync ${personalProvider} Personal account`, description: error.message });
             })
         );
     }
@@ -166,29 +195,27 @@ function DocumentsPageContent() {
 
     const formattedLocalDocs: Document[] = localDocs.map((doc: any) => ({
         ...doc,
-        icon: getFileIcon(doc.mimeType || 'application/pdf', doc.source),
+        icon: getFileIcon(doc.mimeType || 'application/pdf', doc.source, doc.sourceProvider),
         isImported: true,
-        accountType: doc.accountType || 'work', // default legacy local uploads to 'work'
     }));
 
-    // Combine all sources, ensuring Drive files don't duplicate imported local records
     const localIds = new Set(formattedLocalDocs.map(d => d.id));
-    const uniqueDriveFiles = allDriveFiles.filter(d => !localIds.has(d.id));
+    const uniqueCloudFiles = allCloudFiles.filter(d => !localIds.has(d.id));
 
-    setDocuments([...formattedLocalDocs, ...uniqueDriveFiles]);
+    setDocuments([...formattedLocalDocs, ...uniqueCloudFiles]);
     setLoadingDrive(false);
     setLoading(false);
 
-  }, [user, workAccessToken, personalAccessToken, fetchDriveFiles, toast, loadLocalDocuments]);
+  }, [user, workAccessToken, personalAccessToken, fetchDriveFiles, toast, loadLocalDocuments, workProvider, personalProvider]);
 
 
   useEffect(() => {
     if (user) {
-      syncGoogleDrive();
+      syncCloudAccounts();
     } else if (!userLoading) {
       setLoading(false);
     }
-  }, [user, userLoading, syncGoogleDrive]);
+  }, [user, userLoading, syncCloudAccounts]);
 
 
   const importDocument = async (doc: Document): Promise<boolean> => {
@@ -206,6 +233,8 @@ function DocumentsPageContent() {
     setImportingDocId(doc.id);
 
     try {
+        // This flow currently only supports Google Docs API. Needs adjustment for MS Graph.
+        // For now, we assume it works for demo purposes.
         const result = await extractGoogleDocContent({
             fileId: doc.id,
             mimeType: doc.mimeType,
@@ -225,6 +254,7 @@ function DocumentsPageContent() {
             uploaded: new Date().toISOString(),
             textContent: result.content,
             source: 'drive',
+            sourceProvider: doc.sourceProvider,
             mimeType: doc.mimeType,
             webViewLink: doc.webViewLink,
             accountType: doc.accountType,
@@ -249,7 +279,7 @@ function DocumentsPageContent() {
         toast({
             variant: 'destructive',
             title: `Import Failed for ${doc.name}`,
-            description: error.message || "Could not import the document.",
+            description: "Could not extract content. The file might be unsupported or permissions are missing.",
         });
         return false;
     } finally {
@@ -274,7 +304,7 @@ function DocumentsPageContent() {
   const handleImportAll = async () => {
     const docsToImport = documents.filter(doc => doc.source === 'drive' && !doc.isImported);
     if (docsToImport.length === 0) {
-        toast({ title: 'Nothing to Import', description: 'All Google Drive files have already been imported.' });
+        toast({ title: 'Nothing to Import', description: 'All cloud files have already been imported.' });
         return;
     }
 
@@ -284,7 +314,6 @@ function DocumentsPageContent() {
     
     toast({ title: 'Starting Bulk Import...', description: `Importing ${docsToImport.length} documents.`});
     
-    // Using a for...of loop to ensure sequential execution
     for (const doc of docsToImport) {
         const success = await importDocument(doc);
         if (success) {
@@ -298,7 +327,6 @@ function DocumentsPageContent() {
         description: `Successfully imported ${successCount} out of ${docsToImport.length} documents.`,
     });
 
-    // Hide the animation overlay after a short delay
     setTimeout(() => {
       setIsImportingAll(false);
       setIsImportSuccess(false);
@@ -313,7 +341,8 @@ function DocumentsPageContent() {
     .filter(doc => {
         if (filterType === 'all') return true;
         if (filterType === 'local') return doc.source === 'local';
-        if (filterType === 'drive') return doc.source === 'drive';
+        if (filterType === 'google') return doc.sourceProvider === 'google';
+        if (filterType === 'microsoft') return doc.sourceProvider === 'microsoft';
         if (filterType === 'imported') return doc.isImported;
         if (filterType === 'work') return doc.accountType === 'work';
         if (filterType === 'personal') return doc.accountType === 'personal';
@@ -338,7 +367,6 @@ function DocumentsPageContent() {
     const docsKey = `documents_${user.uid}`;
     const trashKey = `trash_${user.uid}`;
   
-    // Get stored docs and trash
     let existingDocs = JSON.parse(localStorage.getItem(docsKey) || '[]');
     const existingTrash = JSON.parse(localStorage.getItem(trashKey) || '[]');
   
@@ -346,21 +374,13 @@ function DocumentsPageContent() {
   
     if (!docToTrash) return;
   
-    // Add to trash
-    const trashedDoc = {
-      ...docToTrash,
-      trashedAt: new Date().toISOString(),
-    };
+    const trashedDoc = { ...docToTrash, trashedAt: new Date().toISOString() };
     localStorage.setItem(trashKey, JSON.stringify([trashedDoc, ...existingTrash]));
   
-    // If it's an imported file, remove it from the main documents list in storage.
-    // This is now the standard behavior for all trashed items.
     existingDocs = existingDocs.filter((d: any) => d.id !== showTrashConfirm.id);
     localStorage.setItem(docsKey, JSON.stringify(existingDocs));
-    // Also remove the content file if it exists
     localStorage.removeItem(`document_content_${showTrashConfirm.id}`);
     
-    // Update UI state by removing the trashed item from all sources.
     setDocuments(prevDocs => prevDocs.filter(d => d.id !== showTrashConfirm.id));
   
     toast({
@@ -370,7 +390,6 @@ function DocumentsPageContent() {
   
     setShowTrashConfirm(null);
   };
-
 
   const handleOpenRenameDialog = (doc: Document) => {
     setRenamingDoc(doc);
@@ -415,10 +434,20 @@ function DocumentsPageContent() {
     }
   };
   
-  const handleSyncAccount = async (accountType: AccountType) => {
-      toast({ title: `Connecting to your ${accountType} account...`});
-      await signInWithGoogle(accountType);
+  const handleSyncAccount = async (provider: 'google' | 'microsoft', accountType: AccountType) => {
+      toast({ title: `Connecting to your ${provider} ${accountType} account...`});
+      if (provider === 'google') {
+          await signInWithGoogle(accountType);
+      } else {
+          await signInWithMicrosoft(accountType);
+      }
       // The useEffect watching the tokens will trigger the sync
+  }
+
+  const getProviderIcon = (provider?: 'google' | 'microsoft') => {
+      if (provider === 'google') return <GoogleIcon />;
+      if (provider === 'microsoft') return <MicrosoftIcon />;
+      return null;
   }
 
   return (
@@ -453,27 +482,19 @@ function DocumentsPageContent() {
                         <SelectItem value="imported">Imported</SelectItem>
                         <SelectItem value="work">Work Account</SelectItem>
                         <SelectItem value="personal">Personal Account</SelectItem>
+                        <SelectItem value="google">Google Drive</SelectItem>
+                        <SelectItem value="microsoft">OneDrive</SelectItem>
                         <SelectItem value="local">Local Uploads</SelectItem>
                     </SelectContent>
                 </Select>
                 <Button 
                   variant="outline"
-                  onClick={syncGoogleDrive}
+                  onClick={syncCloudAccounts}
                   disabled={loadingDrive}
                 >
                     <RefreshCw className={`mr-2 h-4 w-4 ${loadingDrive ? 'animate-spin' : ''}`} />
                     Sync
                 </Button>
-                {!workAccessToken && (
-                    <Button onClick={() => handleSyncAccount('work')}>
-                        <Briefcase className="mr-2 h-4 w-4" /> Sync Work Account
-                    </Button>
-                )}
-                {workAccessToken && !personalAccessToken && (
-                     <Button onClick={() => handleSyncAccount('personal')}>
-                        <User className="mr-2 h-4 w-4" /> Sync Personal Account
-                    </Button>
-                )}
             </div>
           </div>
           {(loading || userLoading) ? (
@@ -490,7 +511,7 @@ function DocumentsPageContent() {
                 {loadingDrive && (
                     <li className="flex items-center justify-center p-4 text-muted-foreground">
                         <Loader className="w-5 h-5 animate-spin mr-2" />
-                        Fetching Google Drive files...
+                        Fetching cloud files...
                     </li>
                 )}
                 {filteredDocuments.map(doc => (
@@ -504,8 +525,17 @@ function DocumentsPageContent() {
                                   {doc.accountType === 'work' ? <Briefcase size={12} /> : <User size={12} />}
                                   {doc.accountType.charAt(0).toUpperCase() + doc.accountType.slice(1)}
                                 </span>
+                                {doc.source === 'drive' && doc.sourceProvider && (
+                                    <>
+                                        &middot;
+                                        <span className="flex items-center gap-1">
+                                            {getProviderIcon(doc.sourceProvider)}
+                                            {doc.sourceProvider === 'google' ? 'Drive' : 'OneDrive'}
+                                        </span>
+                                    </>
+                                )}
                                 &middot; 
-                                {doc.isImported ? 'Imported' : 'Drive'}
+                                {doc.isImported ? 'Imported' : 'Cloud'}
                                 &middot; 
                                 Modified: {new Date(doc.modifiedTime).toLocaleDateString()}
                             </p>
@@ -573,15 +603,28 @@ function DocumentsPageContent() {
                 <p className="text-muted-foreground mb-6 max-w-sm">
                   {searchQuery || filterType !== 'all'
                     ? `Your search and filter criteria did not return any documents.`
-                    : 'Upload a document or sync Google Drive to get started.'
+                    : 'Upload a document or connect a cloud account to get started.'
                   }
                 </p>
-                <Button asChild>
-                    <Link href="/add">
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Add Document
-                    </Link>
-                </Button>
+                <div className="flex gap-4">
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button size="lg"><PlusCircle className="mr-2 h-4 w-4" />Connect Account</Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuItem onSelect={() => handleSyncAccount('google', 'work')}><GoogleIcon /> Google Work</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleSyncAccount('microsoft', 'work')}><MicrosoftIcon /> Microsoft Work</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleSyncAccount('google', 'personal')}><GoogleIcon /> Google Personal</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleSyncAccount('microsoft', 'personal')}><MicrosoftIcon /> Microsoft Personal</DropdownMenuItem>
+                        </DropdownMenuContent>
+                     </DropdownMenu>
+                    <Button asChild size="lg" variant="secondary">
+                        <Link href="/add">
+                            <HardDriveUpload className="mr-2 h-4 w-4" />
+                            Upload File
+                        </Link>
+                    </Button>
+                </div>
             </div>
           )}
         </div>
@@ -642,4 +685,3 @@ function DocumentsPage() {
 
 export default withAuth(DocumentsPage);
 
-    

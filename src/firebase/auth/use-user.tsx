@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -35,6 +36,8 @@ export interface UserContextValue {
   signInWithEmail: (email: string, password: string) => Promise<UserCredential | void>;
   workAccessToken: string | null;
   personalAccessToken: string | null;
+  workProvider: 'google' | 'microsoft' | null;
+  personalProvider: 'google' | 'microsoft' | null;
   fetchDriveFiles: (accountType: AccountType) => Promise<any[] | void>;
 }
 
@@ -57,6 +60,8 @@ const setAuthTokenCookie = (token: string, provider: 'google' | 'microsoft', acc
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
   });
+  // Set a cookie to remember the provider for the account type
+  setCookie(null, `provider_${accountType}`, provider, { maxAge: 3600, path: '/' });
 };
 
 const clearAuthTokenCookies = () => {
@@ -64,6 +69,8 @@ const clearAuthTokenCookies = () => {
   destroyCookie(null, 'google_access_token_personal', { path: '/' });
   destroyCookie(null, 'microsoft_access_token_work', { path: '/' });
   destroyCookie(null, 'microsoft_access_token_personal', { path: '/' });
+  destroyCookie(null, 'provider_work', { path: '/' });
+  destroyCookie(null, 'provider_personal', { path: '/' });
 };
 
 
@@ -74,15 +81,20 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  const [workAccessToken, setWorkAccessToken] = useState<string | null>(() => {
-    const cookies = parseCookies();
-    return cookies.google_access_token_work || cookies.microsoft_access_token_work || null;
-  });
-  const [personalAccessToken, setPersonalAccessToken] = useState<string | null>(() => {
-    const cookies = parseCookies();
-    return cookies.google_access_token_personal || cookies.microsoft_access_token_personal || null;
-  });
+  const [workAccessToken, setWorkAccessToken] = useState<string | null>(null);
+  const [personalAccessToken, setPersonalAccessToken] = useState<string | null>(null);
+  const [workProvider, setWorkProvider] = useState<'google' | 'microsoft' | null>(null);
+  const [personalProvider, setPersonalProvider] = useState<'google' | 'microsoft' | null>(null);
 
+  // --- Initialize state from cookies ---
+  useEffect(() => {
+    const cookies = parseCookies();
+    setWorkAccessToken(cookies.google_access_token_work || cookies.microsoft_access_token_work || null);
+    setPersonalAccessToken(cookies.google_access_token_personal || cookies.microsoft_access_token_personal || null);
+    setWorkProvider(cookies.provider_work as any || null);
+    setPersonalProvider(cookies.provider_personal as any || null);
+  }, []);
+  
   // --- Listen to Auth State ---
   useEffect(() => {
     if (!auth) {
@@ -94,27 +106,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
       if (!user) {
         setWorkAccessToken(null);
         setPersonalAccessToken(null);
+        setWorkProvider(null);
+        setPersonalProvider(null);
         clearAuthTokenCookies();
-      } else {
-        const cookies = parseCookies();
-        if (cookies.google_access_token_work && !workAccessToken) {
-          setWorkAccessToken(cookies.google_access_token_work);
-        }
-         if (cookies.microsoft_access_token_work && !workAccessToken) {
-          setWorkAccessToken(cookies.microsoft_access_token_work);
-        }
-        if (cookies.google_access_token_personal && !personalAccessToken) {
-          setPersonalAccessToken(cookies.google_access_token_personal);
-        }
-         if (cookies.microsoft_access_token_personal && !personalAccessToken) {
-          setPersonalAccessToken(cookies.microsoft_access_token_personal);
-        }
       }
+      // State from cookies is already initialized, no need to re-read here
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [auth, workAccessToken, personalAccessToken]);
+  }, [auth]);
 
   const handleSuccessfulSignIn = () => {
     const redirectUrl = searchParams.get('redirect') || '/';
@@ -123,9 +124,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   // --- Sign In with Google (with Drive access) ---
   const signInWithGoogle = useCallback(async (accountType: AccountType): Promise<UserCredential | void> => {
-    if (!auth) {
-      return;
-    }
+    if (!auth) return;
 
     const provider = new GoogleAuthProvider();
     provider.addScope('https://www.googleapis.com/auth/drive.readonly');
@@ -142,28 +141,23 @@ export function UserProvider({ children }: { children: ReactNode }) {
         const token = credential.accessToken;
         if (accountType === 'work') {
           setWorkAccessToken(token);
+          setWorkProvider('google');
         } else {
           setPersonalAccessToken(token);
+          setPersonalProvider('google');
         }
         setAuthTokenCookie(token, 'google', accountType);
       }
-      // If this is the first sign-in, set the primary user object
-      if (!user) {
-        setUser(result.user);
-      }
+      if (!user) setUser(result.user);
       handleSuccessfulSignIn();
       return result;
     } catch (error: any) {
-      if (
-        error.code === 'auth/popup-blocked' ||
-        error.code === 'auth/popup-closed-by-user' ||
-        error.code === 'auth/cancelled-popup-request'
-      ) {
-        console.warn(`Sign-in flow for ${accountType} account was interrupted: ${error.message}`);
-        return; // Do not re-throw, just exit.
+      if (['auth/popup-blocked', 'auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(error.code)) {
+        console.warn(`Google sign-in flow for ${accountType} account was interrupted: ${error.message}`);
+        return;
       }
       console.error(`Error signing in with Google for ${accountType} account:`, error);
-      throw error; // Re-throw other errors
+      throw error;
     }
   }, [auth, user, router, searchParams]);
 
@@ -172,16 +166,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (!auth) return;
     const provider = new OAuthProvider('microsoft.com');
     
-    // Add scopes for Microsoft Graph API
     provider.addScope('Files.Read.All');
     provider.addScope('User.Read');
-    provider.addScope('Mail.Read');
-    provider.addScope('Calendars.Read');
-
-    // Set the tenant ID for the authentication request
-    provider.setCustomParameters({
-      tenant: 'edb93353-33cc-4551-a2f5-170be96d8b9d',
-    });
+    provider.setCustomParameters({ tenant: 'edb93353-33cc-4551-a2f5-170be96d8b9d' });
     
     try {
       const result = await signInWithPopup(auth, provider);
@@ -191,23 +178,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
         const token = credential.accessToken;
         if (accountType === 'work') {
           setWorkAccessToken(token);
+          setWorkProvider('microsoft');
         } else {
           setPersonalAccessToken(token);
+          setPersonalProvider('microsoft');
         }
         setAuthTokenCookie(token, 'microsoft', accountType);
       }
       
-      if (!user) {
-        setUser(result.user);
-      }
+      if (!user) setUser(result.user);
       handleSuccessfulSignIn();
       return result;
     } catch (error: any) {
-      if (
-        error.code === 'auth/popup-blocked' ||
-        error.code === 'auth/popup-closed-by-user' ||
-        error.code === 'auth/cancelled-popup-request'
-      ) {
+       if (['auth/popup-blocked', 'auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(error.code)) {
         console.warn(`Microsoft sign-in flow for ${accountType} account was interrupted: ${error.message}`);
         return;
       }
@@ -220,9 +203,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const signUpWithEmail = useCallback(async (email: string, password: string): Promise<UserCredential | void> => {
     if (!auth) return;
     try {
-      const result = await createUserWithEmailAndPassword(auth, email, password);
-      // The onAuthStateChanged listener will handle setting the user and redirection
-      return result;
+      return await createUserWithEmailAndPassword(auth, email, password);
     } catch (error: any) {
       console.error('Error signing up with email:', error);
       throw error;
@@ -233,9 +214,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const signInWithEmail = useCallback(async (email: string, password: string): Promise<UserCredential | void> => {
     if (!auth) return;
     try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      // The onAuthStateChanged listener will handle setting the user and redirection
-      return result;
+      return await signInWithEmailAndPassword(auth, email, password);
     } catch (error: any) {
       console.error('Error signing in with email:', error);
       throw error;
@@ -247,76 +226,56 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (!auth) return;
     try {
       await firebaseSignOut(auth);
-      // State and cookies are cleared by the onAuthStateChanged listener
       router.push('/');
     } catch (error) {
       console.error('Error signing out:', error);
     }
   };
 
-  // --- Fetch Google Drive Files ---
+  // --- Fetch Cloud Files ---
   const fetchDriveFiles = useCallback(async (accountType: AccountType) => {
+    if (!user) throw new Error("User is not signed in.");
+
     const cookies = parseCookies();
-    const googleToken = cookies[`google_access_token_${accountType}`];
-    const microsoftToken = cookies[`microsoft_access_token_${accountType}`];
+    const provider = cookies[`provider_${accountType}`];
+    const token = cookies[`${provider}_access_token_${accountType}`];
 
-    // Determine which token to use, preferring Google for now as Drive is implemented
-    let currentToken = googleToken || microsoftToken || null;
-    let providerName = googleToken ? 'Google' : (microsoftToken ? 'Microsoft' : null);
-
-    if (!user) {
-        throw new Error("User is not signed in.");
-    }
-
-    if (!currentToken) {
-        console.log(`Authentication token for ${accountType} account is missing.`);
-        // Don't throw error, just return nothing, as user might not have connected this account type.
+    if (!provider || !token) {
+        // Silently return if this account type isn't connected
         return;
     }
 
-    // Determine which provider to fetch from
-    if (googleToken) {
+    if (provider === 'google') {
         try {
             const response = await fetch(
                 "https://www.googleapis.com/drive/v3/files?pageSize=50&fields=files(id,name,mimeType,modifiedTime,webViewLink,iconLink)&q=(mimeType='application/vnd.google-apps.document' or mimeType='application/vnd.google-apps.spreadsheet' or mimeType='application/vnd.google-apps.presentation' or mimeType='application/pdf')",
-                { headers: { Authorization: `Bearer ${googleToken}` } }
+                { headers: { Authorization: `Bearer ${token}` } }
             );
-
             if (response.status === 401) {
-                if (accountType === 'work') setWorkAccessToken(null); else setPersonalAccessToken(null);
                 destroyCookie(null, `google_access_token_${accountType}`, { path: '/' });
-                throw new Error(`Authentication token for Google ${accountType} account is invalid. Please sign in again to refresh it.`);
+                destroyCookie(null, `provider_${accountType}`, { path: '/' });
+                throw new Error(`Authentication token for Google ${accountType} account is invalid. Please sign in again.`);
             }
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(`Failed to fetch Google Drive files for ${accountType} account: ${errorData.error?.message || 'Unknown error'}`);
-            }
+            if (!response.ok) throw new Error(await response.text());
             const data = await response.json();
-            return data.files;
+            return data.files.map((file: any) => ({ ...file, source: 'drive', sourceProvider: 'google' }));
         } catch (error) {
             console.error(`Error fetching Google Drive files for ${accountType} account:`, error);
             throw error;
         }
-    } else if (microsoftToken) {
+    } else if (provider === 'microsoft') {
         try {
             const response = await fetch(
                 "https://graph.microsoft.com/v1.0/me/drive/root/children",
-                { headers: { Authorization: `Bearer ${microsoftToken}` } }
+                { headers: { Authorization: `Bearer ${token}` } }
             );
-
             if (response.status === 401) {
-                if (accountType === 'work') setWorkAccessToken(null); else setPersonalAccessToken(null);
-                destroyCookie(null, `microsoft_access_token_${accountType}`, { path: '/' });
-                throw new Error(`Authentication token for Microsoft ${accountType} account is invalid. Please sign in again to refresh it.`);
+                 destroyCookie(null, `microsoft_access_token_${accountType}`, { path: '/' });
+                 destroyCookie(null, `provider_${accountType}`, { path: '/' });
+                throw new Error(`Authentication token for Microsoft ${accountType} account is invalid. Please sign in again.`);
             }
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(`Failed to fetch OneDrive files for ${accountType} account: ${errorData.error?.message || 'Unknown error'}`);
-            }
+            if (!response.ok) throw new Error(await response.text());
             const data = await response.json();
-            // We need to normalize the Microsoft Graph API response to match the Google Drive API response structure
             return data.value.map((file: any) => ({
                 id: file.id,
                 name: file.name,
@@ -324,6 +283,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 modifiedTime: file.lastModifiedDateTime,
                 webViewLink: file.webUrl,
                 source: 'drive',
+                sourceProvider: 'microsoft',
                 accountType: accountType,
             }));
         } catch (error) {
@@ -343,6 +303,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
     signInWithEmail,
     workAccessToken,
     personalAccessToken,
+    workProvider,
+    personalProvider,
     fetchDriveFiles,
   };
 
