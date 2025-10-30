@@ -64,8 +64,6 @@ const setAuthTokenCookie = (token: string, provider: 'google' | 'microsoft', acc
   });
   // Set a cookie to remember the provider for the account type
   setCookie(null, `provider_${accountType}`, provider, { maxAge: 3600, path: '/' });
-  // Set a cookie to indicate which account type was used for the last redirect
-  setCookie(null, 'last_redirect_account_type', accountType, { maxAge: 600, path: '/' });
 };
 
 const clearAuthTokenCookies = () => {
@@ -120,11 +118,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
                     if (accountType === 'work') {
                         setWorkAccessToken(token);
                         setWorkProvider('microsoft');
+                        setAuthTokenCookie(token, 'microsoft', 'work');
                     } else {
                         setPersonalAccessToken(token);
                         setPersonalProvider('microsoft');
+                        setAuthTokenCookie(token, 'microsoft', 'personal');
                     }
-                    setAuthTokenCookie(token, 'microsoft', accountType);
                     destroyCookie(null, 'last_redirect_account_type', { path: '/' });
                 }
             }
@@ -332,5 +331,3 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 }
-
-    
