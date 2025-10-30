@@ -19,6 +19,8 @@ import {
   UserCredential,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signInWithRedirect,
+  getRedirectResult,
 } from 'firebase/auth';
 import { useAuth } from '@/firebase/provider';
 import { setCookie, destroyCookie, parseCookies } from 'nookies';
@@ -30,7 +32,7 @@ export interface UserContextValue {
   user: User | null;
   loading: boolean;
   signInWithGoogle: (accountType: AccountType) => Promise<UserCredential | void>;
-  signInWithMicrosoft: (accountType: AccountType) => Promise<UserCredential | void>;
+  signInWithMicrosoft: (accountType: AccountType) => Promise<void>;
   signOut: () => Promise<void>;
   signUpWithEmail: (email: string, password: string) => Promise<UserCredential | void>;
   signInWithEmail: (email: string, password: string) => Promise<UserCredential | void>;
@@ -62,6 +64,8 @@ const setAuthTokenCookie = (token: string, provider: 'google' | 'microsoft', acc
   });
   // Set a cookie to remember the provider for the account type
   setCookie(null, `provider_${accountType}`, provider, { maxAge: 3600, path: '/' });
+  // Set a cookie to indicate which account type was used for the last redirect
+  setCookie(null, 'last_redirect_account_type', accountType, { maxAge: 600, path: '/' });
 };
 
 const clearAuthTokenCookies = () => {
@@ -71,6 +75,7 @@ const clearAuthTokenCookies = () => {
   destroyCookie(null, 'microsoft_access_token_personal', { path: '/' });
   destroyCookie(null, 'provider_work', { path: '/' });
   destroyCookie(null, 'provider_personal', { path: '/' });
+  destroyCookie(null, 'last_redirect_account_type', { path: '/' });
 };
 
 
@@ -95,12 +100,46 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setPersonalProvider(cookies.provider_personal as any || null);
   }, []);
   
-  // --- Listen to Auth State ---
+  // --- Listen to Auth State Changes & Handle Redirect Results ---
   useEffect(() => {
     if (!auth) {
       setLoading(false);
       return;
     }
+
+    // Handle redirect result on app load
+    getRedirectResult(auth)
+    .then((result) => {
+        if (result) {
+            const credential = OAuthProvider.credentialFromResult(result);
+            const token = credential?.accessToken;
+            if (token) {
+                const cookies = parseCookies();
+                const accountType = cookies.last_redirect_account_type as AccountType;
+                if (accountType) {
+                    if (accountType === 'work') {
+                        setWorkAccessToken(token);
+                        setWorkProvider('microsoft');
+                    } else {
+                        setPersonalAccessToken(token);
+                        setPersonalProvider('microsoft');
+                    }
+                    setAuthTokenCookie(token, 'microsoft', accountType);
+                    destroyCookie(null, 'last_redirect_account_type', { path: '/' });
+                }
+            }
+            if (!user) setUser(result.user);
+            handleSuccessfulSignIn();
+        }
+    })
+    .catch((error) => {
+        console.error("Error getting Microsoft redirect result:", error);
+    }).finally(() => {
+        // This runs whether there was a redirect or not.
+        // The auth state listener will handle the final user state.
+        setLoading(false);
+    });
+
     const unsubscribe = onFirebaseAuthStateChanged(auth, async (user) => {
       setUser(user);
       if (!user) {
@@ -110,11 +149,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
         setPersonalProvider(null);
         clearAuthTokenCookies();
       }
-      // State from cookies is already initialized, no need to re-read here
       setLoading(false);
     });
 
     return () => unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth]);
 
   const handleSuccessfulSignIn = () => {
@@ -162,43 +201,23 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }, [auth, user, router, searchParams]);
 
   // --- Sign In with Microsoft (with OneDrive/365 access) ---
-  const signInWithMicrosoft = useCallback(async (accountType: AccountType): Promise<UserCredential | void> => {
+  const signInWithMicrosoft = useCallback(async (accountType: AccountType): Promise<void> => {
     if (!auth) return;
     const provider = new OAuthProvider('microsoft.com');
     
-    provider.addScope('Files.Read.All');
-    provider.addScope('User.Read');
-    // Use 'common' to allow work, school, and personal accounts.
     provider.setCustomParameters({ tenant: 'common' });
+    provider.addScope('User.Read');
     
     try {
-      const result = await signInWithPopup(auth, provider);
-      const credential = OAuthProvider.credentialFromResult(result);
-
-      if (credential?.accessToken) {
-        const token = credential.accessToken;
-        if (accountType === 'work') {
-          setWorkAccessToken(token);
-          setWorkProvider('microsoft');
-        } else {
-          setPersonalAccessToken(token);
-          setPersonalProvider('microsoft');
-        }
-        setAuthTokenCookie(token, 'microsoft', accountType);
-      }
-      
-      if (!user) setUser(result.user);
-      handleSuccessfulSignIn();
-      return result;
+      // Store the account type to retrieve it after redirect
+      setCookie(null, 'last_redirect_account_type', accountType, { maxAge: 600, path: '/' });
+      await signInWithRedirect(auth, provider);
+      // The user is redirected, so the rest of the logic happens in getRedirectResult
     } catch (error: any) {
-       if (['auth/popup-blocked', 'auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(error.code)) {
-        console.warn(`Microsoft sign-in flow for ${accountType} account was interrupted: ${error.message}`);
-        return;
-      }
-      console.error('Error signing in with Microsoft:', error);
-      throw error;
+       console.error('Error initiating Microsoft sign-in redirect:', error);
+       throw error;
     }
-  }, [auth, user, router, searchParams]);
+  }, [auth]);
 
   // --- Sign Up with Email/Password ---
   const signUpWithEmail = useCallback(async (email: string, password: string): Promise<UserCredential | void> => {
@@ -313,3 +332,5 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 }
+
+    
