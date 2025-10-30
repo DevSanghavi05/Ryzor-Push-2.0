@@ -259,7 +259,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const cookies = parseCookies();
     const googleToken = cookies[`google_access_token_${accountType}`];
     const microsoftToken = cookies[`microsoft_access_token_${accountType}`];
-    
+
     // Determine which token to use, preferring Google for now as Drive is implemented
     let currentToken = googleToken || microsoftToken || null;
     let providerName = googleToken ? 'Google' : (microsoftToken ? 'Microsoft' : null);
@@ -270,48 +270,66 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     if (!currentToken) {
         console.log(`Authentication token for ${accountType} account is missing.`);
+        // Don't throw error, just return nothing, as user might not have connected this account type.
         return;
     }
 
-    // Currently only Google Drive is implemented
-    if (!googleToken) {
-        console.log(`Skipping file fetch for ${accountType} account as it is not a Google account.`);
-        return [];
-    }
+    // Determine which provider to fetch from
+    if (googleToken) {
+        try {
+            const response = await fetch(
+                "https://www.googleapis.com/drive/v3/files?pageSize=50&fields=files(id,name,mimeType,modifiedTime,webViewLink,iconLink)&q=(mimeType='application/vnd.google-apps.document' or mimeType='application/vnd.google-apps.spreadsheet' or mimeType='application/vnd.google-apps.presentation' or mimeType='application/pdf')",
+                { headers: { Authorization: `Bearer ${googleToken}` } }
+            );
 
-    try {
-      const response = await fetch(
-        "https://www.googleapis.com/drive/v3/files?pageSize=50&fields=files(id,name,mimeType,modifiedTime,webViewLink,iconLink)&q=(mimeType='application/vnd.google-apps.document' or mimeType='application/vnd.google-apps.spreadsheet' or mimeType='application/vnd.google-apps.presentation' or mimeType='application/pdf')",
-        {
-          headers: {
-            Authorization: `Bearer ${currentToken}`,
-          },
+            if (response.status === 401) {
+                if (accountType === 'work') setWorkAccessToken(null); else setPersonalAccessToken(null);
+                destroyCookie(null, `google_access_token_${accountType}`, { path: '/' });
+                throw new Error(`Authentication token for Google ${accountType} account is invalid. Please sign in again to refresh it.`);
+            }
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`Failed to fetch Google Drive files for ${accountType} account: ${errorData.error?.message || 'Unknown error'}`);
+            }
+            const data = await response.json();
+            return data.files;
+        } catch (error) {
+            console.error(`Error fetching Google Drive files for ${accountType} account:`, error);
+            throw error;
         }
-      );
+    } else if (microsoftToken) {
+        try {
+            const response = await fetch(
+                "https://graph.microsoft.com/v1.0/me/drive/root/children",
+                { headers: { Authorization: `Bearer ${microsoftToken}` } }
+            );
 
-      if (response.status === 401) {
-        if (accountType === 'work') {
-            setWorkAccessToken(null);
-            destroyCookie(null, `google_access_token_work`, { path: '/' });
-            destroyCookie(null, `microsoft_access_token_work`, { path: '/' });
-        } else {
-            setPersonalAccessToken(null);
-            destroyCookie(null, `google_access_token_personal`, { path: '/' });
-            destroyCookie(null, `microsoft_access_token_personal`, { path: '/' });
+            if (response.status === 401) {
+                if (accountType === 'work') setWorkAccessToken(null); else setPersonalAccessToken(null);
+                destroyCookie(null, `microsoft_access_token_${accountType}`, { path: '/' });
+                throw new Error(`Authentication token for Microsoft ${accountType} account is invalid. Please sign in again to refresh it.`);
+            }
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`Failed to fetch OneDrive files for ${accountType} account: ${errorData.error?.message || 'Unknown error'}`);
+            }
+            const data = await response.json();
+            // We need to normalize the Microsoft Graph API response to match the Google Drive API response structure
+            return data.value.map((file: any) => ({
+                id: file.id,
+                name: file.name,
+                mimeType: file.file.mimeType,
+                modifiedTime: file.lastModifiedDateTime,
+                webViewLink: file.webUrl,
+                source: 'drive',
+                accountType: accountType,
+            }));
+        } catch (error) {
+            console.error(`Error fetching OneDrive files for ${accountType} account:`, error);
+            throw error;
         }
-        throw new Error(`Authentication token for ${providerName} ${accountType} account is invalid. Please sign in again to refresh it.`);
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Failed to fetch Drive files for ${accountType} account: ${errorData.error?.message || 'Unknown error'}`);
-      }
-
-      const data = await response.json();
-      return data.files;
-    } catch (error) {
-      console.error(`Error fetching files for ${accountType} account:`, error);
-      throw error;
     }
   }, [user]);
 
