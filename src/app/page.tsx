@@ -26,7 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { motion, useInView } from 'framer-motion';
 import { Logo } from '@/components/layout/logo';
-import { SidebarProvider, Sidebar, SidebarTrigger, SidebarContent, SidebarHeader, SidebarGroup, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuAction } from '@/components/ui/sidebar';
+import { SidebarProvider, Sidebar, SidebarTrigger, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuAction } from '@/components/ui/sidebar';
 import { nanoid } from 'nanoid';
 
 
@@ -230,158 +230,160 @@ function LoggedInView() {
 
   return (
     <SidebarProvider>
-    <div className="flex w-full h-full relative overflow-hidden">
-      {/* Sidebar */}
-      <Sidebar side="left" className="w-72">
-          <SidebarHeader>
-            <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold font-headline">My Chats</h2>
-                <Button variant="ghost" size="icon" onClick={createNewChat}>
-                    <Plus className="h-5 w-5" />
-                </Button>
-            </div>
-          </SidebarHeader>
-          <SidebarContent>
-            <SidebarMenu>
-              {chats.map(chat => (
-                <SidebarMenuItem key={chat.id}>
-                  <SidebarMenuButton 
-                    isActive={chat.id === activeChatId} 
-                    onClick={() => setActiveChatId(chat.id)}
-                    className="truncate"
-                  >
-                    {chat.title}
-                  </SidebarMenuButton>
-                   <SidebarMenuAction 
-                     onClick={() => {
-                        const newTitle = prompt("Enter new chat title:", chat.title);
-                        if (newTitle) renameChat(chat.id, newTitle);
-                     }}
-                     aria-label="Rename chat"
-                   >
-                     <Edit />
-                   </SidebarMenuAction>
-                   <SidebarMenuAction 
-                     onClick={() => {
-                        if (window.confirm("Are you sure you want to delete this chat?")) {
-                            deleteChat(chat.id);
-                        }
-                     }}
-                     className="right-8 hover:text-destructive"
-                     aria-label="Delete chat"
-                   >
-                     <Trash2 />
-                   </SidebarMenuAction>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarContent>
-          <SidebarFooter>
-            {/* Can add user settings or other links here */}
-          </SidebarFooter>
-      </Sidebar>
+      <div className="flex w-full h-dvh pt-16 relative overflow-hidden">
+        {/* Sidebar */}
+        <Sidebar side="left" className="w-72">
+            <SidebarHeader>
+              <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold font-headline">My Chats</h2>
+                  <Button variant="ghost" size="icon" onClick={createNewChat}>
+                      <Plus className="h-5 w-5" />
+                  </Button>
+              </div>
+            </SidebarHeader>
+            <SidebarContent>
+              <SidebarMenu>
+                {chats.map(chat => (
+                  <SidebarMenuItem key={chat.id}>
+                    <SidebarMenuButton 
+                      isActive={chat.id === activeChatId} 
+                      onClick={() => setActiveChatId(chat.id)}
+                      className="truncate"
+                    >
+                      {chat.title}
+                    </SidebarMenuButton>
+                    <SidebarMenuAction 
+                      onClick={() => {
+                          const newTitle = prompt("Enter new chat title:", chat.title);
+                          if (newTitle) renameChat(chat.id, newTitle);
+                      }}
+                      aria-label="Rename chat"
+                    >
+                      <Edit />
+                    </SidebarMenuAction>
+                    <SidebarMenuAction 
+                      onClick={() => {
+                          if (window.confirm("Are you sure you want to delete this chat?")) {
+                              deleteChat(chat.id);
+                          }
+                      }}
+                      className="right-8 hover:text-destructive"
+                      aria-label="Delete chat"
+                    >
+                      <Trash2 />
+                    </SidebarMenuAction>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarContent>
+            <SidebarFooter>
+              {/* Can add user settings or other links here */}
+            </SidebarFooter>
+        </Sidebar>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col h-full bg-background/50">
-        <header className="p-4 flex items-center gap-2">
-            <SidebarTrigger className="md:hidden" />
-            <h1 className="text-xl font-semibold font-headline truncate">
-                {activeChat?.title || "Workspace"}
-            </h1>
-        </header>
-        {/* Background */}
-        <div className="bg-aurora"></div>
+        {/* Main Chat Area */}
+        <div className="flex-1 flex flex-col h-full bg-background/50 relative">
+          <header className="p-4 flex items-center gap-2 border-b md:hidden">
+              <SidebarTrigger />
+              <h1 className="text-xl font-semibold font-headline truncate">
+                  {activeChat?.title || "Workspace"}
+              </h1>
+          </header>
+          {/* Background */}
+          <div className="bg-aurora"></div>
 
-        {/* Chat Messages */}
-        <div
-          ref={chatContainerRef}
-          className="flex-1 p-6 pb-72 overflow-y-auto space-y-6"
-        >
-          {activeChat?.messages.length === 0 && !loading && (
-            <div className="text-center mt-24">
-              <h1 className="text-3xl font-bold text-foreground/80">Ryzor Workspace</h1>
-              <p className="mt-2 text-muted-foreground">
-                Ask a question to start analyzing your documents.
-              </p>
-            </div>
-          )}
+          {/* Chat Messages */}
+          <div
+            ref={chatContainerRef}
+            className="flex-1 p-6 pb-40 overflow-y-auto space-y-6"
+          >
+            {activeChat?.messages.length === 0 && !loading && (
+              <div className="text-center mt-24">
+                <h1 className="text-3xl font-bold text-foreground/80 font-headline">Ryzor Workspace</h1>
+                <p className="mt-2 text-muted-foreground">
+                  Ask a question to start analyzing your documents.
+                </p>
+              </div>
+            )}
 
-          {activeChat?.messages.map((msg, i) => (
-            <div
-              key={i}
-              className={`flex items-start gap-3 ${
-                msg.role === 'user' ? 'justify-end' : 'justify-start'
-              }`}
-            >
-              {msg.role === 'model' && (
+            {activeChat?.messages.map((msg, i) => (
+              <div
+                key={i}
+                className={`flex items-start gap-3 ${
+                  msg.role === 'user' ? 'justify-end' : 'justify-start'
+                }`}
+              >
+                {msg.role === 'model' && (
+                  <div className="w-8 h-8 rounded-full bg-card flex items-center justify-center text-primary p-1.5 shrink-0">
+                    <Logo />
+                  </div>
+                )}
+                <div
+                  className={`p-3 rounded-lg max-w-[85%] ${
+                    msg.role === 'user' ? 'bg-primary/20' : 'bg-card shadow-sm'
+                  }`}
+                >
+                  <MarkdownContent content={msg.content} />
+                </div>
+                {msg.role === 'user' && (
+                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+                    <User size={16} />
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {loading && activeChat?.messages[activeChat.messages.length - 1]?.role === 'user' && (
+              <div className="flex items-start gap-3 justify-start">
                 <div className="w-8 h-8 rounded-full bg-card flex items-center justify-center text-primary p-1.5">
                   <Logo />
                 </div>
-              )}
-              <div
-                className={`p-3 rounded-lg max-w-[85%] ${
-                  msg.role === 'user' ? 'bg-primary/20' : 'bg-card'
-                }`}
-              >
-                <MarkdownContent content={msg.content} />
-              </div>
-              {msg.role === 'user' && (
-                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
-                  <User size={16} />
+                <div className="p-3 rounded-lg max-w-[85%] bg-card flex items-center shadow-sm">
+                  <MarkdownContent content={'▋'} />
                 </div>
-              )}
-            </div>
-          ))}
-
-          {loading && activeChat?.messages[activeChat.messages.length - 1]?.role === 'user' && (
-            <div className="flex items-start gap-3 justify-start">
-              <div className="w-8 h-8 rounded-full bg-card flex items-center justify-center text-primary p-1.5">
-                <Logo />
               </div>
-              <div className="p-3 rounded-lg max-w-[85%] bg-card flex items-center">
-                <MarkdownContent content={'▋'} />
+            )}
+          </div>
+
+          {/* Chat Bar */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 bg-transparent">
+            <div className="mx-auto max-w-3xl">
+              <div className="bg-background/80 dark:bg-neutral-900/80 backdrop-blur-xl rounded-full border border-border dark:border-neutral-700 shadow-lg dark:shadow-[0_0_40px_10px_rgba(129,140,248,0.6)]">
+                <div className="p-3 flex items-center gap-3">
+                  <Button
+                    asChild
+                    size="icon"
+                    className="rounded-full bg-primary/20 hover:bg-primary/30 text-primary border-none transition-all duration-200 shrink-0"
+                  >
+                    <Link href="/add">
+                      <PlusCircle />
+                      <span className="sr-only">Upload</span>
+                    </Link>
+                  </Button>
+
+                  <Input
+                    placeholder="Ask anything about your documents..."
+                    className="border-none focus-visible:ring-0 flex-1 text-base bg-transparent text-foreground placeholder:text-muted-foreground px-4"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleInteraction()}
+                    disabled={loading}
+                  />
+
+                  <Button
+                    size="icon"
+                    className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg dark:shadow-[0_0_25px_rgba(129,140,248,1)] hover:shadow-xl dark:hover:shadow-[0_0_40px_rgba(129,140,248,1)] transition-all duration-200 shrink-0"
+                    onClick={handleInteraction}
+                    disabled={loading || !input.trim()}
+                  >
+                    {loading ? <Loader2 className="animate-spin" /> : <Send />}
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-
-        {/* Chat Bar */}
-        <div className="fixed bottom-32 left-1/2 -translate-x-1/2 w-[92%] max-w-3xl z-50">
-          <div className="bg-background/80 dark:bg-neutral-900/80 backdrop-blur-xl rounded-full border border-border dark:border-neutral-700 shadow-lg dark:shadow-[0_0_40px_10px_rgba(129,140,248,0.6)]">
-            <div className="p-3 flex items-center gap-3">
-              <Button
-                asChild
-                size="icon"
-                className="rounded-full bg-primary/20 hover:bg-primary/30 text-primary border-none transition-all duration-200"
-              >
-                <Link href="/add">
-                  <PlusCircle />
-                  <span className="sr-only">Upload</span>
-                </Link>
-              </Button>
-
-              <Input
-                placeholder="Ask anything about your documents..."
-                className="border-none focus-visible:ring-0 flex-1 text-base bg-transparent text-foreground placeholder:text-muted-foreground px-4"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleInteraction()}
-                disabled={loading}
-              />
-
-              <Button
-                size="icon"
-                className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg dark:shadow-[0_0_25px_rgba(129,140,248,1)] hover:shadow-xl dark:hover:shadow-[0_0_40px_rgba(129,140,248,1)] transition-all duration-200"
-                onClick={handleInteraction}
-                disabled={loading}
-              >
-                {loading ? <Loader2 className="animate-spin" /> : <Send />}
-              </Button>
             </div>
           </div>
         </div>
       </div>
-    </div>
     </SidebarProvider>
   );
 }
@@ -414,7 +416,7 @@ function LandingPage() {
         <div className="relative z-10 mx-auto max-w-7xl">
             <div className="flex flex-col items-center gap-4 text-center">
                 <motion.h1 
-                    className="text-5xl md:text-7xl font-bold bg-gradient-to-b from-neutral-800 to-neutral-500 dark:from-neutral-50 dark:to-neutral-400 bg-clip-text text-transparent"
+                    className="text-5xl md:text-7xl font-bold bg-gradient-to-b from-neutral-800 to-neutral-500 dark:from-neutral-50 dark:to-neutral-400 bg-clip-text text-transparent font-headline"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
@@ -438,7 +440,7 @@ function LandingPage() {
                     <Button 
                         asChild
                         size="lg"
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg dark:shadow-[0_0_20px_rgba(var(--primary-hsl),0.4)] hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(var(--primary-hsl),0.6)] transition-all"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg dark:shadow-[0_0_20px_rgba(var(--primary),0.4)] hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(var(--primary),0.6)] transition-all"
                     >
                         <Link href="/login">
                          <Briefcase className="mr-2" /> Get Started
@@ -453,21 +455,21 @@ function LandingPage() {
       {/* How It Works Section */}
       <AnimatedSection>
         <div className="container mx-auto px-6 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold mb-12">Your documents, understood instantly.</h2>
+          <h2 className="text-4xl md:text-5xl font-bold mb-12 font-headline">Your documents, understood instantly.</h2>
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-card/50 dark:bg-neutral-900/50 p-8 rounded-2xl border border-border dark:border-neutral-800 shadow-sm dark:shadow-[0_0_20px_rgba(129,140,248,0.2)]">
               <Brain className="w-12 h-12 text-primary mx-auto mb-4" />
-              <h3 className="text-2xl font-semibold mb-2">Connect</h3>
+              <h3 className="text-2xl font-semibold mb-2 font-headline">Connect</h3>
               <p className="text-muted-foreground">Securely link your work and personal Google accounts.</p>
             </div>
             <div className="bg-card/50 dark:bg-neutral-900/50 p-8 rounded-2xl border border-border dark:border-neutral-800 shadow-sm dark:shadow-[0_0_20px_rgba(129,140,248,0.2)]">
               <MessageSquare className="w-12 h-12 text-primary mx-auto mb-4" />
-              <h3 className="text-2xl font-semibold mb-2">Ask</h3>
+              <h3 className="text-2xl font-semibold mb-2 font-headline">Ask</h3>
               <p className="text-muted-foreground">Type natural questions like “Summarize my Q3 reports from work.”</p>
             </div>
             <div className="bg-card/50 dark:bg-neutral-900/50 p-8 rounded-2xl border border-border dark:border-neutral-800 shadow-sm dark:shadow-[0_0_20px_rgba(129,140,248,0.2)]">
               <Wand className="w-12 h-12 text-primary mx-auto mb-4" />
-              <h3 className="text-2xl font-semibold mb-2">Get Answers</h3>
+              <h3 className="text-2xl font-semibold mb-2 font-headline">Get Answers</h3>
               <p className="text-muted-foreground">AI finds and explains instantly, keeping your data separate.</p>
             </div>
           </div>
@@ -477,14 +479,14 @@ function LandingPage() {
       {/* Redefining Knowledge Section */}
       <AnimatedSection>
         <div className="container mx-auto px-6 text-center max-w-4xl">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6">We’re redefining how humans use knowledge.</h2>
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 font-headline">We’re redefining how humans use knowledge.</h2>
           <p className="text-lg text-muted-foreground mb-8">
             Ryzor AI turns messy documents into living intelligence. No folders. No chaos. Just clarity — instantly. Read our <Link href="/privacy" className="underline hover:text-primary">Privacy Policy</Link> to learn more.
           </p>
            <Button 
                 asChild
                 size="lg"
-                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg dark:shadow-[0_0_20px_rgba(var(--primary-hsl),0.4)] hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(var(--primary-hsl),0.6)] transition-all"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg dark:shadow-[0_0_20px_rgba(var(--primary),0.4)] hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(var(--primary),0.6)] transition-all"
             >
                 <Link href="/login">
                     Try Ryzor AI Now
@@ -509,3 +511,5 @@ export default function Home() {
 
   return user ? <LoggedInView /> : <LandingPage />;
 }
+
+    
