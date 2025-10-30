@@ -1,10 +1,22 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, Loader2, User, PlusCircle, Brain, MessageSquare, Wand, Briefcase } from 'lucide-react';
+import { 
+  Send, 
+  Loader2, 
+  User, 
+  PlusCircle, 
+  Brain, 
+  MessageSquare, 
+  Wand, 
+  Briefcase, 
+  Plus, 
+  Trash2,
+  Edit
+} from 'lucide-react';
 import { useUser, AccountType } from '@/firebase';
 import { ask } from '@/app/actions';
 import withAuth from '@/firebase/auth/with-auth';
@@ -14,35 +26,124 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { motion, useInView } from 'framer-motion';
 import { Logo } from '@/components/layout/logo';
+import { SidebarProvider, Sidebar, SidebarTrigger, SidebarContent, SidebarHeader, SidebarGroup, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuAction } from '@/components/ui/sidebar';
+import { nanoid } from 'nanoid';
+
 
 export interface Message {
   role: 'user' | 'model';
   content: string;
 }
 
+export interface Chat {
+    id: string;
+    title: string;
+    messages: Message[];
+    createdAt: string;
+}
+
 function LoggedInView() {
   const { user } = useUser();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const router = useRouter();
 
+  // Load chats from local storage
+  useEffect(() => {
+    if (user) {
+        const storedChats = localStorage.getItem(`chats_${user.uid}`);
+        if (storedChats) {
+            const parsedChats: Chat[] = JSON.parse(storedChats);
+            setChats(parsedChats.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+            // If there are chats, set the most recent one as active
+            if (parsedChats.length > 0) {
+              setActiveChatId(parsedChats.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0].id);
+            }
+        }
+    }
+  }, [user]);
+
+  // Save chats to local storage whenever they change
+  useEffect(() => {
+    if (user && chats.length > 0) {
+      localStorage.setItem(`chats_${user.uid}`, JSON.stringify(chats));
+    }
+  }, [chats, user]);
+
+
+  const activeChat = useMemo(() => {
+    return chats.find(chat => chat.id === activeChatId);
+  }, [chats, activeChatId]);
+
+
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [messages, loading]);
+  }, [activeChat?.messages, loading]);
+
+  const createNewChat = () => {
+    const newChat: Chat = {
+        id: nanoid(),
+        title: "New Chat",
+        messages: [],
+        createdAt: new Date().toISOString()
+    };
+    const updatedChats = [newChat, ...chats];
+    setChats(updatedChats);
+    setActiveChatId(newChat.id);
+  }
+
+  const deleteChat = (chatId: string) => {
+    const updatedChats = chats.filter(c => c.id !== chatId);
+    setChats(updatedChats);
+    
+    // If the active chat is deleted, set the new active chat to the first one
+    if(activeChatId === chatId) {
+        setActiveChatId(updatedChats.length > 0 ? updatedChats[0].id : null);
+    }
+  };
+
+  const renameChat = (chatId: string, newTitle: string) => {
+    const updatedChats = chats.map(c => c.id === chatId ? {...c, title: newTitle} : c);
+    setChats(updatedChats);
+  }
 
   const handleInteraction = async () => {
     if (!user || !input.trim()) return;
 
+    let currentChatId = activeChatId;
+    
+    // If there is no active chat, create a new one.
+    if (!currentChatId) {
+        const newChat: Chat = {
+            id: nanoid(),
+            title: input.length > 30 ? input.substring(0, 27) + '...' : input,
+            messages: [],
+            createdAt: new Date().toISOString()
+        };
+        setChats([newChat, ...chats]);
+        currentChatId = newChat.id;
+        setActiveChatId(currentChatId);
+    }
+
+
     const currentInput = input;
     const userMessage: Message = { role: 'user', content: currentInput };
+    
+    // Update the messages for the active chat
+    setChats(prevChats => prevChats.map(chat => 
+        chat.id === currentChatId 
+            ? { ...chat, messages: [...chat.messages, userMessage] } 
+            : chat
+    ));
+
     setInput('');
     setLoading(true);
-    setMessages(prev => [...prev, userMessage]);
 
     try {
       const storageKey = `documents_${user.uid}`;
@@ -63,12 +164,20 @@ function LoggedInView() {
         router.push('/add');
         return;
       }
+      
+      const currentMessages = chats.find(c => c.id === currentChatId)?.messages || [];
 
-      const stream = await ask(currentInput, contextDocuments, messages.slice(-10));
+      const stream = await ask(currentInput, contextDocuments, currentMessages.slice(-10));
 
       let fullResponse = '';
-      const modelMessageIndex = messages.length + 1;
-      setMessages(prev => [...prev, { role: 'model', content: '' }]);
+      
+      const modelMessage: Message = { role: 'model', content: '' };
+       setChats(prevChats => prevChats.map(chat => 
+        chat.id === currentChatId 
+            ? { ...chat, messages: [...chat.messages, modelMessage] } 
+            : chat
+        ));
+
 
       const reader = stream.getReader();
       let done = false;
@@ -77,124 +186,203 @@ function LoggedInView() {
         done = readerDone;
         const chunk = value || '';
         fullResponse += chunk;
-        setMessages(prev => {
-          const newMsgs = [...prev];
-          newMsgs[modelMessageIndex] = { role: 'model', content: fullResponse + '▋' };
-          return newMsgs;
+        
+        setChats(prev => {
+            return prev.map(chat => {
+                if (chat.id === currentChatId) {
+                    const newMessages = [...chat.messages];
+                    newMessages[newMessages.length - 1] = { role: 'model', content: fullResponse + '▋' };
+                    return { ...chat, messages: newMessages };
+                }
+                return chat;
+            });
         });
         await new Promise(resolve => setTimeout(resolve, 20));
       }
 
-      setMessages(prev => {
-        const newMsgs = [...prev];
-        newMsgs[modelMessageIndex] = { role: 'model', content: fullResponse };
-        return newMsgs;
+      setChats(prev => {
+         return prev.map(chat => {
+            if (chat.id === currentChatId) {
+                const newMessages = [...chat.messages];
+                newMessages[newMessages.length - 1] = { role: 'model', content: fullResponse };
+                return { ...chat, messages: newMessages };
+            }
+            return chat;
+        });
       });
+
     } catch (error) {
       console.error(error);
-      setMessages(prev => [
-        ...prev,
-        { role: 'model', content: 'Something went wrong. Try again.' },
-      ]);
+       setChats(prev => {
+         return prev.map(chat => {
+            if (chat.id === currentChatId) {
+                const newMessages = [...chat.messages];
+                newMessages[newMessages.length - 1] = { role: 'model', content: 'Something went wrong. Try again.' };
+                return { ...chat, messages: newMessages };
+            }
+            return chat;
+        });
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col w-full h-full relative overflow-hidden">
-      {/* Background */}
-      <div className="bg-aurora"></div>
+    <SidebarProvider>
+    <div className="flex w-full h-full relative overflow-hidden">
+      {/* Sidebar */}
+      <Sidebar side="left" className="w-72">
+          <SidebarHeader>
+            <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold font-headline">My Chats</h2>
+                <Button variant="ghost" size="icon" onClick={createNewChat}>
+                    <Plus className="h-5 w-5" />
+                </Button>
+            </div>
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarMenu>
+              {chats.map(chat => (
+                <SidebarMenuItem key={chat.id}>
+                  <SidebarMenuButton 
+                    isActive={chat.id === activeChatId} 
+                    onClick={() => setActiveChatId(chat.id)}
+                    className="truncate"
+                  >
+                    {chat.title}
+                  </SidebarMenuButton>
+                   <SidebarMenuAction 
+                     onClick={() => {
+                        const newTitle = prompt("Enter new chat title:", chat.title);
+                        if (newTitle) renameChat(chat.id, newTitle);
+                     }}
+                     aria-label="Rename chat"
+                   >
+                     <Edit />
+                   </SidebarMenuAction>
+                   <SidebarMenuAction 
+                     onClick={() => {
+                        if (window.confirm("Are you sure you want to delete this chat?")) {
+                            deleteChat(chat.id);
+                        }
+                     }}
+                     className="right-8 hover:text-destructive"
+                     aria-label="Delete chat"
+                   >
+                     <Trash2 />
+                   </SidebarMenuAction>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarContent>
+          <SidebarFooter>
+            {/* Can add user settings or other links here */}
+          </SidebarFooter>
+      </Sidebar>
 
-      {/* Chat Area */}
-      <div
-        ref={chatContainerRef}
-        className="flex-1 p-6 pb-72 overflow-y-auto space-y-6"
-      >
-        {messages.length === 0 && !loading && (
-          <div className="text-center mt-24">
-            <h1 className="text-3xl font-bold text-foreground/80">Workspace</h1>
-            <p className="mt-2 text-muted-foreground">
-              Ask a question to start analyzing your documents.
-            </p>
-          </div>
-        )}
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col h-full bg-background/50">
+        <header className="p-4 flex items-center gap-2">
+            <SidebarTrigger className="md:hidden" />
+            <h1 className="text-xl font-semibold font-headline truncate">
+                {activeChat?.title || "Workspace"}
+            </h1>
+        </header>
+        {/* Background */}
+        <div className="bg-aurora"></div>
 
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`flex items-start gap-3 ${
-              msg.role === 'user' ? 'justify-end' : 'justify-start'
-            }`}
-          >
-            {msg.role === 'model' && (
+        {/* Chat Messages */}
+        <div
+          ref={chatContainerRef}
+          className="flex-1 p-6 pb-72 overflow-y-auto space-y-6"
+        >
+          {activeChat?.messages.length === 0 && !loading && (
+            <div className="text-center mt-24">
+              <h1 className="text-3xl font-bold text-foreground/80">Ryzor Workspace</h1>
+              <p className="mt-2 text-muted-foreground">
+                Ask a question to start analyzing your documents.
+              </p>
+            </div>
+          )}
+
+          {activeChat?.messages.map((msg, i) => (
+            <div
+              key={i}
+              className={`flex items-start gap-3 ${
+                msg.role === 'user' ? 'justify-end' : 'justify-start'
+              }`}
+            >
+              {msg.role === 'model' && (
+                <div className="w-8 h-8 rounded-full bg-card flex items-center justify-center text-primary p-1.5">
+                  <Logo />
+                </div>
+              )}
+              <div
+                className={`p-3 rounded-lg max-w-[85%] ${
+                  msg.role === 'user' ? 'bg-primary/20' : 'bg-card'
+                }`}
+              >
+                <MarkdownContent content={msg.content} />
+              </div>
+              {msg.role === 'user' && (
+                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
+                  <User size={16} />
+                </div>
+              )}
+            </div>
+          ))}
+
+          {loading && activeChat?.messages[activeChat.messages.length - 1]?.role === 'user' && (
+            <div className="flex items-start gap-3 justify-start">
               <div className="w-8 h-8 rounded-full bg-card flex items-center justify-center text-primary p-1.5">
                 <Logo />
               </div>
-            )}
-            <div
-              className={`p-3 rounded-lg max-w-[85%] ${
-                msg.role === 'user' ? 'bg-primary/20' : 'bg-card'
-              }`}
-            >
-              <MarkdownContent content={msg.content} />
-            </div>
-            {msg.role === 'user' && (
-              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
-                <User size={16} />
+              <div className="p-3 rounded-lg max-w-[85%] bg-card flex items-center">
+                <MarkdownContent content={'▋'} />
               </div>
-            )}
-          </div>
-        ))}
-
-        {loading && messages[messages.length - 1]?.role === 'user' && (
-          <div className="flex items-start gap-3 justify-start">
-            <div className="w-8 h-8 rounded-full bg-card flex items-center justify-center text-primary p-1.5">
-              <Logo />
             </div>
-            <div className="p-3 rounded-lg max-w-[85%] bg-card flex items-center">
-              <MarkdownContent content={'▋'} />
+          )}
+        </div>
+
+        {/* Chat Bar */}
+        <div className="fixed bottom-32 left-1/2 -translate-x-1/2 w-[92%] max-w-3xl z-50">
+          <div className="bg-background/80 dark:bg-neutral-900/80 backdrop-blur-xl rounded-full border border-border dark:border-neutral-700 shadow-lg dark:shadow-[0_0_40px_10px_rgba(129,140,248,0.6)]">
+            <div className="p-3 flex items-center gap-3">
+              <Button
+                asChild
+                size="icon"
+                className="rounded-full bg-primary/20 hover:bg-primary/30 text-primary border-none transition-all duration-200"
+              >
+                <Link href="/add">
+                  <PlusCircle />
+                  <span className="sr-only">Upload</span>
+                </Link>
+              </Button>
+
+              <Input
+                placeholder="Ask anything about your documents..."
+                className="border-none focus-visible:ring-0 flex-1 text-base bg-transparent text-foreground placeholder:text-muted-foreground px-4"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleInteraction()}
+                disabled={loading}
+              />
+
+              <Button
+                size="icon"
+                className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg dark:shadow-[0_0_25px_rgba(129,140,248,1)] hover:shadow-xl dark:hover:shadow-[0_0_40px_rgba(129,140,248,1)] transition-all duration-200"
+                onClick={handleInteraction}
+                disabled={loading}
+              >
+                {loading ? <Loader2 className="animate-spin" /> : <Send />}
+              </Button>
             </div>
-          </div>
-        )}
-      </div>
-
-      {/* Chat Bar - raised higher */}
-      <div className="fixed bottom-32 left-1/2 -translate-x-1/2 w-[92%] max-w-3xl z-50">
-        <div className="bg-background/80 dark:bg-neutral-900/80 backdrop-blur-xl rounded-full border border-border dark:border-neutral-700 shadow-lg dark:shadow-[0_0_40px_10px_rgba(129,140,248,0.6)]">
-          <div className="p-3 flex items-center gap-3">
-            <Button
-              asChild
-              size="icon"
-              className="rounded-full bg-primary/20 hover:bg-primary/30 text-primary border-none transition-all duration-200"
-            >
-              <Link href="/add">
-                <PlusCircle />
-                <span className="sr-only">Upload</span>
-              </Link>
-            </Button>
-
-            <Input
-              placeholder="Ask anything about your documents..."
-              className="border-none focus-visible:ring-0 flex-1 text-base bg-transparent text-foreground placeholder:text-muted-foreground px-4"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleInteraction()}
-              disabled={loading}
-            />
-
-            <Button
-              size="icon"
-              className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg dark:shadow-[0_0_25px_rgba(129,140,248,1)] hover:shadow-xl dark:hover:shadow-[0_0_40px_rgba(129,140,248,1)] transition-all duration-200"
-              onClick={handleInteraction}
-              disabled={loading}
-            >
-              {loading ? <Loader2 className="animate-spin" /> : <Send />}
-            </Button>
           </div>
         </div>
       </div>
     </div>
+    </SidebarProvider>
   );
 }
 
