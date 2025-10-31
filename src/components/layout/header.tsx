@@ -14,7 +14,7 @@ export function Header() {
   const { user } = useUser();
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 p-4 bg-transparent">
+    <div className="fixed top-0 left-0 right-0 z-50 p-2 bg-transparent">
         <header className="container mx-auto px-4 lg:px-6 h-14 flex items-center justify-between gap-6 border border-border/40 bg-background/80 backdrop-blur-sm rounded-xl shadow-lg">
             <Link href="/" className="flex items-center gap-2 font-bold font-headline text-lg">
                 <Logo className="h-6 w-6" />
@@ -82,5 +82,3 @@ function UserAvatar() {
     </div>
   );
 }
-
-    
