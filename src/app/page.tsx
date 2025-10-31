@@ -269,15 +269,8 @@ function LoggedInView() {
                       {chat.title}
                     </SidebarMenuButton>
                     <SidebarMenuAction 
-                      onClick={() => renameChat(chat.id, chat.title)}
-                      aria-label="Rename chat"
-                      showOnHover={true}
-                    >
-                      <Edit />
-                    </SidebarMenuAction>
-                    <SidebarMenuAction 
                       onClick={() => deleteChat(chat.id)}
-                      className="right-8 hover:text-destructive"
+                      className="hover:text-destructive"
                       aria-label="Delete chat"
                       showOnHover={true}
                     >
@@ -295,9 +288,14 @@ function LoggedInView() {
               <SidebarTrigger>
                 <PanelLeft size={18} />
               </SidebarTrigger>
-              <h1 className="text-xl font-semibold font-headline truncate">
+              <h1 className="text-xl font-semibold font-headline truncate flex-1">
                   {activeChat?.title || "Workspace"}
               </h1>
+              {activeChat && (
+                <Button variant="ghost" size="icon" onClick={() => renameChat(activeChat.id, activeChat.title)}>
+                  <Edit className="h-5 w-5" />
+                </Button>
+              )}
           </header>
           {/* Background */}
           <div className="bg-aurora"></div>
@@ -521,3 +519,5 @@ export default function Home() {
 
   return user ? <LoggedInView /> : <LandingPage />;
 }
+
+    
