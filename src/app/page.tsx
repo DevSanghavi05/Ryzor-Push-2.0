@@ -15,7 +15,8 @@ import {
   Briefcase, 
   Plus, 
   Trash2,
-  Edit
+  Edit,
+  PanelLeft
 } from 'lucide-react';
 import { useUser, AccountType } from '@/firebase';
 import { ask } from '@/app/actions';
@@ -58,10 +59,11 @@ function LoggedInView() {
         const storedChats = localStorage.getItem(`chats_${user.uid}`);
         if (storedChats) {
             const parsedChats: Chat[] = JSON.parse(storedChats);
-            setChats(parsedChats.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+            const sortedChats = parsedChats.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            setChats(sortedChats);
             // If there are chats, set the most recent one as active
-            if (parsedChats.length > 0) {
-              setActiveChatId(parsedChats.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0].id);
+            if (sortedChats.length > 0) {
+              setActiveChatId(sortedChats[0].id);
             }
         }
     }
@@ -99,24 +101,31 @@ function LoggedInView() {
   }
 
   const deleteChat = (chatId: string) => {
-    const updatedChats = chats.filter(c => c.id !== chatId);
-    setChats(updatedChats);
-    
-    // If the active chat is deleted, set the new active chat to the first one
-    if(activeChatId === chatId) {
-        setActiveChatId(updatedChats.length > 0 ? updatedChats[0].id : null);
+    if (window.confirm("Are you sure you want to delete this chat?")) {
+        const updatedChats = chats.filter(c => c.id !== chatId);
+        setChats(updatedChats);
+        
+        // If the active chat is deleted, set the new active chat to the first one
+        if(activeChatId === chatId) {
+            setActiveChatId(updatedChats.length > 0 ? updatedChats[0].id : null);
+        }
+        localStorage.setItem(`chats_${user!.uid}`, JSON.stringify(updatedChats));
     }
   };
 
-  const renameChat = (chatId: string, newTitle: string) => {
-    const updatedChats = chats.map(c => c.id === chatId ? {...c, title: newTitle} : c);
-    setChats(updatedChats);
+  const renameChat = (chatId: string, currentTitle: string) => {
+    const newTitle = prompt("Enter new chat title:", currentTitle);
+    if (newTitle && newTitle.trim() !== "") {
+        const updatedChats = chats.map(c => c.id === chatId ? {...c, title: newTitle.trim()} : c);
+        setChats(updatedChats);
+    }
   }
 
   const handleInteraction = async () => {
     if (!user || !input.trim()) return;
 
     let currentChatId = activeChatId;
+    let isNewChat = false;
     
     // If there is no active chat, create a new one.
     if (!currentChatId) {
@@ -129,6 +138,7 @@ function LoggedInView() {
         setChats([newChat, ...chats]);
         currentChatId = newChat.id;
         setActiveChatId(currentChatId);
+        isNewChat = true;
     }
 
 
@@ -136,11 +146,17 @@ function LoggedInView() {
     const userMessage: Message = { role: 'user', content: currentInput };
     
     // Update the messages for the active chat
-    setChats(prevChats => prevChats.map(chat => 
-        chat.id === currentChatId 
-            ? { ...chat, messages: [...chat.messages, userMessage] } 
-            : chat
-    ));
+    setChats(prevChats => prevChats.map(chat => {
+        if (chat.id === currentChatId) {
+            const updatedMessages = [...chat.messages, userMessage];
+            // If it's the first message of a new chat, also update the title
+            if (isNewChat && updatedMessages.length === 1) {
+                return { ...chat, messages: updatedMessages, title: currentInput.length > 30 ? currentInput.substring(0, 27) + '...' : currentInput }
+            }
+            return { ...chat, messages: updatedMessages }
+        }
+        return chat;
+    }));
 
     setInput('');
     setLoading(true);
@@ -232,10 +248,10 @@ function LoggedInView() {
     <SidebarProvider>
       <div className="flex w-full h-dvh pt-16 relative overflow-hidden">
         {/* Sidebar */}
-        <Sidebar side="left" className="w-72">
+        <Sidebar>
             <SidebarHeader>
               <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold font-headline">My Chats</h2>
+                  <h2 className="text-xl font-bold font-headline px-2">My Chats</h2>
                   <Button variant="ghost" size="icon" onClick={createNewChat}>
                       <Plus className="h-5 w-5" />
                   </Button>
@@ -253,22 +269,17 @@ function LoggedInView() {
                       {chat.title}
                     </SidebarMenuButton>
                     <SidebarMenuAction 
-                      onClick={() => {
-                          const newTitle = prompt("Enter new chat title:", chat.title);
-                          if (newTitle) renameChat(chat.id, newTitle);
-                      }}
+                      onClick={() => renameChat(chat.id, chat.title)}
                       aria-label="Rename chat"
+                      showOnHover={true}
                     >
                       <Edit />
                     </SidebarMenuAction>
                     <SidebarMenuAction 
-                      onClick={() => {
-                          if (window.confirm("Are you sure you want to delete this chat?")) {
-                              deleteChat(chat.id);
-                          }
-                      }}
+                      onClick={() => deleteChat(chat.id)}
                       className="right-8 hover:text-destructive"
                       aria-label="Delete chat"
+                      showOnHover={true}
                     >
                       <Trash2 />
                     </SidebarMenuAction>
@@ -276,15 +287,14 @@ function LoggedInView() {
                 ))}
               </SidebarMenu>
             </SidebarContent>
-            <SidebarFooter>
-              {/* Can add user settings or other links here */}
-            </SidebarFooter>
         </Sidebar>
 
         {/* Main Chat Area */}
         <div className="flex-1 flex flex-col h-full bg-background/50 relative">
-          <header className="p-4 flex items-center gap-2 border-b md:hidden">
-              <SidebarTrigger />
+          <header className="p-4 flex items-center gap-2 border-b">
+              <SidebarTrigger>
+                <PanelLeft size={18} />
+              </SidebarTrigger>
               <h1 className="text-xl font-semibold font-headline truncate">
                   {activeChat?.title || "Workspace"}
               </h1>
