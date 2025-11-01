@@ -208,10 +208,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const fetchDriveFiles = useCallback(async (accountType: AccountType) => {
     if (!user) throw new Error("User is not signed in.");
 
-    const cookies = parseCookies();
-    const provider = cookies[`provider_${accountType}`];
-    const token = cookies[`${provider}_access_token_${accountType}`];
-
+    const provider = accountType === 'work' ? workProvider : personalProvider;
+    const token = accountType === 'work' ? workAccessToken : personalAccessToken;
+    
     if (!provider || !token) {
         return; // Silently return if this account type isn't connected
     }
@@ -223,10 +222,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             if (response.status === 401 || response.status === 403) {
-                destroyCookie(null, `google_access_token_${accountType}`, { path: '/' });
-                destroyCookie(null, `provider_${accountType}`, { path: '/' });
-                if(accountType === 'work') setWorkAccessToken(null);
-                else setPersonalAccessToken(null);
+                // Clear the invalid token from state and cookies
+                if(accountType === 'work') {
+                  setWorkAccessToken(null);
+                  setWorkProvider(null);
+                  destroyCookie(null, 'google_access_token_work', { path: '/' });
+                  destroyCookie(null, 'provider_work', { path: '/' });
+                } else {
+                  setPersonalAccessToken(null);
+                  setPersonalProvider(null);
+                  destroyCookie(null, 'google_access_token_personal', { path: '/' });
+                  destroyCookie(null, 'provider_personal', { path: '/' });
+                }
                 throw new Error(`Authentication token for Google ${accountType} account is invalid. Please sign in again.`);
             }
             if (!response.ok) throw new Error(`Google Drive API error: ${await response.text()}`);
@@ -237,7 +244,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
             throw error;
         }
     }
-  }, [user]);
+  }, [user, workProvider, personalProvider, workAccessToken, personalAccessToken]);
 
   const value: UserContextValue = {
     user,
