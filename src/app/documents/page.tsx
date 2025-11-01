@@ -1,4 +1,3 @@
-
 'use client';
 
 import { 
@@ -393,10 +392,6 @@ function DocumentsPageContent() {
             mimeType: doc.mimeType,
             accessToken: accessToken,
         });
-
-        if (!result.content && !doc.mimeType.includes('pdf')) { // PDFs might not have text content that this flow can extract
-             throw new Error("No content was extracted from the document.");
-        }
 
         const storageKey = `documents_${user.uid}`;
         const existingDocuments = JSON.parse(localStorage.getItem(storageKey) || '[]');
@@ -797,5 +792,3 @@ function DocumentsPageContent() {
 
 function DocumentsPage() { return <DocumentsPageContent /> }
 export default withAuth(DocumentsPage);
-
-    

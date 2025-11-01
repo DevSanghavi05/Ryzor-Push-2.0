@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,8 @@ import { useUser } from '@/firebase';
 type LocalDocument = {
     id: string;
     name: string;
-    content: string; // This is the Data URL for the iframe
+    // The main document list doesn't need the full content, so it's optional here
+    content?: string; 
     uploaded: string;
 }
 
@@ -31,6 +31,7 @@ export default function DocumentPage() {
 
     useEffect(() => {
         if (id && user) {
+            setLoading(true);
             const storageKey = `documents_${user.uid}`;
             const contentKey = `document_content_${id}`;
 
@@ -38,18 +39,19 @@ export default function DocumentPage() {
             const foundDocMeta = existingDocuments.find((d: any) => d.id === id);
             
             if (foundDocMeta) {
-                // Check if content is text or a data URL
+                setDoc(foundDocMeta);
+                // Now, fetch the separately stored content for viewing
                 const storedContent = localStorage.getItem(contentKey);
+
                 if (storedContent) {
                     if (storedContent.startsWith('data:application/pdf') || storedContent.startsWith('data:text/plain')) {
-                        // It's a PDF data URL or a text data URL, safe for iframe
+                        // It's a data URL, safe for iframe
                         setIframeSrc(storedContent);
                     } else {
-                        // It's raw text content, create a data URL from it
+                        // This case should be rare now, but handle legacy raw text
                         const blob = new Blob([storedContent], { type: 'text/plain' });
                         setIframeSrc(URL.createObjectURL(blob));
                     }
-                     setDoc(foundDocMeta);
                 }
             }
             setLoading(false);
@@ -79,7 +81,7 @@ export default function DocumentPage() {
                 {loading ? (
                     <Loader className="animate-spin" />
                 ) : iframeSrc ? (
-                    <iframe src={iframeSrc} className="w-full h-[70vh] border rounded-lg" title={doc?.name}></iframe>
+                    <iframe src={iframeSrc} className="w-full h-[70vh] border rounded-lg bg-white" title={doc?.name}></iframe>
                 ) : (
                     <p>Document content could not be loaded or found.</p>
                 )}

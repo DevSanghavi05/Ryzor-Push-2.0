@@ -112,10 +112,10 @@ function AddDocumentPage() {
             id: docId,
             name: docName,
             uploaded: new Date().toISOString(),
-            textContent: textContent,
+            textContent: textContent, // Keep text content for search
             source: 'local',
             mimeType: 'application/pdf',
-            accountType: 'personal',
+            accountType: 'personal', // Local uploads are personal
           };
           
           const viewableContent = e.target?.result;
@@ -130,9 +130,13 @@ function AddDocumentPage() {
           
           const contentKey = `document_content_${docId}`;
           
-          const dataUrlReader = new FileReader();
+          // Use another FileReader to get the data URL for storage
+           const dataUrlReader = new FileReader();
            dataUrlReader.onload = (event) => {
+                // Store the viewable Data URL separately
                 localStorage.setItem(contentKey, event.target!.result as string);
+                
+                // Store the metadata (including text content) in the main list
                 localStorage.setItem(storageKey, JSON.stringify([docForList, ...existingDocuments]));
                 resolve();
            }
@@ -149,6 +153,7 @@ function AddDocumentPage() {
         console.error("FileReader error:", error);
         reject(new Error(`Could not read the file ${fileToSave.name}.`));
       };
+      // We read as ArrayBuffer for PDF.js, then re-read as DataURL for storage.
       fileReader.readAsArrayBuffer(fileToSave); 
     });
   };
