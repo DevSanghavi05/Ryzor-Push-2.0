@@ -72,9 +72,9 @@ import {
 } from "@/components/ui/select"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { extractGoogleDocContent } from '@/ai/flows/extract-google-doc-content';
-import { HyperdriveAnimation } from '@/components/ui/hyperdrive-animation';
 import { cn } from '@/lib/utils';
 import { nanoid } from 'nanoid';
+import { Progress } from '@/components/ui/progress';
 
 
 const GoogleIcon = () => (
@@ -350,7 +350,7 @@ function DocumentsPageContent() {
   const [loadingDrive, setLoadingDrive] = useState(false);
   const [importingDocId, setImportingDocId] = useState<string | null>(null);
   const [isImportingAll, setIsImportingAll] = useState(false);
-  const [isImportSuccess, setIsImportSuccess] = useState(false);
+  const [bulkImportProgress, setBulkImportProgress] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   
   const searchParams = useSearchParams();
@@ -464,19 +464,19 @@ function DocumentsPageContent() {
         return;
     }
     setIsImportingAll(true);
-    setIsImportSuccess(false);
+    setBulkImportProgress(0);
     let successCount = 0;
     toast({ title: 'Starting Bulk Import...', description: `Importing ${docsToImport.length} documents.`});
     
-    // We run imports sequentially to avoid rate limiting issues
-    for (const doc of docsToImport) {
+    for (let i = 0; i < docsToImport.length; i++) {
+        const doc = docsToImport[i];
         const success = await importDocument(doc);
         if (success) successCount++;
+        setBulkImportProgress(((i + 1) / docsToImport.length) * 100);
     }
 
-    setIsImportSuccess(true);
+    setIsImportingAll(false);
     toast({ title: 'Bulk Import Complete', description: `Successfully imported ${successCount} out of ${docsToImport.length} documents.` });
-    setTimeout(() => { setIsImportingAll(false); setIsImportSuccess(false); }, 2000);
   };
   
   const handleTrash = (item: Document | Folder) => setShowTrashConfirm(item);
@@ -682,6 +682,15 @@ function DocumentsPageContent() {
     const docHandlers = { onRename: handleOpenRenameDialog, onTrash: handleTrash, onMove: handleMoveDocument, onImportAndAnalyze: handleImportAndAnalyze, importingDocId, isImportingAll };
 
     return (
+      <>
+        {isImportingAll && (
+            <div className="mb-4">
+                <Progress value={bulkImportProgress} className="w-full h-2" />
+                <p className="text-sm text-muted-foreground text-center mt-2">
+                    Importing... {Math.round(bulkImportProgress)}%
+                </p>
+            </div>
+        )}
         <div className="border rounded-lg overflow-hidden bg-card/50 p-2">
             <ul className="divide-y divide-border">
                 {loadingDrive && (
@@ -700,6 +709,7 @@ function DocumentsPageContent() {
                 {unassignedDocs.map(doc => <DocumentItem key={doc.id} doc={doc} {...docHandlers} />)}
              </ul>
         </div>
+      </>
     )
   };
 
@@ -707,7 +717,6 @@ function DocumentsPageContent() {
     <div className="relative min-h-dvh w-full pt-16">
       <div className="bg-aurora"></div>
       <main className="flex-1 p-4 md:p-6 relative">
-        <HyperdriveAnimation isImporting={isImportingAll} isSuccess={isImportSuccess} />
         <TooltipProvider>
             <div className="container mx-auto">
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
@@ -802,5 +811,3 @@ function DocumentsPageContent() {
 
 function DocumentsPage() { return <DocumentsPageContent /> }
 export default withAuth(DocumentsPage);
-
-    
