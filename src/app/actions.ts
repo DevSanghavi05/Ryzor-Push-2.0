@@ -8,7 +8,7 @@ export async function ask(
   question: string,
   docList: {name: string, content: string}[],
   history: Message[]
-): Promise<ReadableStream<string>> {
+): Promise<ReadableStream<Uint8Array>> {
   
   // Step 1: Find the most relevant document
   const findDocPrompt = `
@@ -45,7 +45,7 @@ export async function ask(
   return stream;
 }
 
-async function generateAnswer(question: string, context: string, history: Message[]): Promise<ReadableStream<string>> {
+async function generateAnswer(question: string, context: string, history: Message[]): Promise<ReadableStream<Uint8Array>> {
     const prompt = `
     You are Ryzor, an expert analyst and helpful assistant. Your primary task is to provide insightful, accurate, and well-structured answers to questions based on the provided document context. You can also perform generative tasks like drafting content based on the documents.
 
@@ -70,10 +70,11 @@ async function generateAnswer(question: string, context: string, history: Messag
     history,
   });
 
-  const readableStream = new ReadableStream<string>({
+  const encoder = new TextEncoder();
+  const readableStream = new ReadableStream({
     async start(controller) {
       for await (const chunk of stream) {
-        controller.enqueue(chunk.text);
+        controller.enqueue(encoder.encode(chunk.text));
       }
       controller.close();
     },
@@ -81,3 +82,5 @@ async function generateAnswer(question: string, context: string, history: Messag
 
   return readableStream;
 }
+
+    

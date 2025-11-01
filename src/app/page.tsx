@@ -109,11 +109,13 @@ function LoggedInView() {
 
 
       const reader = stream.getReader();
+      const decoder = new TextDecoder();
       let done = false;
+
       while (!done) {
         const { value, done: readerDone } = await reader.read();
         done = readerDone;
-        const chunk = value || '';
+        const chunk = decoder.decode(value, { stream: !done });
         fullResponse += chunk;
         
         setMessages(prev => {
@@ -124,8 +126,6 @@ function LoggedInView() {
             }
             return newMessages;
         });
-        // A short delay to create the typing effect
-        await new Promise(resolve => setTimeout(resolve, 15));
       }
 
       setMessages(prev => {
