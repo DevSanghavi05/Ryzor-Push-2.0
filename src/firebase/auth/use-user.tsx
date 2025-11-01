@@ -12,14 +12,12 @@ import {
 import type { User } from 'firebase/auth';
 import {
   GoogleAuthProvider,
-  OAuthProvider,
   signInWithPopup,
   onAuthStateChanged as onFirebaseAuthStateChanged,
   signOut as firebaseSignOut,
   UserCredential,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signInWithRedirect,
   getRedirectResult,
 } from 'firebase/auth';
 import { useAuth } from '@/firebase/provider';
@@ -32,14 +30,13 @@ export interface UserContextValue {
   user: User | null;
   loading: boolean;
   signInWithGoogle: (accountType: AccountType) => Promise<UserCredential | void>;
-  signInWithMicrosoft: (accountType: AccountType) => Promise<void>;
   signOut: () => Promise<void>;
   signUpWithEmail: (email: string, password: string) => Promise<UserCredential | void>;
   signInWithEmail: (email: string, password: string) => Promise<UserCredential | void>;
   workAccessToken: string | null;
   personalAccessToken: string | null;
-  workProvider: 'google' | 'microsoft' | null;
-  personalProvider: 'google' | 'microsoft' | null;
+  workProvider: 'google' | null;
+  personalProvider: 'google' | null;
   fetchDriveFiles: (accountType: AccountType) => Promise<any[] | void>;
 }
 
@@ -54,7 +51,7 @@ export function useUser() {
 }
 
 // --- Cookie Helpers ---
-const setAuthTokenCookie = (token: string, provider: 'google' | 'microsoft', accountType: AccountType) => {
+const setAuthTokenCookie = (token: string, provider: 'google', accountType: AccountType) => {
   const cookieName = `${provider}_access_token_${accountType}`;
   setCookie(null, cookieName, token, {
     maxAge: 3600, // 1 hour
@@ -69,8 +66,6 @@ const setAuthTokenCookie = (token: string, provider: 'google' | 'microsoft', acc
 const clearAuthTokenCookies = () => {
   destroyCookie(null, 'google_access_token_work', { path: '/' });
   destroyCookie(null, 'google_access_token_personal', { path: '/' });
-  destroyCookie(null, 'microsoft_access_token_work', { path: '/' });
-  destroyCookie(null, 'microsoft_access_token_personal', { path: '/' });
   destroyCookie(null, 'provider_work', { path: '/' });
   destroyCookie(null, 'provider_personal', { path: '/' });
   destroyCookie(null, 'last_redirect_account_type', { path: '/' });
@@ -86,14 +81,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
   
   const [workAccessToken, setWorkAccessToken] = useState<string | null>(null);
   const [personalAccessToken, setPersonalAccessToken] = useState<string | null>(null);
-  const [workProvider, setWorkProvider] = useState<'google' | 'microsoft' | null>(null);
-  const [personalProvider, setPersonalProvider] = useState<'google' | 'microsoft' | null>(null);
+  const [workProvider, setWorkProvider] = useState<'google' | null>(null);
+  const [personalProvider, setPersonalProvider] = useState<'google' | null>(null);
 
   // --- Initialize state from cookies ---
   useEffect(() => {
     const cookies = parseCookies();
-    setWorkAccessToken(cookies.google_access_token_work || cookies.microsoft_access_token_work || null);
-    setPersonalAccessToken(cookies.google_access_token_personal || cookies.microsoft_access_token_personal || null);
+    setWorkAccessToken(cookies.google_access_token_work || null);
+    setPersonalAccessToken(cookies.google_access_token_personal || null);
     setWorkProvider(cookies.provider_work as any || null);
     setPersonalProvider(cookies.provider_personal as any || null);
   }, []);
@@ -107,32 +102,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     // Handle redirect result on app load
     getRedirectResult(auth)
-    .then((result) => {
-        if (result) {
-            const credential = OAuthProvider.credentialFromResult(result);
-            const token = credential?.accessToken;
-            if (token) {
-                const cookies = parseCookies();
-                const accountType = cookies.last_redirect_account_type as AccountType;
-                if (accountType) {
-                    if (accountType === 'work') {
-                        setWorkAccessToken(token);
-                        setWorkProvider('microsoft');
-                        setAuthTokenCookie(token, 'microsoft', 'work');
-                    } else {
-                        setPersonalAccessToken(token);
-                        setPersonalProvider('microsoft');
-                        setAuthTokenCookie(token, 'microsoft', 'personal');
-                    }
-                    destroyCookie(null, 'last_redirect_account_type', { path: '/' });
-                }
-            }
-            if (!user) setUser(result.user);
-            handleSuccessfulSignIn();
-        }
-    })
     .catch((error) => {
-        console.error("Error getting Microsoft redirect result:", error);
+        console.error("Error getting redirect result:", error);
     }).finally(() => {
         // This runs whether there was a redirect or not.
         // The auth state listener will handle the final user state.
@@ -198,25 +169,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
       throw error;
     }
   }, [auth, user, router, searchParams]);
-
-  // --- Sign In with Microsoft (with OneDrive/365 access) ---
-  const signInWithMicrosoft = useCallback(async (accountType: AccountType): Promise<void> => {
-    if (!auth) return;
-    const provider = new OAuthProvider('microsoft.com');
-    
-    provider.setCustomParameters({ tenant: 'common' });
-    provider.addScope('User.Read');
-    
-    try {
-      // Store the account type to retrieve it after redirect
-      setCookie(null, 'last_redirect_account_type', accountType, { maxAge: 600, path: '/' });
-      await signInWithRedirect(auth, provider);
-      // The user is redirected, so the rest of the logic happens in getRedirectResult
-    } catch (error: any) {
-       console.error('Error initiating Microsoft sign-in redirect:', error);
-       throw error;
-    }
-  }, [auth]);
 
   // --- Sign Up with Email/Password ---
   const signUpWithEmail = useCallback(async (email: string, password: string): Promise<UserCredential | void> => {
@@ -284,33 +236,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
             console.error(`Error fetching Google Drive files for ${accountType} account:`, error);
             throw error;
         }
-    } else if (provider === 'microsoft') {
-        try {
-            const response = await fetch(
-                "https://graph.microsoft.com/v1.0/me/drive/root/children",
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            if (response.status === 401) {
-                 destroyCookie(null, `microsoft_access_token_${accountType}`, { path: '/' });
-                 destroyCookie(null, `provider_${accountType}`, { path: '/' });
-                throw new Error(`Authentication token for Microsoft ${accountType} account is invalid. Please sign in again.`);
-            }
-            if (!response.ok) throw new Error(await response.text());
-            const data = await response.json();
-            return data.value.map((file: any) => ({
-                id: file.id,
-                name: file.name,
-                mimeType: file.file.mimeType,
-                modifiedTime: file.lastModifiedDateTime,
-                webViewLink: file.webUrl,
-                source: 'drive',
-                sourceProvider: 'microsoft',
-                accountType: accountType,
-            }));
-        } catch (error) {
-            console.error(`Error fetching OneDrive files for ${accountType} account:`, error);
-            throw error;
-        }
     }
   }, [user]);
 
@@ -318,7 +243,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     user,
     loading,
     signInWithGoogle,
-    signInWithMicrosoft,
     signOut,
     signUpWithEmail,
     signInWithEmail,

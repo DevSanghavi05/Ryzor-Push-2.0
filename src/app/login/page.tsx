@@ -34,18 +34,8 @@ const GoogleIcon = () => (
     </svg>
 );
 
-const MicrosoftIcon = () => (
-    <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2">
-        <title>Microsoft</title>
-        <path fill="#f25022" d="M11.4 11.4H0V0h11.4z"/>
-        <path fill="#00a4ef" d="M11.4 24H0V12.6h11.4z"/>
-        <path fill="#7fba00" d="M24 11.4H12.6V0H24z"/>
-        <path fill="#ffb900" d="M24 24H12.6V12.6H24z"/>
-    </svg>
-);
-
 export default function LoginPage() {
-  const { user, loading, signInWithEmail, signInWithGoogle, signInWithMicrosoft } = useUser();
+  const { user, loading, signInWithEmail, signInWithGoogle } = useUser();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
@@ -69,7 +59,7 @@ export default function LoginPage() {
     } catch (error: any) {
       let description = 'An unknown error occurred. Please try again.';
       if (error.code === 'auth/invalid-credential') {
-        description = 'The email or password you entered is incorrect. If you previously signed in with Google or Microsoft, please use that method instead, or create a new account by signing up.';
+        description = 'The email or password you entered is incorrect. If you previously signed in with Google, please use that method instead, or create a new account by signing up.';
       } else {
         description = error.message;
       }
@@ -147,10 +137,6 @@ export default function LoginPage() {
                       <Button variant="outline" className="w-full" onClick={() => signInWithGoogle('work')}>
                           <GoogleIcon />
                           <span>Continue with Google</span>
-                      </Button>
-                      <Button variant="outline" className="w-full" onClick={() => signInWithMicrosoft('work')}>
-                          <MicrosoftIcon />
-                          <span>Continue with Microsoft</span>
                       </Button>
                   </div>
 

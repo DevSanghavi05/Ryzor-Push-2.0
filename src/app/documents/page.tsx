@@ -78,16 +78,6 @@ const GoogleIcon = () => (
     </svg>
 );
 
-const MicrosoftIcon = () => (
-    <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2">
-        <path fill="#f25022" d="M11.4 11.4H0V0h11.4z"/>
-        <path fill="#00a4ef" d="M11.4 24H0V12.6h11.4z"/>
-        <path fill="#7fba00" d="M24 11.4H12.6V0H24z"/>
-        <path fill="#ffb900" d="M24 24H12.6V12.6H24z"/>
-    </svg>
-);
-
-
 type Document = {
   id: string;
   name: string;
@@ -96,19 +86,13 @@ type Document = {
   webViewLink: string;
   icon: React.ReactNode;
   source: 'drive' | 'local';
-  sourceProvider?: 'google' | 'microsoft';
+  sourceProvider?: 'google';
   accountType: AccountType;
   isImported?: boolean;
 };
 
-const getFileIcon = (mimeType: string, source: 'drive' | 'local', provider?: 'google' | 'microsoft') => {
+const getFileIcon = (mimeType: string, source: 'drive' | 'local', provider?: 'google') => {
     if (source === 'local') return <HardDriveUpload className="w-5 h-5 text-purple-500" />;
-    
-    if (provider === 'microsoft') {
-        if (mimeType.includes('wordprocessingml')) return <FileText className="w-5 h-5 text-blue-600" />;
-        if (mimeType.includes('spreadsheetml')) return <Sheet className="w-5 h-5 text-green-600" />;
-        if (mimeType.includes('presentationml')) return <Presentation className="w-5 h-5 text-orange-600" />;
-    }
     
     // Google and other general mimetypes
     if (mimeType.includes('document')) return <FileText className="w-5 h-5 text-blue-500" />;
@@ -124,7 +108,7 @@ function DocumentsPageContent() {
       user, loading: userLoading, fetchDriveFiles, 
       workAccessToken, personalAccessToken, 
       workProvider, personalProvider,
-      signInWithGoogle, signInWithMicrosoft 
+      signInWithGoogle
     } = useUser();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
@@ -163,7 +147,7 @@ function DocumentsPageContent() {
 
     const fetchPromises: Promise<void>[] = [];
 
-    const processFiles = (files: any[] | void, accountType: AccountType, provider: 'google' | 'microsoft') => {
+    const processFiles = (files: any[] | void, accountType: AccountType, provider: 'google') => {
         if (files) {
             const formatted: Document[] = files.map((file: any) => ({
                 id: file.id, name: file.name, modifiedTime: file.modifiedTime, mimeType: file.mimeType, webViewLink: file.webViewLink,
@@ -233,8 +217,6 @@ function DocumentsPageContent() {
     setImportingDocId(doc.id);
 
     try {
-        // This flow currently only supports Google Docs API. Needs adjustment for MS Graph.
-        // For now, we assume it works for demo purposes.
         const result = await extractGoogleDocContent({
             fileId: doc.id,
             mimeType: doc.mimeType,
@@ -342,7 +324,6 @@ function DocumentsPageContent() {
         if (filterType === 'all') return true;
         if (filterType === 'local') return doc.source === 'local';
         if (filterType === 'google') return doc.sourceProvider === 'google';
-        if (filterType === 'microsoft') return doc.sourceProvider === 'microsoft';
         if (filterType === 'imported') return doc.isImported;
         if (filterType === 'work') return doc.accountType === 'work';
         if (filterType === 'personal') return doc.accountType === 'personal';
@@ -434,19 +415,16 @@ function DocumentsPageContent() {
     }
   };
   
-  const handleSyncAccount = async (provider: 'google' | 'microsoft', accountType: AccountType) => {
+  const handleSyncAccount = async (provider: 'google', accountType: AccountType) => {
       toast({ title: `Connecting to your ${provider} ${accountType} account...`});
       if (provider === 'google') {
           await signInWithGoogle(accountType);
-      } else {
-          await signInWithMicrosoft(accountType);
       }
       // The useEffect watching the tokens will trigger the sync
   }
 
-  const getProviderIcon = (provider?: 'google' | 'microsoft') => {
+  const getProviderIcon = (provider?: 'google') => {
       if (provider === 'google') return <GoogleIcon />;
-      if (provider === 'microsoft') return <MicrosoftIcon />;
       return null;
   }
 
@@ -483,7 +461,6 @@ function DocumentsPageContent() {
                         <SelectItem value="work">Work Account</SelectItem>
                         <SelectItem value="personal">Personal Account</SelectItem>
                         <SelectItem value="google">Google Drive</SelectItem>
-                        <SelectItem value="microsoft">OneDrive</SelectItem>
                         <SelectItem value="local">Local Uploads</SelectItem>
                     </SelectContent>
                 </Select>
@@ -530,7 +507,7 @@ function DocumentsPageContent() {
                                         &middot;
                                         <span className="flex items-center gap-1">
                                             {getProviderIcon(doc.sourceProvider)}
-                                            {doc.sourceProvider === 'google' ? 'Drive' : 'OneDrive'}
+                                            {doc.sourceProvider === 'google' ? 'Drive' : ''}
                                         </span>
                                     </>
                                 )}
