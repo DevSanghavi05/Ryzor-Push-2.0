@@ -15,7 +15,7 @@ import { z } from 'genkit';
 const ExtractGoogleDocContentInputSchema = z.object({
   fileId: z.string().describe('The ID of the Google Drive file.'),
   mimeType: z.string().describe('The MIME type of the file to determine which API to use.'),
-  accessToken: z.string().describe('The user\'s Google OAuth access token.'),
+  accessToken: z.string().describe("The user's Google OAuth access token."),
 });
 export type ExtractGoogleDocContentInput = z.infer<typeof ExtractGoogleDocContentInputSchema>;
 
@@ -91,7 +91,8 @@ const extractGoogleDocContentFlow = ai.defineFlow(
             }).join('\n');
         }).join('\n\n---\n\n');
       } else {
-        // Fallback for other file types like PDF
+        // Fallback for other file types like PDF - this path is now handled by the client by fetching raw bytes
+        // But we can keep a simple text extraction here as a server-side fallback.
         const fileContentResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
             headers: authHeader,
         });
@@ -108,3 +109,5 @@ const extractGoogleDocContentFlow = ai.defineFlow(
     }
   }
 );
+
+    
