@@ -464,6 +464,12 @@ function DocumentsPageContent() {
                         <SelectItem value="local">Local Uploads</SelectItem>
                     </SelectContent>
                 </Select>
+                 {docsToImportCount > 0 && (
+                    <Button onClick={handleImportAll} disabled={isImportingAll}>
+                        <DownloadCloud className={`mr-2 h-4 w-4 ${isImportingAll ? 'animate-spin' : ''}`} />
+                        Import All ({docsToImportCount})
+                    </Button>
+                )}
                 <Button 
                   variant="outline"
                   onClick={syncCloudAccounts}
@@ -662,3 +668,4 @@ export default withAuth(DocumentsPage);
 
 
     
+
