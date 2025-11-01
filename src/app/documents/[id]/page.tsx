@@ -16,6 +16,14 @@ type LocalDocument = {
     uploaded: string;
 }
 
+// This function is required for Next.js static export but will return an empty array
+// because the document IDs are stored in localStorage and are not available at build time.
+// Pages will be client-side rendered.
+export async function generateStaticParams() {
+  return [];
+}
+
+
 export default function DocumentPage() {
     const params = useParams();
     const router = useRouter();
