@@ -4,13 +4,14 @@ import { FC, memo } from 'react';
 // A simple markdown to HTML converter
 const toHtml = (markdown: string): string => {
   if (!markdown) return '';
-  let html = markdown
-    // Escape basic HTML to prevent injection
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+  
+  // Escape HTML to prevent injection, but keep the cursor
+  let html = markdown.replace(/&/g, '&amp;')
+                     .replace(/</g, '&lt;')
+                     .replace(/>/g, '&gt;')
+                     .replace(/"/g, '&quot;')
+                     .replace(/'/g, '&#039;')
+                     .replace(/▋/g, '<span class="animate-blink">▋</span>');
 
   // Bold **text**
   html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
@@ -29,7 +30,6 @@ const toHtml = (markdown: string): string => {
   html = html.replace(/<\/ul>\s*<br \/>/g, '</ul>');
   // Clean up <br> inside li
   html = html.replace(/<li>\s*<br \/>/g, '<li>');
-
 
   return html;
 };
@@ -50,3 +50,5 @@ export const MarkdownContent: FC<MarkdownContentProps> = memo(({ content }) => {
 });
 
 MarkdownContent.displayName = 'MarkdownContent';
+
+    

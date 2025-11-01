@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -117,15 +118,22 @@ function LoggedInView() {
         
         setMessages(prev => {
             const newMessages = [...prev];
-            newMessages[newMessages.length - 1] = { role: 'model', content: fullResponse + '▋' };
+            const lastMessage = newMessages[newMessages.length - 1];
+            if (lastMessage.role === 'model') {
+                lastMessage.content = fullResponse + '▋';
+            }
             return newMessages;
         });
-        await new Promise(resolve => setTimeout(resolve, 20));
+        // A short delay to create the typing effect
+        await new Promise(resolve => setTimeout(resolve, 15));
       }
 
       setMessages(prev => {
          const newMessages = [...prev];
-         newMessages[newMessages.length - 1] = { role: 'model', content: fullResponse };
+         const lastMessage = newMessages[newMessages.length - 1];
+         if (lastMessage.role === 'model') {
+            lastMessage.content = fullResponse;
+         }
          return newMessages;
       });
 
@@ -133,7 +141,13 @@ function LoggedInView() {
       console.error(error);
        setMessages(prev => {
          const newMessages = [...prev];
-         newMessages[newMessages.length - 1] = { role: 'model', content: 'Something went wrong. Try again.' };
+         const lastMessage = newMessages[newMessages.length - 1];
+         if (lastMessage.role === 'model') {
+            lastMessage.content = 'Something went wrong. Please try again.';
+         } else {
+             // If the last message isn't from the model, add an error message
+             return [...newMessages, {role: 'model', content: 'Something went wrong. Please try again.'}];
+         }
          return newMessages;
         });
     } finally {
@@ -376,7 +390,7 @@ function LandingPage() {
     startSimulation();
 
     return () => {
-      clearInterval(typingInterval);
+      if (typingInterval) clearInterval(typingInterval);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -654,3 +668,5 @@ export default function Home() {
 
   return user ? <LoggedInView /> : <LandingPage />;
 }
+
+    
