@@ -438,9 +438,7 @@ function DocumentsPageContent() {
             });
         } else {
             // For GDocs, Sheets, Slides, the text content is sufficient for viewing.
-            // We store it as a plain text data URL.
-            const base64Content = btoa(unescape(encodeURIComponent(result.content)));
-            localStorage.setItem(contentKey, `data:text/plain;base64,${base64Content}`);
+            localStorage.setItem(contentKey, result.content);
         }
 
         setDocuments(prevDocs => prevDocs.map(d => d.id === doc.id ? {...d, ...newDocRecord } : d));
@@ -804,3 +802,5 @@ function DocumentsPageContent() {
 
 function DocumentsPage() { return <DocumentsPageContent /> }
 export default withAuth(DocumentsPage);
+
+    
