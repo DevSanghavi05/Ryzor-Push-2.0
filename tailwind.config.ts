@@ -112,6 +112,11 @@ to: {
           '50%': { transform: 'scale(1.2)', opacity: 0.8 },
           '100%': { transform: 'scale(1)', opacity: 1 },
         },
+        pulse: {
+          '50%': {
+            opacity: '.5',
+          },
+        },
         blink: {
             '50%': { opacity: 1 },
             '0%, 100%': { opacity: 0 },
