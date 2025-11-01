@@ -157,7 +157,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
       if (!user) setUser(result.user);
       
-      handleSuccessfulSignIn();
+      // Do not redirect here, let the calling component decide
+      // handleSuccessfulSignIn(); 
       return result;
     } catch (error: any) {
       if (['auth/popup-blocked', 'auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(error.code)) {
@@ -167,7 +168,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       console.error(`Error signing in with Google:`, error);
       throw error;
     }
-  }, [auth, user, router, searchParams]);
+  }, [auth, user]);
 
   // --- Sign Up with Email/Password ---
   const signUpWithEmail = useCallback(async (email: string, password: string): Promise<UserCredential | void> => {
@@ -185,7 +186,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (!auth) return;
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
-      // The onAuthStateChanged listener will handle setting the user and redirection
       return result;
     } catch (error: any) {
       console.error('Error signing in with email:', error);
@@ -212,7 +212,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const token = accountType === 'work' ? workAccessToken : personalAccessToken;
     
     if (!provider || !token) {
-        return; // Silently return if this account type isn't connected
+        return;
     }
 
     if (provider === 'google') {
@@ -222,7 +222,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             if (response.status === 401 || response.status === 403) {
-                // Clear the invalid token from state and cookies
                 if(accountType === 'work') {
                   setWorkAccessToken(null);
                   setWorkProvider(null);

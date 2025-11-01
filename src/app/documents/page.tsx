@@ -97,6 +97,7 @@ type Document = {
   accountType: AccountType;
   isImported?: boolean;
   folderId?: string;
+  textContent?: string;
 };
 
 type Folder = {
@@ -151,15 +152,15 @@ function useDocuments(user: any) {
             }
         };
 
-        if (workAccessToken) {
+        if (workAccessToken && workProvider) {
             fetchPromises.push(
-                fetchDriveFiles('work').then(files => processFiles(files, 'work', workProvider!))
+                fetchDriveFiles('work').then(files => processFiles(files, 'work', workProvider))
                 .catch(error => { toast({ variant: 'destructive', title: `Could not sync ${workProvider} Work account`, description: error.message }); })
             );
         }
-        if (personalAccessToken) {
+        if (personalAccessToken && personalProvider) {
             fetchPromises.push(
-                fetchDriveFiles('personal').then(files => processFiles(files, 'personal', personalProvider!))
+                fetchDriveFiles('personal').then(files => processFiles(files, 'personal', personalProvider))
                 .catch(error => { toast({ variant: 'destructive', title: `Could not sync ${personalProvider} Personal account`, description: error.message }); })
             );
         }
@@ -167,13 +168,12 @@ function useDocuments(user: any) {
         await Promise.all(fetchPromises);
 
         const cloudDocsMap = new Map(allCloudFiles.map(d => [d.id, d]));
-        const mergedDocs = localDocs.map((localDoc: any) => { // Use any for localDoc to handle missing properties gracefully
+        const mergedDocs = localDocs.map((localDoc: any) => {
              const cloudVersion = cloudDocsMap.get(localDoc.id);
              if (cloudVersion) {
-                 cloudDocsMap.delete(localDoc.id); // Remove from map to avoid duplication
-                 return { ...cloudVersion, ...localDoc, isImported: true }; // Local data (like folderId) overrides cloud
+                 cloudDocsMap.delete(localDoc.id);
+                 return { ...cloudVersion, ...localDoc, isImported: true };
              }
-             // Ensure local docs have a default mimeType and modifiedTime if missing
              return { 
                 mimeType: localDoc.mimeType || 'application/pdf', 
                 modifiedTime: localDoc.uploaded || new Date().toISOString(),
@@ -396,7 +396,7 @@ function DocumentsPageContent() {
         const docsKey = `documents_${user.uid}`;
         const existingDocuments = JSON.parse(localStorage.getItem(docsKey) || '[]');
         
-        const newDocRecord = {
+        const newDocRecord: Document = {
             id: doc.id,
             name: doc.name,
             uploaded: new Date().toISOString(),
@@ -407,7 +407,7 @@ function DocumentsPageContent() {
             accountType: doc.accountType,
             folderId: doc.folderId,
             isImported: true,
-            textContent: result.content, // Storing extracted text
+            textContent: result.content,
         };
 
         const docIndex = existingDocuments.findIndex((d: any) => d.id === doc.id);
@@ -419,7 +419,6 @@ function DocumentsPageContent() {
         }
         localStorage.setItem(docsKey, JSON.stringify(existingDocuments));
 
-        // For non-PDFs, content is just text. For PDFs, we need to get the file data.
         const contentKey = `document_content_${doc.id}`;
         if (doc.mimeType.includes('pdf')) {
             const fileContentResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${doc.id}?alt=media`, {
@@ -437,7 +436,6 @@ function DocumentsPageContent() {
                 reader.readAsDataURL(blob);
             });
         } else {
-            // For GDocs, Sheets, Slides, the text content is sufficient for viewing.
             localStorage.setItem(contentKey, result.content);
         }
 
@@ -527,15 +525,16 @@ function DocumentsPageContent() {
         const trashedDoc = { ...docToTrash, trashedAt: new Date().toISOString() };
         localStorage.setItem(trashKey, JSON.stringify([trashedDoc, ...existingTrash]));
         
-        // For cloud-sourced docs, we just remove them from the UI list, but don't delete from local storage record
-        // as that would make them reappear on next sync. We just mark them as not imported.
-        // For local files, we remove them from local storage.
         if (docToTrash.source === 'local') {
           localStorage.setItem(docsKey, JSON.stringify(existingDocs.filter((d: any) => d.id !== showTrashConfirm.id)));
+        } else {
+          // For cloud docs, we mark them as not imported in the main list
+           const updatedDocs = existingDocs.map((d: any) => d.id === showTrashConfirm.id ? {...d, isImported: false, textContent: undefined } : d);
+           localStorage.setItem(docsKey, JSON.stringify(updatedDocs));
         }
         localStorage.removeItem(`document_content_${showTrashConfirm.id}`);
         
-        setDocuments(prevDocs => prevDocs.map(d => d.id === showTrashConfirm.id ? {...d, isImported: false} : d).filter(d => d.id !== showTrashConfirm.id || d.source !== 'local'));
+        setDocuments(prevDocs => prevDocs.map(d => d.id === showTrashConfirm.id ? {...d, isImported: false, textContent: undefined} : d).filter(d => d.id !== showTrashConfirm.id || d.source !== 'local'));
 
         toast({ title: "Moved to Trash", description: `${showTrashConfirm.name} has been moved to trash.` });
     }
@@ -590,9 +589,7 @@ function DocumentsPageContent() {
     if (docIndex > -1) {
         currentDocs[docIndex].folderId = folderId;
     } else {
-        // This case handles moving a document that hasn't been imported yet.
-        // We create a minimal record in local storage just to save its folder assignment.
-        currentDocs.push({ id: doc.id, name: doc.name, folderId });
+        currentDocs.push({ id: doc.id, name: doc.name, folderId, isImported: false });
     }
 
     localStorage.setItem(docsKey, JSON.stringify(currentDocs));
