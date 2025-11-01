@@ -322,14 +322,14 @@ function LoggedInView() {
 
 function AnimatedSection({ children, className }: { children: React.ReactNode, className?: string }) {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, amount: 0.2, rootMargin: "0px 0px -100px 0px" });
+  const isInView = useInView(ref, { once: true, amount: 0.15, rootMargin: "0px 0px -100px 0px" });
 
   return (
     <motion.section
       ref={ref}
-      initial={{ opacity: 0, y: 50 }}
-      animate={{ opacity: isInView ? 1 : 0, y: isInView ? 0 : 50 }}
-      transition={{ duration: 0.8, ease: [0.6, 0.05, -0.01, 0.9] }}
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: isInView ? 1 : 0, y: isInView ? 0 : 30 }}
+      transition={{ duration: 0.8, ease: 'easeOut' }}
       className={className}
     >
       {children}
@@ -434,6 +434,64 @@ function LandingPage() {
                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
             </div>
           </AnimatedSection>
+          
+           <section className="section py-36" id="why">
+            <AnimatedSection className="section-header max-w-3xl mx-auto mb-20 text-center">
+                <h2 className="text-4xl md:text-6xl font-bold tracking-tighter mb-5 text-white">Built for how you actually work</h2>
+                <p className="subhead text-lg md:text-xl text-muted-foreground font-light leading-relaxed">We handle the chaos of finding information so you can focus on understanding it.</p>
+            </AnimatedSection>
+
+            <div className="grid md:grid-cols-2 gap-6">
+                <AnimatedSection className="group card bg-white/5 border border-white/10 p-10 rounded-3xl hover:bg-white/10 hover:border-blue-500/30 transition-all duration-300 backdrop-blur-sm">
+                    <div className="card-number text-xs font-bold text-blue-400 mb-4 tracking-widest uppercase">Step 01</div>
+                    <h3 className="text-2xl md:text-3xl font-semibold mb-4 text-white group-hover:text-blue-300 transition-colors">Everything in one place</h3>
+                    <p className="text-base text-muted-foreground leading-relaxed">Connect Google Drive, OneDrive, Dropbox, and local files. No more "where did I save that?" moments. Your documents from work and personal accounts, all searchable in seconds.</p>
+                </AnimatedSection>
+
+                <AnimatedSection className="group card bg-white/5 border border-white/10 p-10 rounded-3xl hover:bg-white/10 hover:border-pink-500/30 transition-all duration-300 backdrop-blur-sm">
+                    <div className="card-number text-xs font-bold text-pink-400 mb-4 tracking-widest uppercase">Step 02</div>
+                    <h3 className="text-2xl md:text-3xl font-semibold mb-4 text-white group-hover:text-pink-300 transition-colors">Ask anything, naturally</h3>
+                    <p className="text-base text-muted-foreground leading-relaxed">Ask questions that span multiple documents and get synthesized answers instantly. Our AI understands context and connects information across your entire knowledge base—no technical queries needed.</p>
+                </AnimatedSection>
+
+                <AnimatedSection className="group card bg-white/5 border border-white/10 p-10 rounded-3xl hover:bg-white/10 hover:border-purple-500/30 transition-all duration-300 backdrop-blur-sm">
+                    <div className="card-number text-xs font-bold text-purple-400 mb-4 tracking-widest uppercase">Step 03</div>
+                    <h3 className="text-2xl md:text-3xl font-semibold mb-4 text-white group-hover:text-purple-300 transition-colors">Work & life, together</h3>
+                    <p className="text-base text-muted-foreground leading-relaxed">Manage both professional and personal documents in one workspace. Keep them separate when you need to, or let AI discover connections you never knew existed between your projects.</p>
+                </AnimatedSection>
+
+                <AnimatedSection className="group card bg-white/5 border border-white/10 p-10 rounded-3xl hover:bg-white/10 hover:border-yellow-500/30 transition-all duration-300 backdrop-blur-sm">
+                    <div className="card-number text-xs font-bold text-yellow-400 mb-4 tracking-widest uppercase">Step 04</div>
+                    <h3 className="text-2xl md:text-3xl font-semibold mb-4 text-white group-hover:text-yellow-300 transition-colors">Share in one click</h3>
+                    <p className="text-base text-muted-foreground leading-relaxed">Found something worth sharing? Make it public instantly. No complicated permission settings, no email attachments. Just share the link and you're done.</p>
+                </AnimatedSection>
+            </div>
+
+            <AnimatedSection className="future-box relative overflow-hidden bg-gradient-to-br from-blue-500/10 via-violet-500/5 to-blue-500/10 border border-blue-500/20 p-14 rounded-3xl text-center mt-20 backdrop-blur-sm" id="roadmap">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-violet-500/5 animate-pulse" style={{ animationDuration: '4s' }} />
+                <div className="relative z-10">
+                  <div className="future-tag inline-block bg-violet-500/15 border border-violet-500/30 py-2 px-4 rounded-full text-xs text-violet-300 mb-6 font-semibold tracking-wider uppercase backdrop-blur-sm">Coming Soon</div>
+                  <h3 className="text-3xl md:text-4xl font-bold mb-4 text-white">Your complete AI workspace</h3>
+                  <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed font-light">Soon you'll be able to ask AI about your calendar, emails, and more. Schedule meetings, find that message from last week, and manage everything through natural conversation. Ryzor will be your unified command center.</p>
+                  <div className="integration-list flex gap-3 justify-center flex-wrap">
+                      <div className="integration bg-white/5 border border-white/10 py-3 px-5 rounded-xl text-sm text-muted-foreground backdrop-blur-sm">📅 Google Calendar</div>
+                      <div className="integration bg-white/5 border border-white/10 py-3 px-5 rounded-xl text-sm text-muted-foreground backdrop-blur-sm">📅 Microsoft Calendar</div>
+                      <div className="integration bg-white/5 border border-white/10 py-3 px-5 rounded-xl text-sm text-muted-foreground backdrop-blur-sm">✉️ Gmail</div>
+                      <div className="integration bg-white/5 border border-white/10 py-3 px-5 rounded-xl text-sm text-muted-foreground backdrop-blur-sm">✉️ Outlook</div>
+                  </div>
+                </div>
+            </AnimatedSection>
+        </section>
+
+        <section className="final-cta text-center py-36">
+            <AnimatedSection>
+                <h2 className="text-5xl md:text-6xl font-bold mb-6 tracking-tighter">Ready to end the search?</h2>
+                <p className="text-lg md:text-xl text-muted-foreground mb-10 font-light">Join teams already using Ryzor to work smarter.</p>
+                <Button asChild size="lg" className="bg-gradient-to-r from-blue-500 to-violet-500 hover:from-blue-600 hover:to-violet-600 h-12 px-8 text-base font-semibold shadow-lg shadow-blue-500/30 border-0">
+                    <Link href="/login">Get Started Free</Link>
+                </Button>
+            </AnimatedSection>
+        </section>
         </div>
       </div>
     </>
@@ -445,10 +503,10 @@ export default function Home() {
   const { user, loading } = useUser();
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-slate-950">
+      <div className="flex items-center justify-center h-screen bg-background">
         <div className="relative">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-500" />
-          <div className="absolute inset-0 blur-2xl bg-blue-500/30 animate-pulse" />
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <div className="absolute inset-0 blur-xl bg-blue-500/30 animate-pulse" />
         </div>
       </div>
     );
@@ -456,5 +514,4 @@ export default function Home() {
 
   return user ? <LoggedInView /> : <LandingPage />;
 }
-
-    
+```
