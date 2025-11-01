@@ -127,3 +127,5 @@ to: {
     require('tailwindcss-animate'),
   ],
 } satisfies Config;
+
+    
