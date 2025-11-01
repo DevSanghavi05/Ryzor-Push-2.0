@@ -5,32 +5,33 @@ import { FC, memo } from 'react';
 const toHtml = (markdown: string): string => {
   if (!markdown) return '';
   
-  // Escape HTML to prevent injection, but keep the cursor
-  let html = markdown.replace(/&/g, '&amp;')
-                     .replace(/</g, '&lt;')
-                     .replace(/>/g, '&gt;')
-                     .replace(/"/g, '&quot;')
-                     .replace(/'/g, '&#039;')
-                     .replace(/▋/g, '<span class="animate-blink">▋</span>');
+  let processedMarkdown = markdown;
 
-  // Bold **text**
-  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-  // Italics *text*
-  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
-  // Unordered list items * item or - item
+  // Render the blinking cursor if present
+  processedMarkdown = processedMarkdown.replace(/▋/g, '<span class="animate-blink">▋</span>');
+
+  // Convert markdown to HTML
+  let html = processedMarkdown
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
+    .replace(/\*(.*?)\*/g, '<em>$1</em>'); // Italics
+
+  // Handle lists
   html = html.replace(/^\s*[-*]\s+(.+)/gm, '<li>$1</li>');
-  // Wrap consecutive <li>'s in <ul>
-  html = html.replace(/(<li>(?:.|\n)*?<\/li>)/g, '<ul>$1</ul>');
-  // Clean up multiple <ul> tags
+  html = html.replace(/((<li>.*<\/li>\s*)+)/g, '<ul>$1</ul>');
   html = html.replace(/<\/ul>\s*<ul>/g, '');
-   // Handle newlines -> <br>
-  html = html.replace(/\n/g, '<br />');
-  // Clean up extra <br>s around lists
+
+  // Handle newlines, but be careful not to add <br> inside list structure
+  html = html.split('\n').map(line => {
+    if (line.trim().startsWith('<li') || line.trim().startsWith('<ul') || line.trim().startsWith('</ul')) {
+      return line;
+    }
+    return line === '' ? '<br />' : line;
+  }).join('<br />').replace(/<br \/>\s*<br \/>/g, '<br />');
+
+  // Cleanup extra breaks around lists
   html = html.replace(/<br \/>\s*<ul>/g, '<ul>');
   html = html.replace(/<\/ul>\s*<br \/>/g, '</ul>');
-  // Clean up <br> inside li
-  html = html.replace(/<li>\s*<br \/>/g, '<li>');
-
+  
   return html;
 };
 
@@ -50,5 +51,3 @@ export const MarkdownContent: FC<MarkdownContentProps> = memo(({ content }) => {
 });
 
 MarkdownContent.displayName = 'MarkdownContent';
-
-    
