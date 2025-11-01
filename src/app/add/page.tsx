@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRef, useEffect, useMemo } from 'react';
 import { useUser } from '@/firebase';
 import * as pdfjs from 'pdfjs-dist';
+import { generateDocumentName } from '@/ai/flows/generate-doc-name-flow';
 
 type Source = {
   name: string;
@@ -88,15 +89,29 @@ function AddDocumentPage() {
         return;
       }
       
+      toast({ title: "Analyzing Document...", description: "Extracting content and generating a name." });
+
       const fileReader = new FileReader();
       fileReader.onload = async (e) => {
         try {
           const textContent = await extractTextFromPdf(fileToSave);
+          let docName = fileToSave.name;
+
+          try {
+            const result = await generateDocumentName({ textContent });
+            docName = result.name;
+            toast({ title: "Document Named!", description: `Suggested name: "${docName}"`});
+          } catch (aiError) {
+            console.error("AI naming failed, falling back to original filename:", aiError);
+            toast({ variant: 'destructive', title: "AI Naming Failed", description: "Could not generate a name. Using original filename." });
+          }
+
+
           const docId = new Date().toISOString() + Math.random();
 
           const docForList = {
             id: docId,
-            name: fileToSave.name,
+            name: docName,
             uploaded: new Date().toISOString(),
             textContent: textContent,
             source: 'local',
@@ -116,15 +131,7 @@ function AddDocumentPage() {
           
           const contentKey = `document_content_${docId}`;
           
-          // pdfjs needs an ArrayBuffer, but the iframe needs a Data URL.
-          // Let's create the data URL from the ArrayBuffer we already read.
-          const blob = new Blob([viewableContent], { type: 'application/pdf' });
-          const dataUrl = URL.createObjectURL(blob);
-          
-          // It's better to store the data URL for the iframe, but we can't do that synchronously with createObjectURL.
-          // A better approach is to store the array buffer itself and convert it to a data URL when needed.
-          // For simplicity here, we'll re-read it. A cleaner implementation would pass around the ArrayBuffer.
-           const dataUrlReader = new FileReader();
+          const dataUrlReader = new FileReader();
            dataUrlReader.onload = (event) => {
                 localStorage.setItem(contentKey, event.target!.result as string);
                 localStorage.setItem(storageKey, JSON.stringify([docForList, ...existingDocuments]));
@@ -155,7 +162,7 @@ function AddDocumentPage() {
             await handleFileSave(file);
             toast({
                 title: "Upload Successful",
-                description: `${file.name} has been added to your documents.`,
+                description: `Your document has been processed and saved.`,
             })
             router.push('/documents');
         } catch (error: any) {
@@ -204,7 +211,7 @@ function AddDocumentPage() {
         if (successCount > 0) {
             toast({
                 title: "Folder Upload Complete",
-                description: `${successCount} PDF(s) have been added to your documents. ${errorCount > 0 ? `${errorCount} failed.` : ''}`,
+                description: `${successCount} PDF(s) have been processed and saved. ${errorCount > 0 ? `${errorCount} failed.` : ''}`,
             });
             router.push('/documents');
         } else {
@@ -281,6 +288,3 @@ function AddDocumentPage() {
 }
 
 export default withAuth(AddDocumentPage);
-
-
-    
