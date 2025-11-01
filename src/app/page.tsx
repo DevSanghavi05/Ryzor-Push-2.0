@@ -12,13 +12,9 @@ import {
   Brain, 
   MessageSquare, 
   Wand, 
-  Briefcase, 
-  Plus, 
-  Trash2,
-  Edit,
-  PanelLeft
+  Briefcase
 } from 'lucide-react';
-import { useUser, AccountType } from '@/firebase';
+import { useUser } from '@/firebase';
 import { ask } from '@/app/actions';
 import withAuth from '@/firebase/auth/with-auth';
 import Link from 'next/link';
@@ -27,8 +23,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { motion, useInView } from 'framer-motion';
 import { Logo } from '@/components/layout/logo';
-import { SidebarProvider, Sidebar, SidebarTrigger, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuAction } from '@/components/ui/sidebar';
-import { nanoid } from 'nanoid';
 
 
 export interface Message {
@@ -36,127 +30,46 @@ export interface Message {
   content: string;
 }
 
-export interface Chat {
-    id: string;
-    title: string;
-    messages: Message[];
-    createdAt: string;
-}
-
 function LoggedInView() {
   const { user } = useUser();
-  const [chats, setChats] = useState<Chat[]>([]);
-  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const router = useRouter();
 
-  // Load chats from local storage
+  // Load chat from local storage
   useEffect(() => {
     if (user) {
-        const storedChats = localStorage.getItem(`chats_${user.uid}`);
-        if (storedChats) {
-            const parsedChats: Chat[] = JSON.parse(storedChats);
-            const sortedChats = parsedChats.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-            setChats(sortedChats);
-            // If there are chats, set the most recent one as active
-            if (sortedChats.length > 0) {
-              setActiveChatId(sortedChats[0].id);
-            }
+        const storedMessages = localStorage.getItem(`messages_${user.uid}`);
+        if (storedMessages) {
+            setMessages(JSON.parse(storedMessages));
         }
     }
   }, [user]);
 
-  // Save chats to local storage whenever they change
+  // Save chat to local storage whenever messages change
   useEffect(() => {
-    if (user && chats.length > 0) {
-      localStorage.setItem(`chats_${user.uid}`, JSON.stringify(chats));
+    if (user && messages.length > 0) {
+      localStorage.setItem(`messages_${user.uid}`, JSON.stringify(messages));
     }
-  }, [chats, user]);
-
-
-  const activeChat = useMemo(() => {
-    return chats.find(chat => chat.id === activeChatId);
-  }, [chats, activeChatId]);
+  }, [messages, user]);
 
 
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [activeChat?.messages, loading]);
-
-  const createNewChat = () => {
-    const newChat: Chat = {
-        id: nanoid(),
-        title: "New Chat",
-        messages: [],
-        createdAt: new Date().toISOString()
-    };
-    const updatedChats = [newChat, ...chats];
-    setChats(updatedChats);
-    setActiveChatId(newChat.id);
-  }
-
-  const deleteChat = (chatId: string) => {
-    if (window.confirm("Are you sure you want to delete this chat?")) {
-        const updatedChats = chats.filter(c => c.id !== chatId);
-        setChats(updatedChats);
-        
-        // If the active chat is deleted, set the new active chat to the first one
-        if(activeChatId === chatId) {
-            setActiveChatId(updatedChats.length > 0 ? updatedChats[0].id : null);
-        }
-        localStorage.setItem(`chats_${user!.uid}`, JSON.stringify(updatedChats));
-    }
-  };
-
-  const renameChat = (chatId: string, currentTitle: string) => {
-    const newTitle = prompt("Enter new chat title:", currentTitle);
-    if (newTitle && newTitle.trim() !== "") {
-        const updatedChats = chats.map(c => c.id === chatId ? {...c, title: newTitle.trim()} : c);
-        setChats(updatedChats);
-    }
-  }
+  }, [messages, loading]);
 
   const handleInteraction = async () => {
     if (!user || !input.trim()) return;
 
-    let currentChatId = activeChatId;
-    let isNewChat = false;
-    
-    // If there is no active chat, create a new one.
-    if (!currentChatId) {
-        const newChat: Chat = {
-            id: nanoid(),
-            title: input.length > 30 ? input.substring(0, 27) + '...' : input,
-            messages: [],
-            createdAt: new Date().toISOString()
-        };
-        setChats([newChat, ...chats]);
-        currentChatId = newChat.id;
-        setActiveChatId(currentChatId);
-        isNewChat = true;
-    }
-
-
     const currentInput = input;
     const userMessage: Message = { role: 'user', content: currentInput };
     
-    // Update the messages for the active chat
-    setChats(prevChats => prevChats.map(chat => {
-        if (chat.id === currentChatId) {
-            const updatedMessages = [...chat.messages, userMessage];
-            // If it's the first message of a new chat, also update the title
-            if (isNewChat && updatedMessages.length === 1) {
-                return { ...chat, messages: updatedMessages, title: currentInput.length > 30 ? currentInput.substring(0, 27) + '...' : currentInput }
-            }
-            return { ...chat, messages: updatedMessages }
-        }
-        return chat;
-    }));
+    setMessages(prevMessages => [...prevMessages, userMessage]);
 
     setInput('');
     setLoading(true);
@@ -181,18 +94,12 @@ function LoggedInView() {
         return;
       }
       
-      const currentMessages = chats.find(c => c.id === currentChatId)?.messages || [];
-
-      const stream = await ask(currentInput, contextDocuments, currentMessages.slice(-10));
+      const stream = await ask(currentInput, contextDocuments, messages.slice(-10));
 
       let fullResponse = '';
       
       const modelMessage: Message = { role: 'model', content: '' };
-       setChats(prevChats => prevChats.map(chat => 
-        chat.id === currentChatId 
-            ? { ...chat, messages: [...chat.messages, modelMessage] } 
-            : chat
-        ));
+       setMessages(prevMessages => [...prevMessages, modelMessage]);
 
 
       const reader = stream.getReader();
@@ -203,99 +110,40 @@ function LoggedInView() {
         const chunk = value || '';
         fullResponse += chunk;
         
-        setChats(prev => {
-            return prev.map(chat => {
-                if (chat.id === currentChatId) {
-                    const newMessages = [...chat.messages];
-                    newMessages[newMessages.length - 1] = { role: 'model', content: fullResponse + '▋' };
-                    return { ...chat, messages: newMessages };
-                }
-                return chat;
-            });
+        setMessages(prev => {
+            const newMessages = [...prev];
+            newMessages[newMessages.length - 1] = { role: 'model', content: fullResponse + '▋' };
+            return newMessages;
         });
         await new Promise(resolve => setTimeout(resolve, 20));
       }
 
-      setChats(prev => {
-         return prev.map(chat => {
-            if (chat.id === currentChatId) {
-                const newMessages = [...chat.messages];
-                newMessages[newMessages.length - 1] = { role: 'model', content: fullResponse };
-                return { ...chat, messages: newMessages };
-            }
-            return chat;
-        });
+      setMessages(prev => {
+         const newMessages = [...prev];
+         newMessages[newMessages.length - 1] = { role: 'model', content: fullResponse };
+         return newMessages;
       });
 
     } catch (error) {
       console.error(error);
-       setChats(prev => {
-         return prev.map(chat => {
-            if (chat.id === currentChatId) {
-                const newMessages = [...chat.messages];
-                newMessages[newMessages.length - 1] = { role: 'model', content: 'Something went wrong. Try again.' };
-                return { ...chat, messages: newMessages };
-            }
-            return chat;
+       setMessages(prev => {
+         const newMessages = [...prev];
+         newMessages[newMessages.length - 1] = { role: 'model', content: 'Something went wrong. Try again.' };
+         return newMessages;
         });
-      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <SidebarProvider>
       <div className="flex w-full h-dvh pt-16 relative overflow-hidden">
-        {/* Sidebar */}
-        <Sidebar>
-            <SidebarHeader>
-              <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold font-headline px-2">My Chats</h2>
-                  <Button variant="ghost" size="icon" onClick={createNewChat}>
-                      <Plus className="h-5 w-5" />
-                  </Button>
-              </div>
-            </SidebarHeader>
-            <SidebarContent>
-              <SidebarMenu>
-                {chats.map(chat => (
-                  <SidebarMenuItem key={chat.id}>
-                    <SidebarMenuButton 
-                      isActive={chat.id === activeChatId} 
-                      onClick={() => setActiveChatId(chat.id)}
-                      className="truncate"
-                    >
-                      {chat.title}
-                    </SidebarMenuButton>
-                    <SidebarMenuAction 
-                      onClick={() => deleteChat(chat.id)}
-                      className="hover:text-destructive"
-                      aria-label="Delete chat"
-                      showOnHover={true}
-                    >
-                      <Trash2 />
-                    </SidebarMenuAction>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarContent>
-        </Sidebar>
-
         {/* Main Chat Area */}
         <div className="flex-1 flex flex-col h-full bg-background/50 relative">
           <header className="p-4 flex items-center gap-2 border-b">
-              <SidebarTrigger>
-                <PanelLeft size={18} />
-              </SidebarTrigger>
               <h1 className="text-xl font-semibold font-headline truncate flex-1">
-                  {activeChat?.title || "Workspace"}
+                  Workspace
               </h1>
-              {activeChat && (
-                <Button variant="ghost" size="icon" onClick={() => renameChat(activeChat.id, activeChat.title)}>
-                  <Edit className="h-5 w-5" />
-                </Button>
-              )}
           </header>
           {/* Background */}
           <div className="bg-aurora"></div>
@@ -305,7 +153,7 @@ function LoggedInView() {
             ref={chatContainerRef}
             className="flex-1 p-6 pb-40 overflow-y-auto space-y-6"
           >
-            {activeChat?.messages.length === 0 && !loading && (
+            {messages.length === 0 && !loading && (
               <div className="text-center mt-24">
                 <h1 className="text-3xl font-bold text-foreground/80 font-headline">Ryzor Workspace</h1>
                 <p className="mt-2 text-muted-foreground">
@@ -314,7 +162,7 @@ function LoggedInView() {
               </div>
             )}
 
-            {activeChat?.messages.map((msg, i) => (
+            {messages.map((msg, i) => (
               <div
                 key={i}
                 className={`flex items-start gap-3 ${
@@ -341,7 +189,7 @@ function LoggedInView() {
               </div>
             ))}
 
-            {loading && activeChat?.messages[activeChat.messages.length - 1]?.role === 'user' && (
+            {loading && messages[messages.length - 1]?.role === 'user' && (
               <div className="flex items-start gap-3 justify-start">
                 <div className="w-8 h-8 rounded-full bg-card flex items-center justify-center text-primary p-1.5">
                   <Logo />
@@ -392,7 +240,6 @@ function LoggedInView() {
           </div>
         </div>
       </div>
-    </SidebarProvider>
   );
 }
 
