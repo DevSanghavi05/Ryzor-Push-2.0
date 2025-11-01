@@ -175,7 +175,7 @@ function useDocuments(user: any) {
              }
              // Ensure local docs have a default mimeType and modifiedTime if missing
              return { 
-                mimeType: 'application/pdf', 
+                mimeType: localDoc.mimeType || 'application/pdf', 
                 modifiedTime: localDoc.uploaded || new Date().toISOString(),
                 ...localDoc, 
                 isImported: true 
@@ -202,6 +202,18 @@ function useDocuments(user: any) {
 }
 
 // --- UI Components ---
+
+const getFileIcon = (mimeType: string, source: 'drive' | 'local', provider?: 'google') => {
+    if (source === 'local') return <HardDriveUpload className="w-5 h-5 text-purple-500" />;
+    if (!mimeType) return <FileIcon className="w-5 h-5 text-gray-500" />;
+    if (mimeType.includes('document')) return <FileIcon className="w-5 h-5 text-blue-500" />;
+    if (mimeType.includes('spreadsheet')) return <FileIcon className="w-5 h-5 text-green-500" />;
+    if (mimeType.includes('presentation')) return <FileIcon className="w-5 h-5 text-yellow-500" />;
+    if (mimeType.includes('pdf')) return <FileIcon className="w-5 h-5 text-red-500" />;
+    return <FileIcon className="w-5 h-5 text-gray-500" />;
+};
+
+
 function DocumentItem({ doc, onRename, onTrash, onCopyLink, onMove, onImportAndAnalyze, importingDocId, isImportingAll }: {
     doc: Document;
     onRename: (doc: Document) => void;
@@ -214,16 +226,6 @@ function DocumentItem({ doc, onRename, onTrash, onCopyLink, onMove, onImportAndA
 }) {
     const router = useRouter();
 
-    const getFileIcon = (mimeType: string, source: 'drive' | 'local', provider?: 'google') => {
-        if (source === 'local') return <HardDriveUpload className="w-5 h-5 text-purple-500" />;
-        if (!mimeType) return <FileIcon className="w-5 h-5 text-gray-500" />;
-        if (mimeType.includes('document')) return <FileIcon className="w-5 h-5 text-blue-500" />;
-        if (mimeType.includes('spreadsheet')) return <FileIcon className="w-5 h-5 text-green-500" />;
-        if (mimeType.includes('presentation')) return <FileIcon className="w-5 h-5 text-yellow-500" />;
-        if (mimeType.includes('pdf')) return <FileIcon className="w-5 h-5 text-red-500" />;
-        return <FileIcon className="w-5 h-5 text-gray-500" />;
-    };
-
     const handleDocumentClick = (e: React.MouseEvent) => {
         e.preventDefault();
         if (doc.source === 'drive' && !doc.isImported) {
@@ -234,6 +236,7 @@ function DocumentItem({ doc, onRename, onTrash, onCopyLink, onMove, onImportAndA
     };
     
     const { user } = useUser();
+    // This is a bit inefficient, but acceptable for now. For larger apps, this state should be lifted.
     const { folders: allFolders } = useDocuments(user);
 
     return (
