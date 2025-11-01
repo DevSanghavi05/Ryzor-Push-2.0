@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -175,19 +174,13 @@ function LoggedInView() {
         
         {/* Main Chat Area */}
         <div className="flex-1 flex flex-col h-full bg-transparent relative z-10">
-          <header className="p-5 flex items-center gap-4 border-b border-white/10 backdrop-blur-xl bg-black/20">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500 via-violet-500 to-pink-500 flex items-center justify-center p-2 shadow-lg shadow-violet-500/50">
-                <Logo />
-              </div>
-          </header>
-
           {/* Chat Messages */}
           <div
             ref={chatContainerRef}
             className="flex-1 p-6 pb-40 overflow-y-auto"
           >
             {messages.length === 0 && !loading && (
-              <div className="text-center mt-32 max-w-3xl mx-auto">
+              <div className="text-center mt-20 max-w-3xl mx-auto">
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -199,7 +192,7 @@ function LoggedInView() {
                       <Sparkles className="w-12 h-12 text-white" />
                     </div>
                   </div>
-                  <h1 className="text-5xl font-bold mb-4 mt-6 tracking-tight bg-gradient-to-br from-white to-gray-400 bg-clip-text text-transparent">Welcome back</h1>
+                  <h1 className="text-5xl font-bold mb-4 mt-6 tracking-tight bg-gradient-to-br from-white to-gray-400 bg-clip-text text-transparent">Your intelligent workspace.</h1>
                   <p className="text-muted-foreground text-lg mb-10">
                     Ask anything about your documents. I'll search across everything to find what you need.
                   </p>
@@ -668,5 +661,3 @@ export default function Home() {
 
   return user ? <LoggedInView /> : <LandingPage />;
 }
-
-    
