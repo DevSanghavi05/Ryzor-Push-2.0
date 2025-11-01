@@ -613,9 +613,7 @@ function DocumentsPageContent() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
                             <DropdownMenuItem onSelect={() => handleSyncAccount('google', 'work')}><GoogleIcon /> Google Work</DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => handleSyncAccount('microsoft', 'work')}><MicrosoftIcon /> Microsoft Work</DropdownMenuItem>
                             <DropdownMenuItem onSelect={() => handleSyncAccount('google', 'personal')}><GoogleIcon /> Google Personal</DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => handleSyncAccount('microsoft', 'personal')}><MicrosoftIcon /> Microsoft Personal</DropdownMenuItem>
                         </DropdownMenuContent>
                      </DropdownMenu>
                     <Button asChild size="lg" variant="secondary">
@@ -685,3 +683,5 @@ function DocumentsPage() {
 
 export default withAuth(DocumentsPage);
 
+
+    
