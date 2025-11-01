@@ -59,51 +59,6 @@
 }
 
 @layer utilities {
-  .bg-gradient-aurora {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -10;
-    opacity: 0.3;
-  }
-  .glow-1 {
-    position: absolute;
-    width: 600px;
-    height: 600px;
-    background: radial-gradient(circle, hsl(var(--primary) / 0.4) 0%, transparent 70%);
-    top: -300px;
-    right: -200px;
-    animation: drift 25s infinite ease-in-out;
-  }
-  .glow-2 {
-      position: absolute;
-      width: 500px;
-      height: 500px;
-      background: radial-gradient(circle, hsl(var(--accent) / 0.3) 0%, transparent 70%);
-      bottom: -200px;
-      left: -100px;
-      animation: drift 30s infinite ease-in-out reverse;
-  }
-  .grain {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      opacity: 0.03;
-      z-index: 100;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' /%3E%3C/svg%3E");
-  }
-
-  @keyframes drift {
-      0%, 100% { transform: translate(0, 0); }
-      33% { transform: translate(80px, -60px); }
-      66% { transform: translate(-50px, 100px); }
-  }
-
   .bg-aurora {
     position: fixed;
     top: 0;
@@ -111,7 +66,7 @@
     width: 100vw;
     height: 100vh;
     z-index: -10;
-    background-color: hsl(var(--background));
+    background-color: #0d0d12;
     --gradient-1: hsl(var(--primary) / 0.3);
     --gradient-2: hsl(var(--accent) / 0.2);
     --gradient-3: hsl(var(--primary) / 0.2);
@@ -119,12 +74,7 @@
       radial-gradient(at 20% 25%, var(--gradient-1) 0px, transparent 50%),
       radial-gradient(at 70% 30%, var(--gradient-2) 0px, transparent 50%),
       radial-gradient(at 30% 80%, var(--gradient-3) 0px, transparent 50%);
-    -webkit-animation: aurora 20s infinite alternate;
-            animation: aurora 20s infinite alternate;
-  }
-
-  .dark .bg-aurora {
-    background-color: #0d0d12;
+    animation: aurora 20s infinite alternate;
   }
 
   .bg-aurora::after {
@@ -133,14 +83,8 @@
     inset: 0;
     background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAMAAAAp4XiDAAAAUVBMVEWFhYWDg4N3d3dtbW17e3t1dXWBgYGHh4d5eXlzc3OLi4ubm5uVlZWPj4+NjY19fX2JiYl/f39ra2uRkZGZmZlpaWmXl5dvb29xcXGTk5NnZ2c8TV1mAAAAG3RSTlNAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEAvEOwtAAAFVklEQVR4XpWWB67c2BUFb3g557T/hRo9/WUMZHlgr4Bg8Z4qQgQJlHI4A8SzFVrapvmTF9O7dmYRFZ60YiBhJRCgh1FY5OEwWCsVRsUVxwFeA1mDGKwPEubgwFiggeRgIHorxIwVB40NhDpqQX3QvEI+oGNLFXCKU2KNWCgIChZoMGoJICEnaoGLQrQ4ULFAQyEe0EgbQRvUolIV5UoOsqmLEpBMA0sZ0IqFC5IUE2sVkeUVCTEHiRgprRCExNwSMW9BlGA5CESSxgEkEk8FRxwWR+121JBZCYh5hK+ASKgskMw4SoXKl4NKMwMsTARAoYIQBc5Ra2MQrQDcDw επιχειρήσεις κα κινすることにより social media κτλ. characteristically formatted text like this');
     background-repeat: repeat;
-    opacity: 0.1;
+    opacity: 0.05;
     pointer-events: none;
-  }
-  
-  @-webkit-keyframes aurora {
-    0% { background-position: 20% 25%, 70% 30%, 30% 80%; }
-    50% { background-position: 40% 50%, 60% 40%, 40% 70%; }
-    100% { background-position: 25% 30%, 80% 20%, 20% 60%; }
   }
   
   @keyframes aurora {
