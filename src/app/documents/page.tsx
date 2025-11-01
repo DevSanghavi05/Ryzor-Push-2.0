@@ -167,13 +167,19 @@ function useDocuments(user: any) {
         await Promise.all(fetchPromises);
 
         const cloudDocsMap = new Map(allCloudFiles.map(d => [d.id, d]));
-        const mergedDocs = localDocs.map((localDoc: Document) => {
+        const mergedDocs = localDocs.map((localDoc: any) => { // Use any for localDoc to handle missing properties gracefully
              const cloudVersion = cloudDocsMap.get(localDoc.id);
              if (cloudVersion) {
                  cloudDocsMap.delete(localDoc.id); // Remove from map to avoid duplication
                  return { ...cloudVersion, ...localDoc, isImported: true }; // Local data (like folderId) overrides cloud
              }
-             return { ...localDoc, isImported: true };
+             // Ensure local docs have a default mimeType and modifiedTime if missing
+             return { 
+                mimeType: 'application/pdf', 
+                modifiedTime: localDoc.uploaded || new Date().toISOString(),
+                ...localDoc, 
+                isImported: true 
+            };
         });
         
         const uniqueCloudFiles = Array.from(cloudDocsMap.values());
@@ -210,6 +216,7 @@ function DocumentItem({ doc, onRename, onTrash, onCopyLink, onMove, onImportAndA
 
     const getFileIcon = (mimeType: string, source: 'drive' | 'local', provider?: 'google') => {
         if (source === 'local') return <HardDriveUpload className="w-5 h-5 text-purple-500" />;
+        if (!mimeType) return <FileIcon className="w-5 h-5 text-gray-500" />; // Safety check
         if (mimeType.includes('document')) return <FileIcon className="w-5 h-5 text-blue-500" />;
         if (mimeType.includes('spreadsheet')) return <FileIcon className="w-5 h-5 text-green-500" />;
         if (mimeType.includes('presentation')) return <FileIcon className="w-5 h-5 text-yellow-500" />;
@@ -347,7 +354,7 @@ function DocumentsPageContent() {
   const [filterType, setFilterType] = useState(initialFilter);
 
   const [showTrashConfirm, setShowTrashConfirm] = useState<Document | Folder | null>(null);
-  const [deleteFolderAction, setDeleteFolderAction] = useState<'delete' | 'unassign'>('unassign');
+  const [deleteFolderAction, setDeleteFolderAction] = useState<'unassign' | 'delete'>('unassign');
   const [renamingItem, setRenamingItem] = useState<Document | Folder | null>(null);
   const [newName, setNewName] = useState("");
   const [showNewFolderDialog, setShowNewFolderDialog] = useState(false);
@@ -744,5 +751,7 @@ function DocumentsPageContent() {
 
 function DocumentsPage() { return <DocumentsPageContent /> }
 export default withAuth(DocumentsPage);
+
+    
 
     
