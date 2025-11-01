@@ -29,10 +29,11 @@ export type AccountType = 'work' | 'personal';
 export interface UserContextValue {
   user: User | null;
   loading: boolean;
-  signInWithGoogle: (accountType: AccountType) => Promise<UserCredential | void>;
+  signInWithGoogle: (accountType?: AccountType) => Promise<UserCredential | void>;
   signOut: () => Promise<void>;
   signUpWithEmail: (email: string, password: string) => Promise<UserCredential | void>;
   signInWithEmail: (email: string, password: string) => Promise<UserCredential | void>;
+  accessToken: string | null;
   workAccessToken: string | null;
   personalAccessToken: string | null;
   workProvider: 'google' | null;
@@ -80,6 +81,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   
+  const [accessToken, setAccessToken] = useState<string|null>(null);
   const [workAccessToken, setWorkAccessToken] = useState<string | null>(null);
   const [personalAccessToken, setPersonalAccessToken] = useState<string | null>(null);
   const [workProvider, setWorkProvider] = useState<'google' | null>(null);
@@ -92,6 +94,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setPersonalAccessToken(cookies.google_access_token_personal || null);
     setWorkProvider(cookies.provider_work as any || null);
     setPersonalProvider(cookies.provider_personal as any || null);
+    setAccessToken(cookies.google_access_token_work || cookies.google_access_token_personal || null);
   }, []);
   
   // --- Listen to Auth State Changes & Handle Redirect Results ---
@@ -118,6 +121,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         setPersonalAccessToken(null);
         setWorkProvider(null);
         setPersonalProvider(null);
+        setAccessToken(null);
         clearAuthTokenCookies();
       }
       setLoading(false);
@@ -133,7 +137,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }
 
   // --- Sign In with Google (with Drive access) ---
-  const signInWithGoogle = useCallback(async (accountType: AccountType): Promise<UserCredential | void> => {
+  const signInWithGoogle = useCallback(async (accountType?: AccountType): Promise<UserCredential | void> => {
     if (!auth) return;
 
     const provider = new GoogleAuthProvider();
@@ -149,24 +153,31 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
       if (credential?.accessToken) {
         const token = credential.accessToken;
+        setAccessToken(token);
         if (accountType === 'work') {
           setWorkAccessToken(token);
           setWorkProvider('google');
-        } else {
+          setAuthTokenCookie(token, 'google', 'work');
+        } else if (accountType === 'personal') {
           setPersonalAccessToken(token);
           setPersonalProvider('google');
+          setAuthTokenCookie(token, 'google', 'personal');
+        } else {
+           // Default to personal if not specified
+           setPersonalAccessToken(token);
+           setPersonalProvider('google');
+           setAuthTokenCookie(token, 'google', 'personal');
         }
-        setAuthTokenCookie(token, 'google', accountType);
       }
       if (!user) setUser(result.user);
       handleSuccessfulSignIn();
       return result;
     } catch (error: any) {
       if (['auth/popup-blocked', 'auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(error.code)) {
-        console.warn(`Google sign-in flow for ${accountType} account was interrupted: ${error.message}`);
+        console.warn(`Google sign-in flow was interrupted: ${error.message}`);
         return;
       }
-      console.error(`Error signing in with Google for ${accountType} account:`, error);
+      console.error(`Error signing in with Google:`, error);
       throw error;
     }
   }, [auth, user, router, searchParams]);
@@ -248,6 +259,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     signOut,
     signUpWithEmail,
     signInWithEmail,
+    accessToken,
     workAccessToken,
     personalAccessToken,
     workProvider,

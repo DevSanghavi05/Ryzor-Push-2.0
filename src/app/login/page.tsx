@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser } from '@/firebase';
@@ -133,7 +134,7 @@ export default function LoginPage() {
                     </div>
                     
                     <div className="space-y-2 w-full">
-                      <Button variant="outline" className="w-full bg-white/5 border-white/10 hover:bg-white/10" onClick={() => signInWithGoogle('work')}>
+                      <Button variant="outline" className="w-full bg-white/5 border-white/10 hover:bg-white/10" onClick={() => signInWithGoogle()}>
                           <GoogleIcon />
                           <span>Continue with Google</span>
                       </Button>
