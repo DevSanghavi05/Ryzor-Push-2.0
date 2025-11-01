@@ -167,12 +167,6 @@ function LoggedInView() {
               <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500 via-violet-500 to-pink-500 flex items-center justify-center p-2 shadow-lg shadow-violet-500/50">
                 <Logo />
               </div>
-              <div>
-                <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-blue-400 via-violet-400 to-pink-400 bg-clip-text text-transparent">
-                    Workspace
-                </h1>
-                <p className="text-xs text-muted-foreground">AI-powered document intelligence</p>
-              </div>
           </header>
 
           {/* Chat Messages */}
