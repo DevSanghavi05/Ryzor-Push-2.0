@@ -111,7 +111,11 @@ to: {
           '0%': { transform: 'scale(1)', opacity: 1 },
           '50%': { transform: 'scale(1.2)', opacity: 0.8 },
           '100%': { transform: 'scale(1)', opacity: 1 },
-        }
+        },
+        blink: {
+            '0%, 50%': { opacity: '1' },
+            '51%, 100%': { opacity: '0' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -120,6 +124,7 @@ to: {
         'fade-in-up': 'fade-in-up 0.5s ease-out',
         'pan': 'pan 120s linear infinite',
         'hyperdrive': 'hyperdrive 2s ease-in-out infinite',
+        'pulse': 'blink 1s infinite',
       },
     },
   },
@@ -127,5 +132,3 @@ to: {
     require('tailwindcss-animate'),
   ],
 } satisfies Config;
-
-    
