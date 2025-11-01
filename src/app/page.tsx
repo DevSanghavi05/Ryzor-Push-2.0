@@ -29,6 +29,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { motion, useInView } from 'framer-motion';
 import { Logo } from '@/components/layout/logo';
+import Image from 'next/image';
 
 
 export interface Message {
@@ -336,111 +337,106 @@ function AnimatedSection({ children, className }: { children: React.ReactNode, c
   );
 }
 
-const FeatureCard = ({ icon: Icon, title, text, gradient }: {icon: React.ElementType, title: string, text: string, gradient: string}) => (
-  <div className="relative p-8 rounded-3xl bg-slate-900/50 border border-white/10 overflow-hidden">
-    <div className={`absolute top-0 left-0 h-1/2 w-full bg-gradient-to-b ${gradient} opacity-20 blur-3xl`} />
-    <div className="relative z-10">
-      <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl mb-6 bg-gradient-to-br ${gradient} text-white shadow-lg`}>
-        <Icon className="w-6 h-6" />
-      </div>
-      <h3 className="text-xl font-bold mb-3 text-white">{title}</h3>
-      <p className="text-muted-foreground">{text}</p>
-    </div>
-  </div>
-);
-
-
 function LandingPage() {
   return (
-    <div className="w-full overflow-x-hidden relative bg-slate-950 text-white">
-      {/* Dynamic background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-32 -left-32 w-[600px] h-[600px] bg-gradient-to-r from-blue-500/30 to-cyan-500/30 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '8s' }} />
-        <div className="absolute -bottom-32 -right-32 w-[600px] h-[600px] bg-gradient-to-r from-violet-500/30 to-purple-500/30 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '10s', animationDelay: '2s' }} />
-      </div>
-      {/* Gradient mesh overlay */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.1),transparent_40%)] pointer-events-none" />
+    <>
+      <div className="w-full overflow-x-hidden relative bg-slate-950 text-white">
+        {/* Dynamic background */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div
+            className="absolute -top-32 -left-32 w-[600px] h-[600px] bg-gradient-to-r from-blue-500/30 to-cyan-500/30 rounded-full blur-3xl animate-pulse"
+            style={{ animationDuration: '8s' }}
+          />
+          <div
+            className="absolute -bottom-32 -right-32 w-[600px] h-[600px] bg-gradient-to-r from-violet-500/30 to-purple-500/30 rounded-full blur-3xl animate-pulse"
+            style={{ animationDuration: '10s', animationDelay: '2s' }}
+          />
+        </div>
 
-      <div className="container mx-auto px-6 relative z-10">
-        <section className="hero text-center py-32 md:py-48">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}>
-                <Link href="/about" className="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-blue-300 py-2 px-4 rounded-full text-sm mb-8 backdrop-blur-md hover:bg-white/20 transition-colors">
-                    <Sparkles className="w-4 h-4" />
-                    <span className="font-medium">Introducing Ryzor - Your Unified Digital Brain</span>
-                </Link>
-            </motion.div>
-            
-            <motion.h1 
-                className="text-5xl md:text-7xl lg:text-8xl font-bold mb-7 tracking-tighter bg-gradient-to-br from-white via-gray-300 to-gray-500 bg-clip-text text-transparent leading-tight"
-                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
+        {/* Gradient mesh overlay */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.1),transparent_40%)] pointer-events-none" />
+
+        <div className="container mx-auto px-6 relative z-10">
+          {/* Hero Section */}
+          <section className="hero text-center py-32 md:py-48">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
             >
-                Unify Your Digital Life.
+              <Link
+                href="/about"
+                className="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-blue-300 py-2 px-4 rounded-full text-sm mb-8 backdrop-blur-md hover:bg-white/20 transition-colors"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span className="font-medium">
+                  Introducing Ryzor – Your Unified Digital Brain
+                </span>
+              </Link>
+            </motion.div>
+
+            <motion.h1
+              className="text-5xl md:text-7xl lg:text-8xl font-bold mb-7 tracking-tighter bg-gradient-to-br from-white via-gray-300 to-gray-500 bg-clip-text text-transparent leading-tight"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              Unify Your Digital Life.
             </motion.h1>
-            
-            <motion.p 
-                className="max-w-3xl mx-auto text-lg md:text-xl text-gray-400 leading-relaxed mb-12 font-light"
-                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}
+
+            <motion.p
+              className="max-w-3xl mx-auto text-lg md:text-xl text-gray-400 leading-relaxed mb-12 font-light"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
             >
-                Ryzor instantly transforms your scattered digital world into an intelligent, conversational workspace. Sync documents from your work and personal accounts, and get immediate, synthesized answers to complex questions.
+              Ryzor instantly transforms your scattered digital world into an
+              intelligent, conversational workspace. Sync documents from your
+              work and personal accounts, and get immediate, synthesized
+              answers to complex questions.
             </motion.p>
-            
-            <motion.div 
-                className="flex gap-4 justify-center flex-wrap"
-                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }}
+
+            <motion.div
+              className="flex gap-4 justify-center flex-wrap"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
             >
-                <Button asChild size="lg" className="bg-gradient-to-r from-blue-500 to-violet-500 hover:from-blue-600 hover:to-violet-600 h-12 px-8 text-base font-semibold shadow-lg shadow-blue-500/40 border-0 rounded-full">
-                    <Link href="/login">Get Started for Free</Link>
-                </Button>
-                <Button asChild size="lg" variant="outline" className="bg-white/5 border-white/10 hover:bg-white/10 h-12 px-8 text-base font-semibold backdrop-blur-md rounded-full text-white">
-                    <Link href="#features">Learn More</Link>
-                </Button>
+              <Button
+                asChild
+                size="lg"
+                className="bg-gradient-to-r from-blue-500 to-violet-500 hover:from-blue-600 hover:to-violet-600 h-12 px-8 text-base font-semibold shadow-lg shadow-blue-500/40 border-0 rounded-full"
+              >
+                <Link href="/login">Get Started for Free</Link>
+              </Button>
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="bg-white/5 border-white/10 hover:bg-white/10 h-12 px-8 text-base font-semibold backdrop-blur-md rounded-full text-white"
+              >
+                <Link href="#features">Learn More</Link>
+              </Button>
             </motion.div>
-        </section>
+          </section>
 
-        <AnimatedSection className="visual-wrapper -mt-20 mb-32" id="features">
+          {/* Features Section */}
+          <AnimatedSection className="visual-wrapper -mt-20 mb-32" id="features">
             <div className="relative bg-black/40 border border-white/10 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-xl p-2">
-                <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Dashboard preview" className="rounded-2xl" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-            </div>
-        </AnimatedSection>
-        
-        <AnimatedSection className="section py-24">
-            <div className="section-header max-w-3xl mx-auto mb-16 text-center">
-                <h2 className="text-4xl md:text-6xl font-bold tracking-tighter mb-5 bg-gradient-to-br from-white to-gray-400 bg-clip-text text-transparent">The Future of Productivity is Here.</h2>
-                <p className="subhead text-lg md:text-xl text-gray-400 font-light leading-relaxed">Stop context-switching. Start getting answers. Ryzor brings all your knowledge together, so you can focus on what matters.</p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-8">
-              <FeatureCard 
-                icon={Rocket}
-                title="Unified Workspace"
-                text="Connect Google Drive, local files, and more. No more "where did I save that?" moments. All your documents, instantly searchable."
-                gradient="from-blue-500 to-cyan-500"
+              <Image
+                src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2070&auto=format"
+                alt="Feature visual"
+                width={2070}
+                height={1380}
+                data-ai-hint="document analytics"
+                className="rounded-2xl"
               />
-              <FeatureCard 
-                icon={Brain}
-                title="Conversational AI"
-                text="Ask questions that span multiple documents and get synthesized answers instantly. Our AI understands context and connects information."
-                gradient="from-violet-500 to-purple-500"
-              />
-              <FeatureCard 
-                icon={Globe}
-                title="Work & Life, Together"
-                text="Manage professional and personal documents in one place. Keep them separate or let Ryzor discover connections you never knew existed."
-                gradient="from-pink-500 to-rose-500"
-              />
+               <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
             </div>
-        </AnimatedSection>
-        
-        <AnimatedSection className="final-cta text-center py-32">
-            <h2 className="text-5xl md:text-6xl font-bold mb-6 tracking-tighter bg-gradient-to-br from-white to-gray-400 bg-clip-text text-transparent">Ready to End the Search?</h2>
-            <p className="text-lg md:text-xl text-gray-400 mb-10 font-light">Join teams already using Ryzor to work smarter, not harder.</p>
-            <Button asChild size="lg" className="bg-gradient-to-r from-blue-500 to-violet-500 hover:from-blue-600 hover:to-violet-600 h-14 px-10 text-lg font-semibold shadow-lg shadow-blue-500/40 border-0 rounded-full">
-                <Link href="/login">Get Started Free</Link>
-            </Button>
-        </AnimatedSection>
+          </AnimatedSection>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -460,3 +456,5 @@ export default function Home() {
 
   return user ? <LoggedInView /> : <LandingPage />;
 }
+
+    
