@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -48,7 +49,7 @@ export default function DocumentPage() {
                         // It's a data URL, safe for iframe
                         setIframeSrc(storedContent);
                     } else {
-                        // This case should be rare now, but handle legacy raw text
+                        // This case handles legacy raw text or plain text from Google Docs
                         const blob = new Blob([storedContent], { type: 'text/plain' });
                         setIframeSrc(URL.createObjectURL(blob));
                     }

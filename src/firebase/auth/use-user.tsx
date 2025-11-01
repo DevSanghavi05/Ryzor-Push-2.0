@@ -18,7 +18,6 @@ import {
   UserCredential,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  getRedirectResult,
 } from 'firebase/auth';
 import { useAuth } from '@/firebase/provider';
 import { setCookie, destroyCookie, parseCookies } from 'nookies';
@@ -62,7 +61,7 @@ const setAuthTokenCookie = (token: string, provider: 'google', accountType: Acco
     sameSite: 'lax',
   });
   // Set a cookie to remember the provider for the account type
-  setCookie(null, `provider_${accountType}`, provider, { maxAge: 3600, path: '/' });
+  setCookie(null, `provider_${accountType}`, provider, { maxAge: 3600 * 24 * 7, path: '/' });
 };
 
 const clearAuthTokenCookies = () => {
@@ -70,7 +69,6 @@ const clearAuthTokenCookies = () => {
   destroyCookie(null, 'google_access_token_personal', { path: '/' });
   destroyCookie(null, 'provider_work', { path: '/' });
   destroyCookie(null, 'provider_personal', { path: '/' });
-  destroyCookie(null, 'last_redirect_account_type', { path: '/' });
 };
 
 
@@ -94,6 +92,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setPersonalAccessToken(cookies.google_access_token_personal || null);
     setWorkProvider(cookies.provider_work as any || null);
     setPersonalProvider(cookies.provider_personal as any || null);
+    // Set a general access token, preferring 'work' if both exist.
     setAccessToken(cookies.google_access_token_work || cookies.google_access_token_personal || null);
   }, []);
   
@@ -104,40 +103,29 @@ export function UserProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Handle redirect result on app load
-    getRedirectResult(auth)
-    .catch((error) => {
-        console.error("Error getting redirect result:", error);
-    }).finally(() => {
-        // This runs whether there was a redirect or not.
-        // The auth state listener will handle the final user state.
-        setLoading(false);
-    });
-
     const unsubscribe = onFirebaseAuthStateChanged(auth, async (user) => {
       setUser(user);
       if (!user) {
+        clearAuthTokenCookies();
         setWorkAccessToken(null);
         setPersonalAccessToken(null);
         setWorkProvider(null);
         setPersonalProvider(null);
         setAccessToken(null);
-        clearAuthTokenCookies();
       }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth]);
 
   const handleSuccessfulSignIn = () => {
-    const redirectUrl = searchParams.get('redirect') || '/';
+    const redirectUrl = searchParams.get('redirect') || '/documents';
     router.push(redirectUrl);
   }
 
   // --- Sign In with Google (with Drive access) ---
-  const signInWithGoogle = useCallback(async (accountType?: AccountType): Promise<UserCredential | void> => {
+  const signInWithGoogle = useCallback(async (accountType: AccountType = 'personal'): Promise<UserCredential | void> => {
     if (!auth) return;
 
     const provider = new GoogleAuthProvider();
@@ -153,23 +141,22 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
       if (credential?.accessToken) {
         const token = credential.accessToken;
-        setAccessToken(token);
+        
         if (accountType === 'work') {
           setWorkAccessToken(token);
           setWorkProvider('google');
           setAuthTokenCookie(token, 'google', 'work');
-        } else if (accountType === 'personal') {
-          setPersonalAccessToken(token);
-          setPersonalProvider('google');
-          setAuthTokenCookie(token, 'google', 'personal');
-        } else {
-           // Default to personal if not specified
+        } else { // 'personal' or default
            setPersonalAccessToken(token);
            setPersonalProvider('google');
            setAuthTokenCookie(token, 'google', 'personal');
         }
+        // Update general access token
+        setAccessToken(token);
       }
+
       if (!user) setUser(result.user);
+      
       handleSuccessfulSignIn();
       return result;
     } catch (error: any) {
@@ -226,22 +213,23 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const token = cookies[`${provider}_access_token_${accountType}`];
 
     if (!provider || !token) {
-        // Silently return if this account type isn't connected
-        return;
+        return; // Silently return if this account type isn't connected
     }
 
     if (provider === 'google') {
         try {
             const response = await fetch(
-                "https://www.googleapis.com/drive/v3/files?pageSize=50&fields=files(id,name,mimeType,modifiedTime,webViewLink,iconLink)&q=(mimeType='application/vnd.google-apps.document' or mimeType='application/vnd.google-apps.spreadsheet' or mimeType='application/vnd.google-apps.presentation' or mimeType='application/pdf')",
+                "https://www.googleapis.com/drive/v3/files?pageSize=100&fields=files(id,name,mimeType,modifiedTime,webViewLink,iconLink)&q=(mimeType='application/vnd.google-apps.document' or mimeType='application/vnd.google-apps.spreadsheet' or mimeType='application/vnd.google-apps.presentation' or mimeType='application/pdf' or mimeType='application/vnd.google-apps.folder')",
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-            if (response.status === 401) {
+            if (response.status === 401 || response.status === 403) {
                 destroyCookie(null, `google_access_token_${accountType}`, { path: '/' });
                 destroyCookie(null, `provider_${accountType}`, { path: '/' });
+                if(accountType === 'work') setWorkAccessToken(null);
+                else setPersonalAccessToken(null);
                 throw new Error(`Authentication token for Google ${accountType} account is invalid. Please sign in again.`);
             }
-            if (!response.ok) throw new Error(await response.text());
+            if (!response.ok) throw new Error(`Google Drive API error: ${await response.text()}`);
             const data = await response.json();
             return data.files.map((file: any) => ({ ...file, source: 'drive', sourceProvider: 'google', accountType }));
         } catch (error) {

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { 
@@ -213,11 +214,10 @@ const getFileIcon = (mimeType: string, source: 'drive' | 'local', provider?: 'go
 };
 
 
-function DocumentItem({ doc, onRename, onTrash, onCopyLink, onMove, onImportAndAnalyze, importingDocId, isImportingAll }: {
+function DocumentItem({ doc, onRename, onTrash, onMove, onImportAndAnalyze, importingDocId, isImportingAll }: {
     doc: Document;
     onRename: (doc: Document) => void;
     onTrash: (doc: Document) => void;
-    onCopyLink: (link: string) => void;
     onMove: (doc: Document, folderId?: string) => void;
     onImportAndAnalyze: (doc: Document) => void;
     importingDocId: string | null;
@@ -393,43 +393,55 @@ function DocumentsPageContent() {
             accessToken: accessToken,
         });
 
-        const storageKey = `documents_${user.uid}`;
-        const existingDocuments = JSON.parse(localStorage.getItem(storageKey) || '[]');
-        const docIndex = existingDocuments.findIndex((d: any) => d.id === doc.id);
+        const docsKey = `documents_${user.uid}`;
+        const existingDocuments = JSON.parse(localStorage.getItem(docsKey) || '[]');
         
         const newDocRecord = {
-            id: doc.id, name: doc.name, uploaded: new Date().toISOString(),
-            source: 'drive', sourceProvider: doc.sourceProvider, mimeType: doc.mimeType,
-            webViewLink: doc.webViewLink, accountType: doc.accountType, folderId: doc.folderId,
-            isImported: true, textContent: result.content
+            id: doc.id,
+            name: doc.name,
+            uploaded: new Date().toISOString(),
+            source: 'drive',
+            sourceProvider: doc.sourceProvider,
+            mimeType: doc.mimeType,
+            webViewLink: doc.webViewLink,
+            accountType: doc.accountType,
+            folderId: doc.folderId,
+            isImported: true,
+            textContent: result.content, // Storing extracted text
         };
 
-        const contentKey = `document_content_${doc.id}`;
-        // For google native files, we store the extracted text directly as a base64 encoded data url
-        if (!doc.mimeType.includes('pdf')) {
-            localStorage.setItem(contentKey, `data:text/plain;base64,${btoa(unescape(encodeURIComponent(result.content)))}`);
-        } else {
-             // For PDFs, we need to re-fetch the raw bytes and store as data URL
-            const fileContentResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${doc.id}?alt=media`, {
-                headers: { 'Authorization': `Bearer ${accessToken}` }
-            });
-            if (!fileContentResponse.ok) throw new Error("Could not re-fetch PDF content for storage.");
-            const blob = await fileContentResponse.blob();
-            const reader = new FileReader();
-            await new Promise((resolve, reject) => {
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-            });
-            localStorage.setItem(contentKey, reader.result as string);
-        }
+        const docIndex = existingDocuments.findIndex((d: any) => d.id === doc.id);
 
         if (docIndex > -1) {
             existingDocuments[docIndex] = { ...existingDocuments[docIndex], ...newDocRecord };
         } else {
             existingDocuments.unshift(newDocRecord);
         }
-        localStorage.setItem(storageKey, JSON.stringify(existingDocuments));
+        localStorage.setItem(docsKey, JSON.stringify(existingDocuments));
+
+        // For non-PDFs, content is just text. For PDFs, we need to get the file data.
+        const contentKey = `document_content_${doc.id}`;
+        if (doc.mimeType.includes('pdf')) {
+            const fileContentResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${doc.id}?alt=media`, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            });
+            if (!fileContentResponse.ok) throw new Error("Could not re-fetch PDF content for storage.");
+            const blob = await fileContentResponse.blob();
+            const reader = new FileReader();
+            await new Promise<void>((resolve, reject) => {
+                reader.onload = () => {
+                    localStorage.setItem(contentKey, reader.result as string);
+                    resolve();
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        } else {
+            // For GDocs, Sheets, Slides, the text content is sufficient for viewing.
+            // We store it as a plain text data URL.
+            const base64Content = btoa(unescape(encodeURIComponent(result.content)));
+            localStorage.setItem(contentKey, `data:text/plain;base64,${base64Content}`);
+        }
 
         setDocuments(prevDocs => prevDocs.map(d => d.id === doc.id ? {...d, ...newDocRecord } : d));
         return true;

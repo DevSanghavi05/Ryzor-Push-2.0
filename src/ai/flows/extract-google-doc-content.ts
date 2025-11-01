@@ -109,5 +109,3 @@ const extractGoogleDocContentFlow = ai.defineFlow(
     }
   }
 );
-
-    
