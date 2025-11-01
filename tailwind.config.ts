@@ -113,8 +113,8 @@ to: {
           '100%': { transform: 'scale(1)', opacity: 1 },
         },
         blink: {
-            '0%, 50%': { opacity: '1' },
-            '51%, 100%': { opacity: '0' },
+            '50%': { opacity: 1 },
+            '0%, 100%': { opacity: 0 },
         },
       },
       animation: {
@@ -124,7 +124,8 @@ to: {
         'fade-in-up': 'fade-in-up 0.5s ease-out',
         'pan': 'pan 120s linear infinite',
         'hyperdrive': 'hyperdrive 2s ease-in-out infinite',
-        'pulse': 'blink 1s infinite',
+        'pulse': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'blink': 'blink 1s step-end infinite',
       },
     },
   },

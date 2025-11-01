@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -514,4 +513,3 @@ export default function Home() {
 
   return user ? <LoggedInView /> : <LandingPage />;
 }
-```
