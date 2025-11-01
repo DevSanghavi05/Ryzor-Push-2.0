@@ -1,36 +1,33 @@
 
 'use client';
 
-import { Header } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft, Loader } from 'lucide-react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useUser } from '@/firebase';
 
 type LocalDocument = {
     id: string;
     name: string;
-    content: string; // This is now retrieved from its separate storage
+    content: string; // This is the Data URL for the iframe
     uploaded: string;
 }
 
-// This function is required for Next.js static export but will return an empty array
-// because the document IDs are stored in localStorage and are not available at build time.
-// Pages will be client-side rendered.
+// This function is required for Next.js static export. It tells Next.js there are
+// no paths to pre-render at build time. Pages will be rendered on the client-side.
 export async function generateStaticParams() {
   return [];
 }
 
-
 export default function DocumentPage() {
     const params = useParams();
-    const router = useRouter();
     const { user } = useUser();
     const id = params.id as string;
     const [doc, setDoc] = useState<LocalDocument | null>(null);
     const [loading, setLoading] = useState(true);
+    const [iframeSrc, setIframeSrc] = useState<string | null>(null);
 
     useEffect(() => {
         if (id && user) {
@@ -40,10 +37,20 @@ export default function DocumentPage() {
             const existingDocuments = JSON.parse(localStorage.getItem(storageKey) || '[]');
             const foundDocMeta = existingDocuments.find((d: any) => d.id === id);
             
-            const content = localStorage.getItem(contentKey);
-
-            if (foundDocMeta && content) {
-                setDoc({ ...foundDocMeta, content });
+            if (foundDocMeta) {
+                // Check if content is text or a data URL
+                const storedContent = localStorage.getItem(contentKey);
+                if (storedContent) {
+                    if (storedContent.startsWith('data:application/pdf') || storedContent.startsWith('data:text/plain')) {
+                        // It's a PDF data URL or a text data URL, safe for iframe
+                        setIframeSrc(storedContent);
+                    } else {
+                        // It's raw text content, create a data URL from it
+                        const blob = new Blob([storedContent], { type: 'text/plain' });
+                        setIframeSrc(URL.createObjectURL(blob));
+                    }
+                     setDoc(foundDocMeta);
+                }
             }
             setLoading(false);
         } else if (!user) {
@@ -71,8 +78,8 @@ export default function DocumentPage() {
             <div className="flex-1 flex items-center justify-center mt-8">
                 {loading ? (
                     <Loader className="animate-spin" />
-                ) : doc ? (
-                    <iframe src={doc.content} className="w-full h-[70vh] border rounded-lg" title={doc.name}></iframe>
+                ) : iframeSrc ? (
+                    <iframe src={iframeSrc} className="w-full h-[70vh] border rounded-lg" title={doc?.name}></iframe>
                 ) : (
                     <p>Document content could not be loaded or found.</p>
                 )}
