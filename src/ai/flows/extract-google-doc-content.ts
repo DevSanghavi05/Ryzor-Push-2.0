@@ -91,7 +91,12 @@ const extractGoogleDocContentFlow = ai.defineFlow(
             }).join('\n');
         }).join('\n\n---\n\n');
       } else {
-        throw new Error(`Unsupported MIME type for content extraction: ${mimeType}`);
+        // Fallback for other file types like PDF
+        const fileContentResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+            headers: authHeader,
+        });
+        if (!fileContentResponse.ok) throw new Error(`Google Drive API error: ${fileContentResponse.statusText}`);
+        content = await fileContentResponse.text(); // Assuming text-based content for simplicity
       }
 
       return { content: content.trim() };

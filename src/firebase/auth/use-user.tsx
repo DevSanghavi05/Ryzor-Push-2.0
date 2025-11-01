@@ -38,6 +38,7 @@ export interface UserContextValue {
   workProvider: 'google' | null;
   personalProvider: 'google' | null;
   fetchDriveFiles: (accountType: AccountType) => Promise<any[] | void>;
+  userLoading: boolean;
 }
 
 const UserContext = createContext<UserContextValue | undefined>(undefined);
@@ -231,7 +232,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
             }
             if (!response.ok) throw new Error(await response.text());
             const data = await response.json();
-            return data.files.map((file: any) => ({ ...file, source: 'drive', sourceProvider: 'google' }));
+            return data.files.map((file: any) => ({ ...file, source: 'drive', sourceProvider: 'google', accountType }));
         } catch (error) {
             console.error(`Error fetching Google Drive files for ${accountType} account:`, error);
             throw error;
@@ -242,6 +243,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const value: UserContextValue = {
     user,
     loading,
+    userLoading: loading,
     signInWithGoogle,
     signOut,
     signUpWithEmail,

@@ -216,7 +216,7 @@ function DocumentItem({ doc, onRename, onTrash, onCopyLink, onMove, onImportAndA
 
     const getFileIcon = (mimeType: string, source: 'drive' | 'local', provider?: 'google') => {
         if (source === 'local') return <HardDriveUpload className="w-5 h-5 text-purple-500" />;
-        if (!mimeType) return <FileIcon className="w-5 h-5 text-gray-500" />; // Safety check
+        if (!mimeType) return <FileIcon className="w-5 h-5 text-gray-500" />;
         if (mimeType.includes('document')) return <FileIcon className="w-5 h-5 text-blue-500" />;
         if (mimeType.includes('spreadsheet')) return <FileIcon className="w-5 h-5 text-green-500" />;
         if (mimeType.includes('presentation')) return <FileIcon className="w-5 h-5 text-yellow-500" />;
@@ -225,6 +225,7 @@ function DocumentItem({ doc, onRename, onTrash, onCopyLink, onMove, onImportAndA
     };
 
     const handleDocumentClick = (e: React.MouseEvent) => {
+        e.preventDefault();
         if (doc.source === 'drive' && !doc.isImported) {
             window.open(doc.webViewLink, '_blank');
         } else {
@@ -232,14 +233,15 @@ function DocumentItem({ doc, onRename, onTrash, onCopyLink, onMove, onImportAndA
         }
     };
     
-    const { folders: allFolders } = useDocuments(useUser().user);
+    const { user } = useUser();
+    const { folders: allFolders } = useDocuments(user);
 
     return (
         <li className="flex items-center justify-between p-2 group hover:bg-accent/50 transition-colors rounded-md">
             <div className="flex items-center gap-3 truncate">
                 {getFileIcon(doc.mimeType, doc.source, doc.sourceProvider)}
                 <div className="truncate">
-                    <a href={doc.webViewLink} onClick={(e) => { e.preventDefault(); handleDocumentClick(e); }} className="font-medium truncate hover:underline cursor-pointer text-sm">{doc.name}</a>
+                    <a href={doc.webViewLink || '#'} onClick={handleDocumentClick} className="font-medium truncate hover:underline cursor-pointer text-sm">{doc.name}</a>
                     <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                         <span className="flex items-center gap-1">
                           {doc.accountType === 'work' ? <Briefcase size={12} /> : <User size={12} />}
@@ -360,6 +362,7 @@ function DocumentsPageContent() {
   const [showNewFolderDialog, setShowNewFolderDialog] = useState(false);
   
   const { toast } = useToast();
+  const { workAccessToken, personalAccessToken } = useUser();
 
   const handleSync = async () => {
     setLoadingDrive(true);
@@ -369,13 +372,12 @@ function DocumentsPageContent() {
   
   const docsToImportCount = useMemo(() => documents.filter(doc => doc.source === 'drive' && !doc.isImported).length, [documents]);
 
-  const importDocument = async (doc: Document): Promise<boolean> => {
-    // ... (import logic remains the same)
+  const importDocument = useCallback(async (doc: Document): Promise<boolean> => {
     if (!user) {
        toast({ variant: 'destructive', title: "Authentication Error", description: "Cannot import document without a valid session." });
        return false;
     }
-    const { workAccessToken, personalAccessToken } = useUser();
+    
     const accessToken = doc.accountType === 'work' ? workAccessToken : personalAccessToken;
     if (!accessToken) {
         toast({ variant: 'destructive', title: `Not connected`, description: `Please connect your ${doc.accountType} account to import.` });
@@ -389,20 +391,40 @@ function DocumentsPageContent() {
             accessToken: accessToken,
         });
 
-        if (!result.content) throw new Error("No content was extracted from the document.");
+        if (!result.content && !doc.mimeType.includes('pdf')) { // PDFs might not have text content that this flow can extract
+             throw new Error("No content was extracted from the document.");
+        }
 
         const storageKey = `documents_${user.uid}`;
         const existingDocuments = JSON.parse(localStorage.getItem(storageKey) || '[]');
         const docIndex = existingDocuments.findIndex((d: any) => d.id === doc.id);
         
         const newDocRecord = {
-            id: doc.id, name: doc.name, uploaded: new Date().toISOString(), textContent: result.content,
+            id: doc.id, name: doc.name, uploaded: new Date().toISOString(),
             source: 'drive', sourceProvider: doc.sourceProvider, mimeType: doc.mimeType,
             webViewLink: doc.webViewLink, accountType: doc.accountType, folderId: doc.folderId,
+            isImported: true, textContent: result.content
         };
 
         const contentKey = `document_content_${doc.id}`;
-        localStorage.setItem(contentKey, `data:text/plain;base64,${btoa(unescape(encodeURIComponent(result.content)))}`);
+        // For google native files, we store the extracted text directly as a base64 encoded data url
+        if (!doc.mimeType.includes('pdf')) {
+            localStorage.setItem(contentKey, `data:text/plain;base64,${btoa(unescape(encodeURIComponent(result.content)))}`);
+        } else {
+             // For PDFs, we need to re-fetch the raw bytes and store as data URL
+            const fileContentResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${doc.id}?alt=media`, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            });
+            if (!fileContentResponse.ok) throw new Error("Could not re-fetch PDF content for storage.");
+            const blob = await fileContentResponse.blob();
+            const reader = new FileReader();
+            await new Promise((resolve, reject) => {
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+            localStorage.setItem(contentKey, reader.result as string);
+        }
 
         if (docIndex > -1) {
             existingDocuments[docIndex] = { ...existingDocuments[docIndex], ...newDocRecord };
@@ -411,15 +433,15 @@ function DocumentsPageContent() {
         }
         localStorage.setItem(storageKey, JSON.stringify(existingDocuments));
 
-        setDocuments(prevDocs => prevDocs.map(d => d.id === doc.id ? {...d, isImported: true, textContent: result.content } : d));
+        setDocuments(prevDocs => prevDocs.map(d => d.id === doc.id ? {...d, ...newDocRecord } : d));
         return true;
     } catch (error: any) {
-        toast({ variant: 'destructive', title: `Import Failed for ${doc.name}`, description: "Could not extract content.", });
+        toast({ variant: 'destructive', title: `Import Failed for ${doc.name}`, description: error.message || "Could not extract content.", });
         return false;
     } finally {
         setImportingDocId(null);
     }
-  };
+  }, [user, toast, workAccessToken, personalAccessToken, setDocuments]);
 
   const handleImportAndAnalyze = async (doc: Document) => {
      toast({ title: 'Importing Document...', description: `Extracting content from ${doc.name}.` });
@@ -437,10 +459,13 @@ function DocumentsPageContent() {
     setIsImportSuccess(false);
     let successCount = 0;
     toast({ title: 'Starting Bulk Import...', description: `Importing ${docsToImport.length} documents.`});
+    
+    // We run imports sequentially to avoid rate limiting issues
     for (const doc of docsToImport) {
         const success = await importDocument(doc);
         if (success) successCount++;
     }
+
     setIsImportSuccess(true);
     toast({ title: 'Bulk Import Complete', description: `Successfully imported ${successCount} out of ${docsToImport.length} documents.` });
     setTimeout(() => { setIsImportingAll(false); setIsImportSuccess(false); }, 2000);
@@ -493,9 +518,17 @@ function DocumentsPageContent() {
 
         const trashedDoc = { ...docToTrash, trashedAt: new Date().toISOString() };
         localStorage.setItem(trashKey, JSON.stringify([trashedDoc, ...existingTrash]));
-        localStorage.setItem(docsKey, JSON.stringify(existingDocs.filter((d: any) => d.id !== showTrashConfirm.id)));
+        
+        // For cloud-sourced docs, we just remove them from the UI list, but don't delete from local storage record
+        // as that would make them reappear on next sync. We just mark them as not imported.
+        // For local files, we remove them from local storage.
+        if (docToTrash.source === 'local') {
+          localStorage.setItem(docsKey, JSON.stringify(existingDocs.filter((d: any) => d.id !== showTrashConfirm.id)));
+        }
         localStorage.removeItem(`document_content_${showTrashConfirm.id}`);
-        setDocuments(prevDocs => prevDocs.filter(d => d.id !== showTrashConfirm.id));
+        
+        setDocuments(prevDocs => prevDocs.map(d => d.id === showTrashConfirm.id ? {...d, isImported: false} : d).filter(d => d.id !== showTrashConfirm.id || d.source !== 'local'));
+
         toast({ title: "Moved to Trash", description: `${showTrashConfirm.name} has been moved to trash.` });
     }
     setShowTrashConfirm(null);
@@ -544,8 +577,17 @@ function DocumentsPageContent() {
     if (!user) return;
     const docsKey = `documents_${user.uid}`;
     let currentDocs = JSON.parse(localStorage.getItem(docsKey) || '[]');
-    const updatedDocs = currentDocs.map((d: Document) => d.id === doc.id ? { ...d, folderId } : d);
-    localStorage.setItem(docsKey, JSON.stringify(updatedDocs));
+    const docIndex = currentDocs.findIndex((d: Document) => d.id === doc.id);
+    
+    if (docIndex > -1) {
+        currentDocs[docIndex].folderId = folderId;
+    } else {
+        // This case handles moving a document that hasn't been imported yet.
+        // We create a minimal record in local storage just to save its folder assignment.
+        currentDocs.push({ id: doc.id, name: doc.name, folderId });
+    }
+
+    localStorage.setItem(docsKey, JSON.stringify(currentDocs));
     setDocuments(prev => prev.map(d => d.id === doc.id ? { ...d, folderId } : d));
     const folderName = folderId ? folders.find(f => f.id === folderId)?.name : 'Unassigned';
     toast({ title: "Document Moved", description: `"${doc.name}" moved to ${folderName}.`});
@@ -567,6 +609,7 @@ function DocumentsPageContent() {
             if (filterType === 'imported') return doc.isImported;
             if (filterType === 'work') return doc.accountType === 'work';
             if (filterType === 'personal') return doc.accountType === 'personal';
+            if (!doc.mimeType) return false;
             return doc.mimeType.includes(filterType);
         })
         .sort((a, b) => new Date(b.modifiedTime).getTime() - new Date(a.modifiedTime).getTime());
@@ -706,7 +749,7 @@ function DocumentsPageContent() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmTrash} className={cn(showTrashConfirm && 'createdAt' in showTrashConfirm && 'bg-destructive hover:bg-destructive/90')}>
+                        <AlertDialogAction onClick={confirmTrash} className={cn(showTrashConfirm && 'createdAt' in showTrashConfirm && deleteFolderAction === 'delete' && 'bg-destructive hover:bg-destructive/90')}>
                             Confirm
                         </AlertDialogAction>
                     </AlertDialogFooter>
@@ -751,7 +794,3 @@ function DocumentsPageContent() {
 
 function DocumentsPage() { return <DocumentsPageContent /> }
 export default withAuth(DocumentsPage);
-
-    
-
-    

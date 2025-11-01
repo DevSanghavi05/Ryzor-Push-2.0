@@ -17,7 +17,6 @@ const Star = ({
   const randomX = Math.random() * 100;
   const duration = 0.5 + Math.random() * 0.5;
 
-  // Use a simplified gradient for the streaks
   const gradient = isDarkMode
     ? 'linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent)))'
     : 'linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent)))';
@@ -68,7 +67,7 @@ export function HyperdriveAnimation({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm"
+          className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm"
         >
           {/* Main Animation Container */}
           <div className="relative h-48 w-48 overflow-hidden rounded-full border shadow-lg">
@@ -82,13 +81,14 @@ export function HyperdriveAnimation({
 
             {/* Central Icon Transition */}
             <div className="absolute inset-0 flex items-center justify-center">
-              <AnimatePresence>
+              <AnimatePresence mode="wait">
                 {!isSuccess ? (
                   <motion.div
                     key="loading"
                     initial={{ scale: 0.5, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.5, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
                     className="flex flex-col items-center gap-2 text-center"
                   >
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -100,20 +100,16 @@ export function HyperdriveAnimation({
                 ) : (
                   <motion.div
                     key="success"
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
+                    initial={{ scale: 0.5, opacity: 0, rotate: -90 }}
+                    animate={{ scale: 1, opacity: 1, rotate: 0 }}
                     transition={{ type: 'spring', damping: 15, stiffness: 200 }}
-                    className="relative"
+                    className="flex flex-col items-center gap-2 text-center"
                   >
-                    <File className="h-16 w-16 text-muted-foreground/50" />
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 0.2, type: 'spring' }}
-                      className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-green-500"
-                    >
-                      <Check className="h-5 w-5 text-white" />
-                    </motion.div>
+                    <Check className="h-10 w-10 text-green-500" />
+                     <p className="font-semibold text-green-500">Success!</p>
+                     <p className="text-xs text-muted-foreground">
+                      Documents imported.
+                    </p>
                   </motion.div>
                 )}
               </AnimatePresence>
