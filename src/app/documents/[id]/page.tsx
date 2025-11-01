@@ -16,12 +16,6 @@ type LocalDocument = {
     uploaded: string;
 }
 
-// This function is required for Next.js static export. It tells Next.js there are
-// no paths to pre-render at build time. Pages will be rendered on the client-side.
-export async function generateStaticParams() {
-  return [];
-}
-
 export default function DocumentPage() {
     const params = useParams();
     const { user } = useUser();
