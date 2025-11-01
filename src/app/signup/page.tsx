@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser } from '@/firebase';
@@ -91,7 +92,7 @@ export default function SignUpPage() {
                 <CardHeader className="text-center">
                     <Logo className="h-10 w-10 mx-auto mb-4" />
                     <CardTitle className="font-headline text-2xl">Create an Account</CardTitle>
-                    <CardDescription>Join Ryzor AI to unlock your intelligent workspace.</CardDescription>
+                    <CardDescription>Join Ryzor to unlock your intelligent workspace.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
                     <form onSubmit={handleSignUp} className="space-y-4">

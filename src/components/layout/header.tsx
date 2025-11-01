@@ -24,7 +24,7 @@ export function Header() {
         )}>
             <Link href="/" className="flex items-center gap-2 font-bold font-headline text-lg">
                 <Logo className="h-6 w-6" />
-                <span>Ryzor<span className="text-primary">.ai</span></span>
+                <span>Ryzor</span>
             </Link>
             
             {user ? (

@@ -11,7 +11,7 @@ export default function AboutPage() {
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">From Chaos to Clarity</h1>
           <p className="mt-4 text-lg text-muted-foreground max-w-3xl mx-auto">
-            We've all been there. That one crucial piece of information—is it in your work drive? A personal PDF? Buried in an old slide deck? We built Ryzor AI because we believe finding what you already have shouldn't be a full-time job.
+            We've all been there. That one crucial piece of information—is it in your work drive? A personal PDF? Buried in an old slide deck? We built Ryzor because we believe finding what you already have shouldn't be a full-time job.
           </p>
           <p className="mt-4 text-lg text-muted-foreground max-w-3xl mx-auto">
             Our vision is simple: to turn your scattered digital world into a single, intelligent space where answers are just a question away. It’s not just about finding files; it’s about understanding the knowledge within them.
@@ -28,7 +28,7 @@ export default function AboutPage() {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                Securely connect your work and personal accounts, or upload files directly. Ryzor AI becomes your personal knowledge base, without mixing your contexts.
+                Securely connect your work and personal accounts, or upload files directly. Ryzor becomes your personal knowledge base, without mixing your contexts.
               </p>
             </CardContent>
           </Card>
@@ -63,7 +63,7 @@ export default function AboutPage() {
         <div className="mt-20 text-center">
           <h2 className="text-3xl font-bold font-headline">Privacy at the Core</h2>
           <p className="mt-4 text-muted-foreground max-w-2xl mx-auto">
-            This isn't about feeding your data to a giant model. Your work and personal documents remain separate and are used only to answer *your* questions. Your privacy is fundamental to how Ryzor AI works.
+            This isn't about feeding your data to a giant model. Your work and personal documents remain separate and are used only to answer *your* questions. Your privacy is fundamental to how Ryzor works.
           </p>
         </div>
 
