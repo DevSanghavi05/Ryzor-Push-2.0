@@ -11,15 +11,14 @@ import {
   PlusCircle, 
   Brain, 
   MessageSquare, 
-  Wand, 
-  Briefcase,
   Sparkles,
   FileText,
   Zap,
   Rocket,
   Globe,
   Lock,
-  RotateCw
+  RotateCw,
+  Target
 } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { ask } from '@/app/actions';
@@ -32,6 +31,8 @@ import { motion, useInView } from 'framer-motion';
 import { Logo } from '@/components/layout/logo';
 import { nanoid } from 'nanoid';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { DocumentPickerSidebar } from '@/components/chat/document-picker-sidebar';
+import { Badge } from '@/components/ui/badge';
 
 
 export interface Message {
@@ -48,6 +49,20 @@ function LoggedInView() {
   const { toast } = useToast();
   const router = useRouter();
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+
+  const [isDocPickerOpen, setIsDocPickerOpen] = useState(false);
+  const [allDocs, setAllDocs] = useState<any[]>([]);
+  const [focusedDocIds, setFocusedDocIds] = useState<Set<string>>(new Set());
+
+  // Load all documents from local storage on mount
+  useEffect(() => {
+    if (user) {
+        const storedDocs = localStorage.getItem(`documents_${user.uid}`);
+        if (storedDocs) {
+            setAllDocs(JSON.parse(storedDocs).filter((d:any) => d.isImported));
+        }
+    }
+  }, [user]);
 
   // Load chat from local storage
   useEffect(() => {
@@ -123,13 +138,7 @@ function LoggedInView() {
     setLoading(true);
 
     try {
-      const storageKey = `documents_${user.uid}`;
-      const documentsString = localStorage.getItem(storageKey);
-      const documentsMeta = documentsString ? JSON.parse(documentsString) : [];
-
-      let importedDocs = documentsMeta.filter((doc: any) => doc.isImported);
-
-      if (importedDocs.length === 0) {
+      if (allDocs.length === 0) {
         toast({
           variant: 'destructive',
           title: 'No Documents Found',
@@ -141,9 +150,13 @@ function LoggedInView() {
         return;
       }
       
+      // Determine which documents to use for context
+      const docsForContext = focusedDocIds.size > 0 
+        ? allDocs.filter(doc => focusedDocIds.has(doc.id)) 
+        : allDocs;
+
       // For local docs, retrieve content from local storage and add it to the object
-      // This prepares it to be sent to the server action.
-      importedDocs = importedDocs.map((doc: any) => {
+      const docsWithContent = docsForContext.map((doc: any) => {
           if (doc.source === 'local') {
               const content = localStorage.getItem(`document_content_${doc.id}`);
               return { ...doc, content: content || '' };
@@ -153,7 +166,7 @@ function LoggedInView() {
 
       const stream = await ask(
         currentInput, 
-        importedDocs, 
+        docsWithContent, 
         messages.slice(-10), 
         { work: workAccessToken, personal: personalAccessToken }
       );
@@ -202,6 +215,14 @@ function LoggedInView() {
       <div className="flex w-full h-dvh pt-16 relative overflow-hidden">
         <div className="bg-aurora"></div>
         
+        <DocumentPickerSidebar 
+          isOpen={isDocPickerOpen}
+          onOpenChange={setIsDocPickerOpen}
+          allDocs={allDocs}
+          focusedDocIds={focusedDocIds}
+          onFocusedDocIdsChange={setFocusedDocIds}
+        />
+
         {/* Main Chat Area */}
         <div className="flex-1 flex flex-col h-full bg-transparent relative z-10">
           {/* Chat Messages */}
@@ -340,6 +361,21 @@ function LoggedInView() {
                         </AlertDialog>
                     )}
 
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => setIsDocPickerOpen(true)}
+                      className="relative rounded-xl bg-background/50 hover:bg-accent/50 text-foreground border-none transition-all duration-200 shrink-0 h-12 w-12"
+                    >
+                      <Target className="w-6 h-6" />
+                      <span className="sr-only">Focus on specific documents</span>
+                      {focusedDocIds.size > 0 && (
+                        <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                          {focusedDocIds.size}
+                        </Badge>
+                      )}
+                    </Button>
+
                     <Input
                       placeholder="Ask anything..."
                       className="border-none focus-visible:ring-0 flex-1 text-base bg-transparent text-foreground placeholder:text-muted-foreground/60 px-4 h-12"
@@ -361,7 +397,10 @@ function LoggedInView() {
                 </div>
               </div>
               <p className="text-xs text-center text-muted-foreground/60 mt-3">
-                Ryzor searches across all your documents to provide accurate answers
+                {focusedDocIds.size > 0 
+                    ? `Ryzor is focusing on ${focusedDocIds.size} document(s).` 
+                    : "Ryzor searches across all your documents to provide accurate answers"
+                }
               </p>
             </div>
           </div>

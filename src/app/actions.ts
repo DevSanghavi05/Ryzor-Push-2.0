@@ -53,60 +53,56 @@ export async function ask(
   tokens: { work: string | null, personal: string | null }
 ): Promise<ReadableStream<Uint8Array>> {
   
-  // Step 1: For this initial routing step, we will use a small chunk of content to keep it fast.
-  const previewDocs = await Promise.all(
-      docList.map(async (d) => {
-          let previewContent = '';
-          if (d.source === 'local') {
-              // Local docs now have their content passed in directly
-              previewContent = (d.content || '').substring(0, 2000);
-          } else {
-              // For drive docs, we don't have content locally. We'll rely on the name for routing for now.
-              // A more advanced implementation could fetch a preview.
-              previewContent = `Document from Google Drive. Name: ${d.name}`;
-          }
-          return { name: d.name, tags: d.tags || [], content: previewContent, id: d.id };
-      })
-  );
+  let relevantDocs = docList;
 
-  const findDocsPrompt = `
-    You are an expert document router. Given a user's question and a list of available documents (with names, tags, and a short content preview), your task is to identify ALL relevant documents to answer the question.
-    Consider the document name, its tags, and the content preview. Respond with a list of the exact names of the relevant documents, each on a new line. Do not add any other text. If no documents are relevant, respond with an empty list.
+  // Step 1: Route to relevant documents IF more than one document is available to choose from.
+  if (docList.length > 1) {
+    const previewDocs = await Promise.all(
+        docList.map(async (d) => {
+            let previewContent = '';
+            if (d.source === 'local' && d.content) {
+                previewContent = (d.content || '').substring(0, 2000);
+            } else {
+                previewContent = `Document from Google Drive. Name: ${d.name}`;
+            }
+            return { name: d.name, tags: d.tags || [], content: previewContent, id: d.id };
+        })
+    );
 
-    Available documents:
-    ${previewDocs.map(d => `- ${d.name} (Tags: ${d.tags.join(', ') || 'None'})`).join('\n')}
+    const findDocsPrompt = `
+      You are an expert document router. Given a user's question and a list of available documents (with names, tags, and a short content preview), your task is to identify ALL relevant documents to answer the question.
+      Consider the document name, its tags, and the content preview. Respond with a list of the exact names of the relevant documents, each on a new line. Do not add any other text. If no documents are relevant, respond with an empty list.
 
-    User question: "${question}"
+      Available documents:
+      ${previewDocs.map(d => `- ${d.name} (Tags: ${d.tags.join(', ') || 'None'})`).join('\n')}
 
-    Relevant document(s):
-  `;
+      User question: "${question}"
 
-  const docChoiceResponse = await ai.generate({
-    model: ai.model,
-    prompt: findDocsPrompt,
-    history: [], // History is not needed for routing
-  });
+      Relevant document(s):
+    `;
 
-  const relevantDocNames = docChoiceResponse.text.trim().split('\n').filter(name => name.trim() !== '' && name.startsWith('- ')).map(name => name.substring(2).trim().replace(/ \(Tags:.*\)/, ''));
-  
-  let context = '';
-  let relevantDocs = [];
+    const docChoiceResponse = await ai.generate({
+      model: ai.model,
+      prompt: findDocsPrompt,
+      history: [], // History is not needed for routing
+    });
 
-  if (relevantDocNames.length > 0) {
-      relevantDocs = docList.filter(d => relevantDocNames.includes(d.name));
-  }
-  
-  if (relevantDocs.length === 0) {
-      // Fallback if the AI fails to select a doc or no docs are relevant.
-      // We will try to find the answer in all documents.
-      relevantDocs = docList;
+    const relevantDocNames = docChoiceResponse.text.trim().split('\n').filter(name => name.trim() !== '' && name.startsWith('- ')).map(name => name.substring(2).trim().replace(/ \(Tags:.*\)/, ''));
+    
+    if (relevantDocNames.length > 0) {
+        const foundDocs = docList.filter(d => relevantDocNames.includes(d.name));
+        if (foundDocs.length > 0) {
+          relevantDocs = foundDocs;
+        }
+    }
+    // If routing fails or selects no docs, we fall back to using ALL provided docs in `docList`.
   }
 
   // Step 2: Fetch the FULL content for the chosen documents.
   const fullContentPromises = relevantDocs.map(d => getDocumentContent(d, tokens.work, tokens.personal));
   const fullContents = await Promise.all(fullContentPromises);
 
-  context = relevantDocs.map((doc, i) => {
+  const context = relevantDocs.map((doc, i) => {
       return `Document: ${doc.name}\n\n${fullContents[i] || 'Content not available.'}`;
   }).join('\n\n---\n\n');
 
