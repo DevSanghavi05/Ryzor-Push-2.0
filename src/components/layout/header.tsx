@@ -30,13 +30,13 @@ export function Header() {
                     <Button asChild variant="ghost" className={cn(pathname === '/' && "text-primary")}>
                         <Link href="/">Workspace</Link>
                     </Button>
-                    <Button asChild variant="ghost" className={cn(pathname === '/documents' && "text-primary")}>
+                    <Button asChild variant="ghost" className={cn(pathname.startsWith('/documents') && "text-primary")}>
                         <Link href="/documents">My Documents</Link>
                     </Button>
-                     <Button asChild variant="ghost" className={cn(pathname === '/history' && "text-primary")}>
+                     <Button asChild variant="ghost" className={cn(pathname.startsWith('/history') && "text-primary")}>
                         <Link href="/history">Chat History</Link>
                     </Button>
-                    <Button asChild variant="ghost" className={cn(pathname === '/add' && "text-primary")}>
+                    <Button asChild variant="ghost" className={cn(pathname.startsWith('/add') && "text-primary")}>
                         <Link href="/add">Add Source</Link>
                     </Button>
                 </nav>
