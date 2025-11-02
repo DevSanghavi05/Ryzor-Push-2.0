@@ -3,20 +3,76 @@
 
 import { ai } from '@/ai/genkit';
 import { Message } from './page';
+import { extractGoogleDocContent } from '@/ai/flows/extract-google-doc-content';
+import { extractPdfText } from '@/ai/flows/extract-pdf-text-flow';
+
+async function getDocumentContent(doc: any, workToken?: string | null, personalToken?: string | null): Promise<string> {
+    if (doc.source === 'local') {
+        return localStorage.getItem(`document_content_${doc.id}`) || '';
+    }
+
+    if (doc.source === 'drive') {
+        const token = doc.accountType === 'work' ? workToken : personalToken;
+        if (!token) {
+            console.warn(`No token for ${doc.accountType} account, cannot fetch content for ${doc.name}`);
+            return '';
+        }
+        
+        try {
+            if (doc.mimeType === 'application/pdf') {
+                 const fileResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${doc.id}?alt=media`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!fileResponse.ok) throw new Error(`Failed to fetch PDF content from Drive: ${fileResponse.statusText}`);
+                
+                const arrayBuffer = await fileResponse.arrayBuffer();
+                const base64 = Buffer.from(arrayBuffer).toString('base64');
+                const dataURI = `data:${doc.mimeType};base64,${base64}`;
+
+                const { text } = await extractPdfText({ pdfDataUri: dataURI });
+                return text;
+            } else {
+                const { content } = await extractGoogleDocContent({ fileId: doc.id, mimeType: doc.mimeType, accessToken: token });
+                return content;
+            }
+        } catch (error: any) {
+            console.error(`Failed to fetch content for ${doc.name}:`, error.message);
+            return ''; // Return empty string on failure
+        }
+    }
+    
+    return '';
+}
+
 
 export async function ask(
   question: string,
-  docList: {name: string, content: string}[],
-  history: Message[]
+  docList: any[],
+  history: Message[],
+  tokens: { work: string | null, personal: string | null }
 ): Promise<ReadableStream<Uint8Array>> {
   
-  // Step 1: Find the most relevant documents (plural)
+  // Step 1: For this initial routing step, we will use a small chunk of content to keep it fast.
+  const previewDocs = await Promise.all(
+      docList.map(async (d) => {
+          let previewContent = '';
+          if (d.source === 'local') {
+              previewContent = (localStorage.getItem(`document_content_${d.id}`) || '').substring(0, 2000);
+          } else {
+              // For drive docs, we don't have content locally. We'll rely on the name for routing for now.
+              // A more advanced implementation could fetch a preview.
+              previewContent = `Document from Google Drive. Name: ${d.name}`;
+          }
+          return { name: d.name, content: previewContent, id: d.id };
+      })
+  );
+
   const findDocsPrompt = `
-    You are an expert document router. Given a user's question and a list of available documents, your task is to identify ALL relevant documents to answer the question.
+    You are an expert document router. Given a user's question and a list of available documents (with a short content preview), your task is to identify ALL relevant documents to answer the question.
     Respond with a list of the exact names of the relevant documents, each on a new line. Do not add any other text. If no documents are relevant, respond with an empty list.
 
     Available documents:
-    ${docList.map(d => d.name).join('\n')}
+    ${previewDocs.map(d => `- ${d.name}`).join('\n')}
 
     User question: "${question}"
 
@@ -29,24 +85,31 @@ export async function ask(
     history: [], // History is not needed for routing
   });
 
-  const relevantDocNames = docChoiceResponse.text.trim().split('\n').filter(name => name.trim() !== '');
+  const relevantDocNames = docChoiceResponse.text.trim().split('\n').filter(name => name.trim() !== '' && name.startsWith('- ')).map(name => name.substring(2).trim());
   
   let context = '';
-  
+  let relevantDocs = [];
+
   if (relevantDocNames.length > 0) {
-      const relevantDocs = docList.filter(d => relevantDocNames.includes(d.name));
-      if (relevantDocs.length > 0) {
-        context = relevantDocs.map(d => `Document: ${d.name}\n\n${d.content}`).join('\n\n---\n\n');
-      }
+      relevantDocs = docList.filter(d => relevantDocNames.includes(d.name));
   }
   
-  if (!context) {
+  if (relevantDocs.length === 0) {
       // Fallback if the AI fails to select a doc or no docs are relevant.
-      // We'll provide all content to give it a chance to answer.
-      context = docList.map(d => `Document: ${d.name}\n\n${d.content}`).join('\n\n---\n\n');
+      // We will try to find the answer in all documents.
+      relevantDocs = docList;
   }
 
-  // Step 2: Generate the answer using the full content of the chosen documents.
+  // Step 2: Fetch the FULL content for the chosen documents.
+  const fullContentPromises = relevantDocs.map(d => getDocumentContent(d, tokens.work, tokens.personal));
+  const fullContents = await Promise.all(fullContentPromises);
+
+  context = relevantDocs.map((doc, i) => {
+      return `Document: ${doc.name}\n\n${fullContents[i] || 'Content not available.'}`;
+  }).join('\n\n---\n\n');
+
+
+  // Step 3: Generate the answer using the full content.
   const stream = await generateAnswer(question, context, history);
   return stream;
 }
@@ -88,5 +151,3 @@ async function generateAnswer(question: string, context: string, history: Messag
 
   return readableStream;
 }
-
-    

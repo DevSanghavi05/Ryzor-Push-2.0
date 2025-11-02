@@ -16,7 +16,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/firebase';
 import withAuth from '@/firebase/auth/with-auth';
-import { RefreshCw, UploadCloud, FolderPlus, Filter, FileText, Wand, Sparkles, CheckCircle2, FolderSync, ChevronDown, Loader2 } from 'lucide-react';
+import { RefreshCw, UploadCloud, FolderPlus, Filter, FileText, Wand, Sparkles, CheckCircle2, FolderSync, ChevronDown, Loader2, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,7 +24,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { AccountType } from '@/firebase/auth/use-user';
-import { extractGoogleDocContent } from '@/ai/flows/extract-google-doc-content';
 import { Progress } from '@/components/ui/progress';
 import { HyperdriveAnimation } from '@/components/animations/hyperdrive-animation';
 import { categorizeDocument } from '@/ai/flows/categorize-document-flow';
@@ -36,7 +35,7 @@ import { extractPdfText } from '@/ai/flows/extract-pdf-text-flow';
 // ---------------------------------------------------------------------------
 
 function DocumentsPage() {
-  const { user, fetchDriveFiles, signInWithGoogle, workProvider, personalProvider, workAccessToken, personalAccessToken } = useUser();
+  const { user, fetchDriveFiles, signInWithGoogle, workProvider, personalProvider } = useUser();
   const { toast } = useToast();
   const router = useRouter();
   
@@ -169,39 +168,13 @@ function DocumentsPage() {
 
   const handleImport = async (doc: any): Promise<any | null> => {
     if (!user) return null;
-
-    const token = doc.accountType === 'work' ? workAccessToken : personalAccessToken;
-    if (!token) {
-        toast({ variant: 'destructive', title: 'Authentication Error', description: `Please re-connect your ${doc.accountType} account.`});
-        return null;
-    }
     
+    // For all docs (local or drive), we now just mark them as imported.
+    // The content will be fetched on demand by the `ask` action.
+    // This avoids localStorage quota issues for large files.
     try {
-        let content = '';
-
-        if (doc.mimeType === 'application/pdf') {
-            // Handle PDF from Google Drive: fetch raw data and use PDF extractor flow
-            const fileResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${doc.id}?alt=media`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (!fileResponse.ok) throw new Error(`Failed to fetch PDF content from Drive: ${fileResponse.statusText}`);
-            
-            const arrayBuffer = await fileResponse.arrayBuffer();
-            const base64 = Buffer.from(arrayBuffer).toString('base64');
-            const dataURI = `data:${doc.mimeType};base64,${base64}`;
-
-            const { text } = await extractPdfText({ pdfDataUri: dataURI });
-            content = text;
-
-        } else {
-            // Handle Google Workspace docs (Docs, Sheets, Slides)
-            const result = await extractGoogleDocContent({ fileId: doc.id, mimeType: doc.mimeType, accessToken: token });
-            content = result.content;
-        }
-
         const updatedDoc = { ...doc, isImported: true };
-        localStorage.setItem(`document_content_${doc.id}`, content);
-        
+        // We don't save content to localStorage anymore for Drive files
         return updatedDoc;
     } catch (e: any) {
         console.error("Import error for", doc.name, e);
@@ -220,9 +193,12 @@ function DocumentsPage() {
     const unimportedDocs = allDocs.filter(doc => doc.source === 'drive' && !doc.isImported);
     const totalToImport = unimportedDocs.length;
 
+    let importedCount = 0;
     const importPromises = unimportedDocs.map((doc, index) => 
       handleImport(doc).then(updatedDoc => {
-          // Progress is updated inside the Promise.all loop for better responsiveness
+          if (updatedDoc) {
+            importedCount++;
+          }
           setImportProgress(((index + 1) / totalToImport) * 100);
           return updatedDoc;
       })
@@ -265,6 +241,9 @@ function DocumentsPage() {
     let processedCount = 0;
     const updatedDocs = [...allDocs];
 
+    // Note: This relies on local storage for content. This will need to be updated
+    // to fetch content from Drive for Drive-sourced documents if we want to organize them
+    // without having the content stored locally. For now, it will only work on local files.
     for (const doc of docsToOrganize) {
         try {
             const content = localStorage.getItem(`document_content_${doc.id}`);
@@ -301,6 +280,36 @@ function DocumentsPage() {
         });
         setAllDocs(updatedDocs);
         localStorage.setItem(`documents_${user.uid}`, JSON.stringify(updatedDocs));
+    });
+  }
+
+  const handleDeleteDoc = (docId: string) => {
+    if (!user) return;
+    
+    const docToDelete = allDocs.find(d => d.id === docId);
+    if (!docToDelete) return;
+
+    // Move to trash
+    const trashKey = `trash_${user.uid}`;
+    const trash = JSON.parse(localStorage.getItem(trashKey) || '[]');
+    const trashedDoc = { ...docToDelete, trashedAt: new Date().toISOString() };
+    trash.push(trashedDoc);
+    localStorage.setItem(trashKey, JSON.stringify(trash));
+    
+    // Remove from main list
+    const updatedDocs = allDocs.filter(d => d.id !== docId);
+    setAllDocs(updatedDocs);
+    localStorage.setItem(`documents_${user.uid}`, JSON.stringify(updatedDocs));
+    
+    toast({
+        variant: 'destructive',
+        title: 'Document moved to trash',
+        description: `"${docToDelete.name}" has been moved to the trash.`,
+        action: (
+            <Button variant="secondary" size="sm" onClick={() => router.push('/trash')}>
+                View Trash
+            </Button>
+        )
     });
   }
 
@@ -384,29 +393,32 @@ function DocumentsPage() {
                                   <CardContent className="divide-y divide-border p-0">
                                       {docs.map((d: any) => (
                                           <div key={d.id} className="flex items-center justify-between p-4 hover:bg-accent/50 transition">
-                                              <div className="flex items-center gap-4">
-                                                  <CheckCircle2 className="h-5 w-5 text-green-500" />
-                                                  <div>
-                                                      <p className="font-medium flex items-center gap-2">{d.name}</p>
+                                              <div className="flex items-center gap-4 flex-1 min-w-0">
+                                                  <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
+                                                  <div className='min-w-0'>
+                                                      <p className="font-medium flex items-center gap-2 truncate">{d.name}</p>
                                                       <p className="text-sm text-muted-foreground">
                                                           {d.source === 'drive' ? `Google Drive (${d.accountType})` : 'Local Upload'} &middot; {new Date(d.uploaded).toLocaleDateString()}
                                                       </p>
                                                   </div>
                                               </div>
-                                              <Button 
-                                                  variant="ghost" 
-                                                  size="sm"
-                                                  onClick={() => {
-                                                    if (d.source === 'drive' && d.webViewLink) {
-                                                      window.open(d.webViewLink, '_blank');
-                                                    } else {
-                                                      router.push(`/documents/${d.id}`);
-                                                    }
-                                                  }}
-                                                  disabled={isPending}
-                                              >
-                                                  {d.source === 'drive' ? 'View in Drive' : 'View'}
-                                              </Button>
+                                              <div className="flex items-center gap-2 ml-4">
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm"
+                                                    onClick={() => {
+                                                      if (d.source === 'drive' && d.webViewLink) {
+                                                        window.open(d.webViewLink, '_blank');
+                                                      } else {
+                                                        router.push(`/documents/${d.id}`);
+                                                      }
+                                                    }}
+                                                    disabled={isPending}
+                                                >
+                                                    {d.source === 'drive' ? 'View in Drive' : 'View'}
+                                                </Button>
+                                                <Button variant="ghost" size="icon" onClick={() => handleDeleteDoc(d.id)}><Trash2 className="h-4 w-4" /></Button>
+                                              </div>
                                           </div>
                                       ))}
                                   </CardContent>

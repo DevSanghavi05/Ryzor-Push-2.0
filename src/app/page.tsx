@@ -40,7 +40,7 @@ export interface Message {
 }
 
 function LoggedInView() {
-  const { user } = useUser();
+  const { user, workAccessToken, personalAccessToken } = useUser();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -141,12 +141,12 @@ function LoggedInView() {
         return;
       }
       
-      const contextDocuments = importedDocsMeta.map((doc: any) => {
-          const content = localStorage.getItem(`document_content_${doc.id}`) || '';
-          return { name: doc.name, content };
-      }).filter((doc: any) => doc.content.trim().length > 0);
-
-      const stream = await ask(currentInput, contextDocuments, messages.slice(-10));
+      const stream = await ask(
+        currentInput, 
+        importedDocsMeta, 
+        messages.slice(-10), 
+        { work: workAccessToken, personal: personalAccessToken }
+      );
       const reader = stream.getReader();
       const decoder = new TextDecoder();
       let done = false;
