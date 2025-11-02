@@ -1,4 +1,3 @@
-
 'use server';
 
 import { ai } from '@/ai/genkit';
@@ -66,16 +65,16 @@ export async function ask(
               // A more advanced implementation could fetch a preview.
               previewContent = `Document from Google Drive. Name: ${d.name}`;
           }
-          return { name: d.name, content: previewContent, id: d.id };
+          return { name: d.name, tags: d.tags || [], content: previewContent, id: d.id };
       })
   );
 
   const findDocsPrompt = `
-    You are an expert document router. Given a user's question and a list of available documents (with a short content preview), your task is to identify ALL relevant documents to answer the question.
-    Respond with a list of the exact names of the relevant documents, each on a new line. Do not add any other text. If no documents are relevant, respond with an empty list.
+    You are an expert document router. Given a user's question and a list of available documents (with names, tags, and a short content preview), your task is to identify ALL relevant documents to answer the question.
+    Consider the document name, its tags, and the content preview. Respond with a list of the exact names of the relevant documents, each on a new line. Do not add any other text. If no documents are relevant, respond with an empty list.
 
     Available documents:
-    ${previewDocs.map(d => `- ${d.name}`).join('\n')}
+    ${previewDocs.map(d => `- ${d.name} (Tags: ${d.tags.join(', ') || 'None'})`).join('\n')}
 
     User question: "${question}"
 
@@ -88,7 +87,7 @@ export async function ask(
     history: [], // History is not needed for routing
   });
 
-  const relevantDocNames = docChoiceResponse.text.trim().split('\n').filter(name => name.trim() !== '' && name.startsWith('- ')).map(name => name.substring(2).trim());
+  const relevantDocNames = docChoiceResponse.text.trim().split('\n').filter(name => name.trim() !== '' && name.startsWith('- ')).map(name => name.substring(2).trim().replace(/ \(Tags:.*\)/, ''));
   
   let context = '';
   let relevantDocs = [];

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useMemo, useRef, useState, useCallback, useTransition } from 'react';
@@ -16,7 +15,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/firebase';
 import withAuth from '@/firebase/auth/with-auth';
-import { RefreshCw, UploadCloud, FolderPlus, Filter, FileText, Wand, Sparkles, CheckCircle2, FolderSync, ChevronDown, Loader2, Trash2 } from 'lucide-react';
+import { RefreshCw, UploadCloud, FolderPlus, Filter, FileText, Wand, Sparkles, CheckCircle2, FolderSync, ChevronDown, Loader2, Trash2, Tag } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,6 +29,9 @@ import { categorizeDocument } from '@/ai/flows/categorize-document-flow';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { extractPdfText } from '@/ai/flows/extract-pdf-text-flow';
 import { extractGoogleDocContent } from '@/ai/flows/extract-google-doc-content';
+import { generateTags } from '@/ai/flows/generate-tags-flow';
+import { Badge } from '@/components/ui/badge';
+
 
 // ---------------------------------------------------------------------------
 // Main Documents Page Component
@@ -63,7 +65,8 @@ function DocumentsPage() {
       const filtered = importedDocs
         .filter((doc) => {
           const nameMatch = doc.name.toLowerCase().includes(query.toLowerCase());
-          if (!nameMatch) return false;
+          const tagMatch = doc.tags?.some((tag: string) => tag.toLowerCase().includes(query.toLowerCase()));
+          if (!nameMatch && !tagMatch) return false;
 
           switch (filter) {
             case 'local':
@@ -171,22 +174,31 @@ function DocumentsPage() {
     if (!user) return null;
 
     try {
-        const updatedDoc = { ...doc, isImported: true };
-
-        // For Google Drive PDFs, we need to fetch the content and pass it to the text extractor
-        if (doc.source === 'drive' && doc.mimeType === 'application/pdf') {
+        let content = '';
+        if (doc.source === 'drive') {
             const token = doc.accountType === 'work' ? workAccessToken : personalAccessToken;
             if (!token) throw new Error('Missing authentication token for Drive.');
             
-            const fileResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${doc.id}?alt=media`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (!fileResponse.ok) throw new Error('Failed to fetch PDF content from Drive.');
-            
-            // We no longer save content to localStorage to avoid quota errors
+            if (doc.mimeType === 'application/pdf') {
+                const fileResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${doc.id}?alt=media`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!fileResponse.ok) throw new Error('Failed to fetch PDF content from Drive.');
+                const arrayBuffer = await fileResponse.arrayBuffer();
+                const base64 = Buffer.from(arrayBuffer).toString('base64');
+                const dataURI = `data:${doc.mimeType};base64,${base64}`;
+                const { text } = await extractPdfText({ pdfDataUri: dataURI });
+                content = text;
+            } else {
+                 const { content: extractedContent } = await extractGoogleDocContent({ fileId: doc.id, mimeType: doc.mimeType, accessToken: token });
+                 content = extractedContent;
+            }
         }
         
+        const { tags } = await generateTags({ textContent: content.substring(0, 5000) });
+        const updatedDoc = { ...doc, isImported: true, tags: tags };
         return updatedDoc;
+
     } catch (e: any) {
         console.error("Import error for", doc.name, e);
         toast({ variant: 'destructive', title: `Failed to import "${doc.name}"`, description: e.message });
@@ -203,14 +215,14 @@ function DocumentsPage() {
 
     const unimportedDocs = allDocs.filter(doc => doc.source === 'drive' && !doc.isImported);
     const totalToImport = unimportedDocs.length;
-    let importedSoFar = 0;
+    let importedCount = 0;
 
     const importPromises = unimportedDocs.map((doc) => 
       handleImport(doc).then(updatedDoc => {
         if (updatedDoc) {
-          importedSoFar++;
+          importedCount++;
         }
-        setImportProgress(((importedSoFar) / totalToImport) * 100);
+        setImportProgress(((importedCount) / totalToImport) * 100);
         return updatedDoc;
       })
     );
@@ -383,7 +395,7 @@ function DocumentsPage() {
               </div>
                <div className="flex items-center gap-3 mb-6">
                   <Input
-                  placeholder="Search documents..."
+                  placeholder="Search documents or tags..."
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   className="max-w-sm"
@@ -438,9 +450,14 @@ function DocumentsPage() {
                                                   <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
                                                   <div className='min-w-0'>
                                                       <p className="font-medium flex items-center gap-2 truncate">{d.name}</p>
-                                                      <p className="text-sm text-muted-foreground">
-                                                          {d.source === 'drive' ? `Google Drive (${d.accountType})` : 'Local Upload'} &middot; {new Date(d.uploaded).toLocaleDateString()}
-                                                      </p>
+                                                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                                          <p className="text-sm text-muted-foreground">
+                                                              {d.source === 'drive' ? `Google Drive (${d.accountType})` : 'Local Upload'} &middot; {new Date(d.uploaded).toLocaleDateString()}
+                                                          </p>
+                                                          {d.tags && d.tags.map((tag: string) => (
+                                                              <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                                                          ))}
+                                                      </div>
                                                   </div>
                                               </div>
                                               <div className="flex items-center gap-2 ml-4">
