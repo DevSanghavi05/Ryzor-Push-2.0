@@ -35,7 +35,7 @@ import { extractPdfText } from '@/ai/flows/extract-pdf-text-flow';
 // ---------------------------------------------------------------------------
 
 function DocumentsPage() {
-  const { user, fetchDriveFiles, signInWithGoogle, workProvider, personalProvider } = useUser();
+  const { user, fetchDriveFiles, signInWithGoogle, workProvider, personalProvider, workAccessToken, personalAccessToken } = useUser();
   const { toast } = useToast();
   const router = useRouter();
   
@@ -168,13 +168,30 @@ function DocumentsPage() {
 
   const handleImport = async (doc: any): Promise<any | null> => {
     if (!user) return null;
-    
-    // For all docs (local or drive), we now just mark them as imported.
-    // The content will be fetched on demand by the `ask` action.
-    // This avoids localStorage quota issues for large files.
+
     try {
         const updatedDoc = { ...doc, isImported: true };
-        // We don't save content to localStorage anymore for Drive files
+
+        // For Google Drive PDFs, we need to fetch the content and pass it to the text extractor
+        // We no longer save content to localStorage to avoid quota errors
+        if (doc.source === 'drive' && doc.mimeType === 'application/pdf') {
+            const token = doc.accountType === 'work' ? workAccessToken : personalAccessToken;
+            if (!token) throw new Error('Missing authentication token for Drive.');
+            
+            const fileResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${doc.id}?alt=media`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!fileResponse.ok) throw new Error('Failed to fetch PDF content from Drive.');
+            
+            const arrayBuffer = await fileResponse.arrayBuffer();
+            const base64 = Buffer.from(arrayBuffer).toString('base64');
+            const dataURI = `data:application/pdf;base64,${base64}`;
+
+            // This now happens on demand in the `ask` action.
+            // const { text } = await extractPdfText({ pdfDataUri: dataURI });
+            // console.log(`Extracted text for ${doc.name} (on import)`);
+        }
+        
         return updatedDoc;
     } catch (e: any) {
         console.error("Import error for", doc.name, e);
@@ -192,14 +209,14 @@ function DocumentsPage() {
 
     const unimportedDocs = allDocs.filter(doc => doc.source === 'drive' && !doc.isImported);
     const totalToImport = unimportedDocs.length;
+    let importedSoFar = 0;
 
-    let importedCount = 0;
-    const importPromises = unimportedDocs.map((doc, index) => 
+    const importPromises = unimportedDocs.map(doc => 
       handleImport(doc).then(updatedDoc => {
           if (updatedDoc) {
-            importedCount++;
+            importedSoFar++;
           }
-          setImportProgress(((index + 1) / totalToImport) * 100);
+          setImportProgress((importedSoFar / totalToImport) * 100);
           return updatedDoc;
       })
     );
@@ -223,6 +240,8 @@ function DocumentsPage() {
     });
   };
 
+  const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
   const handleOrganize = async () => {
     if (!user || isOrganizing) return;
     setIsOrganizing(true);
@@ -241,21 +260,34 @@ function DocumentsPage() {
     let processedCount = 0;
     const updatedDocs = [...allDocs];
 
-    // Note: This relies on local storage for content. This will need to be updated
-    // to fetch content from Drive for Drive-sourced documents if we want to organize them
-    // without having the content stored locally. For now, it will only work on local files.
     for (const doc of docsToOrganize) {
         try {
-            const content = localStorage.getItem(`document_content_${doc.id}`);
+            // For local files, content is in local storage.
+            // For Drive files, content must be fetched on-demand.
+            let content = '';
+            if (doc.source === 'local') {
+                content = localStorage.getItem(`document_content_${doc.id}`) || '';
+            } else if (doc.source === 'drive') {
+                // This would be slow. For now, we only organize local files with stored content.
+                // A better solution would be a server-side batch job.
+                // We will skip Drive files for now in this function to prevent errors.
+            }
+
             if (content) {
                 const { category } = await categorizeDocument({ textContent: content });
                 const docIndex = updatedDocs.findIndex(d => d.id === doc.id);
                 if (docIndex !== -1) {
                     updatedDocs[docIndex].folder = category;
                 }
+                await delay(1000); // Add a 1-second delay to avoid rate limiting
             }
         } catch (error: any) {
             console.error(`Failed to categorize ${doc.name}: ${error.message}`);
+            // If we hit a rate limit, wait and then continue.
+            if (error.message.includes('429')) {
+                toast({ variant: 'destructive', title: 'Rate limit hit', description: 'Pausing for a moment before continuing...' });
+                await delay(5000); // Wait 5 seconds
+            }
         } finally {
             processedCount++;
             setOrganizingProgress((processedCount / totalCount) * 100);
