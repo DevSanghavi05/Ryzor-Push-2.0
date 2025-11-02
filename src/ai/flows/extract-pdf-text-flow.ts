@@ -10,7 +10,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import * as pdfParser from 'pdf-parse';
+import * as pdfjs from 'pdfjs-dist';
 
 // Define Zod schemas for input and output
 const ExtractPdfTextInputSchema = z.object({
@@ -45,12 +45,19 @@ const extractPdfTextFlow = ai.defineFlow(
         throw new Error("Invalid data URI: Missing base64 data.");
       }
       const pdfBuffer = Buffer.from(base64Data, 'base64');
+      
+      const pdf = await pdfjs.getDocument(pdfBuffer).promise;
+      const numPages = pdf.numPages;
+      let fullText = '';
 
-      // 2. Use pdf-parse to extract text
-      const data = await pdfParser(pdfBuffer);
+      for (let i = 1; i <= numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => ('str' in item ? item.str : '')).join(' ');
+        fullText += pageText + '\n';
+      }
 
-      // 3. Return the extracted text
-      return { text: data.text };
+      return { text: fullText };
     } catch (error: any) {
       console.error("Error in PDF text extraction flow:", error);
       // Re-throw to make the error visible to the caller
