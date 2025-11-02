@@ -248,24 +248,22 @@ function DocumentsPage() {
 
     const unimportedDocs = allDocs.filter(doc => doc.source === 'drive' && !doc.isImported);
     const totalToImport = unimportedDocs.length;
-    let importedCount = 0;
+    let importedSoFar = 0;
 
     const importPromises = unimportedDocs.map(doc => 
       handleImport(doc).then(updatedDoc => {
-        if (updatedDoc) {
-          importedCount++;
-          setImportProgress((importedCount / totalToImport) * 100);
-          return updatedDoc;
-        }
-        return doc; // Return original doc if import failed
+        importedSoFar++;
+        setImportProgress((importedSoFar / totalToImport) * 100);
+        return updatedDoc; // Return the result (updated or original doc)
       })
     );
 
     const results = await Promise.all(importPromises);
+    const successfulImports = results.filter(res => res && res.isImported && unimportedDocs.some(ud => ud.id === res.id));
 
     startTransition(() => {
       const updatedDocs = allDocs.map(doc => {
-        const updatedVersion = results.find(res => res.id === doc.id);
+        const updatedVersion = results.find(res => res && res.id === doc.id);
         return updatedVersion || doc;
       });
 
@@ -273,8 +271,8 @@ function DocumentsPage() {
       localStorage.setItem(`documents_${user!.uid}`, JSON.stringify(updatedDocs));
       
       setIsImporting(false);
-      setImportComplete(true); // Trigger animation
-      toast({ title: 'Bulk Import Complete', description: `${importedCount} documents have been processed.` });
+      setImportComplete(true); 
+      toast({ title: 'Bulk Import Complete', description: `${successfulImports.length} document(s) have been processed.` });
     });
   };
 
@@ -375,7 +373,7 @@ function DocumentsPage() {
                             variant="ghost" 
                             onClick={() => router.push(d.source === 'drive' && !d.isImported ? d.webViewLink : `/documents/${d.id}`)}
                             target={d.source === 'drive' && !d.isImported ? '_blank' : ''}
-                            disabled={d.source === 'drive' && !d.isImported}
+                            disabled={isPending}
                            >
                             View
                           </Button>
