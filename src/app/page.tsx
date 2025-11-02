@@ -30,6 +30,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { motion, useInView } from 'framer-motion';
 import { Logo } from '@/components/layout/logo';
+import { nanoid } from 'nanoid';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 
 export interface Message {
@@ -45,6 +47,7 @@ function LoggedInView() {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const router = useRouter();
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
 
   // Load chat from local storage
   useEffect(() => {
@@ -73,14 +76,41 @@ function LoggedInView() {
     }
   }, [messages, loading]);
   
-  const handleResetChat = () => {
-    if (!user) return;
-    setMessages([]);
+  const handleSaveAndReset = () => {
+    if (!user || messages.length === 0) return;
+
+    const historyKey = `chat_history_${user.uid}`;
+    const existingHistory = JSON.parse(localStorage.getItem(historyKey) || '[]');
+    
+    const firstUserMessage = messages.find(m => m.role === 'user')?.content || 'Chat';
+    const newSession = {
+      id: nanoid(),
+      savedAt: new Date().toISOString(),
+      messages: messages,
+      title: firstUserMessage.substring(0, 40) + (firstUserMessage.length > 40 ? '...' : ''),
+    };
+
+    existingHistory.push(newSession);
+    localStorage.setItem(historyKey, JSON.stringify(existingHistory));
+
     toast({
-      title: 'Chat Reset',
-      description: 'Your conversation history has been cleared.',
+      title: 'Chat Saved',
+      description: 'Your conversation has been saved to your history.',
     });
+    
+    setMessages([]);
+    setIsResetDialogOpen(false);
   };
+
+  const handleResetWithoutSaving = () => {
+     if (!user) return;
+      setMessages([]);
+      toast({
+        title: 'Chat Reset',
+        description: 'Your conversation history has been cleared.',
+      });
+      setIsResetDialogOpen(false);
+  }
 
   const handleInteraction = async () => {
     if (!user || !input.trim()) return;
@@ -280,15 +310,31 @@ function LoggedInView() {
                     </Button>
                     
                     {messages.length > 0 && (
-                       <Button
-                         size="icon"
-                         variant="ghost"
-                         onClick={handleResetChat}
-                         className="rounded-xl bg-white/10 hover:bg-white/20 text-white border-none transition-all duration-200 shrink-0 h-12 w-12"
-                       >
-                         <RotateCw className="w-6 h-6" />
-                         <span className="sr-only">Reset Chat</span>
-                       </Button>
+                        <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+                            <AlertDialogTrigger asChild>
+                               <Button
+                                 size="icon"
+                                 variant="ghost"
+                                 className="rounded-xl bg-white/10 hover:bg-white/20 text-white border-none transition-all duration-200 shrink-0 h-12 w-12"
+                               >
+                                 <RotateCw className="w-6 h-6" />
+                                 <span className="sr-only">Reset Chat</span>
+                               </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Reset Chat</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Would you like to save this conversation to your chat history before resetting?
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <Button variant="destructive" onClick={handleResetWithoutSaving}>Reset Without Saving</Button>
+                                    <AlertDialogAction onClick={handleSaveAndReset}>Save and Reset</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     )}
 
                     <Input
