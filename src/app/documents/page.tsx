@@ -29,6 +29,7 @@ import { HyperdriveAnimation } from '@/components/animations/hyperdrive-animatio
 import { categorizeDocument } from '@/ai/flows/categorize-document-flow';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { extractPdfText } from '@/ai/flows/extract-pdf-text-flow';
+import { extractGoogleDocContent } from '@/ai/flows/extract-google-doc-content';
 
 // ---------------------------------------------------------------------------
 // Main Documents Page Component
@@ -186,10 +187,9 @@ function DocumentsPage() {
             const arrayBuffer = await fileResponse.arrayBuffer();
             const base64 = Buffer.from(arrayBuffer).toString('base64');
             const dataURI = `data:application/pdf;base64,${base64}`;
-
-            // This now happens on demand in the `ask` action.
+            
+            // This is now done on-demand in the ask action.
             // const { text } = await extractPdfText({ pdfDataUri: dataURI });
-            // console.log(`Extracted text for ${doc.name} (on import)`);
         }
         
         return updatedDoc;
@@ -209,14 +209,10 @@ function DocumentsPage() {
 
     const unimportedDocs = allDocs.filter(doc => doc.source === 'drive' && !doc.isImported);
     const totalToImport = unimportedDocs.length;
-    let importedSoFar = 0;
 
-    const importPromises = unimportedDocs.map(doc => 
+    const importPromises = unimportedDocs.map((doc, index) => 
       handleImport(doc).then(updatedDoc => {
-          if (updatedDoc) {
-            importedSoFar++;
-          }
-          setImportProgress((importedSoFar / totalToImport) * 100);
+          setImportProgress(((index + 1) / totalToImport) * 100);
           return updatedDoc;
       })
     );
@@ -268,9 +264,24 @@ function DocumentsPage() {
             if (doc.source === 'local') {
                 content = localStorage.getItem(`document_content_${doc.id}`) || '';
             } else if (doc.source === 'drive') {
-                // This would be slow. For now, we only organize local files with stored content.
-                // A better solution would be a server-side batch job.
-                // We will skip Drive files for now in this function to prevent errors.
+                const token = doc.accountType === 'work' ? workAccessToken : personalAccessToken;
+                if (token) {
+                    if (doc.mimeType === 'application/pdf') {
+                        const fileResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${doc.id}?alt=media`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (fileResponse.ok) {
+                             const arrayBuffer = await fileResponse.arrayBuffer();
+                             const base64 = Buffer.from(arrayBuffer).toString('base64');
+                             const dataURI = `data:${doc.mimeType};base64,${base64}`;
+                             const { text } = await extractPdfText({ pdfDataUri: dataURI });
+                             content = text;
+                        }
+                    } else {
+                        const { content: extractedContent } = await extractGoogleDocContent({ fileId: doc.id, mimeType: doc.mimeType, accessToken: token });
+                        content = extractedContent;
+                    }
+                }
             }
 
             if (content) {
