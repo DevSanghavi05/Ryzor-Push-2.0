@@ -214,7 +214,7 @@ function DocumentsPage() {
 
     startTransition(() => {
       const updatedDocs = allDocs.map(doc => {
-        const updatedVersion = results.find(res => res && res.id === doc.id);
+        const updatedVersion = successfulImports.find(res => res && res.id === doc.id);
         return updatedVersion || doc;
       });
 
