@@ -312,5 +312,3 @@ function DocumentsPage() {
 }
 
 export default withAuth(DocumentsPage);
-
-    
