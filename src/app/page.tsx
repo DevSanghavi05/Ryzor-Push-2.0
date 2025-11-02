@@ -127,9 +127,9 @@ function LoggedInView() {
       const documentsString = localStorage.getItem(storageKey);
       const documentsMeta = documentsString ? JSON.parse(documentsString) : [];
 
-      const importedDocsMeta = documentsMeta.filter((doc: any) => doc.isImported);
+      let importedDocs = documentsMeta.filter((doc: any) => doc.isImported);
 
-      if (importedDocsMeta.length === 0) {
+      if (importedDocs.length === 0) {
         toast({
           variant: 'destructive',
           title: 'No Documents Found',
@@ -141,9 +141,19 @@ function LoggedInView() {
         return;
       }
       
+      // For local docs, retrieve content from local storage and add it to the object
+      // This prepares it to be sent to the server action.
+      importedDocs = importedDocs.map((doc: any) => {
+          if (doc.source === 'local') {
+              const content = localStorage.getItem(`document_content_${doc.id}`);
+              return { ...doc, content: content || '' };
+          }
+          return doc;
+      });
+
       const stream = await ask(
         currentInput, 
-        importedDocsMeta, 
+        importedDocs, 
         messages.slice(-10), 
         { work: workAccessToken, personal: personalAccessToken }
       );

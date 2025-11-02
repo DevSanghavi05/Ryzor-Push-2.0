@@ -7,8 +7,10 @@ import { extractGoogleDocContent } from '@/ai/flows/extract-google-doc-content';
 import { extractPdfText } from '@/ai/flows/extract-pdf-text-flow';
 
 async function getDocumentContent(doc: any, workToken?: string | null, personalToken?: string | null): Promise<string> {
-    if (doc.source === 'local') {
-        return localStorage.getItem(`document_content_${doc.id}`) || '';
+    // This function now only handles cloud-based documents.
+    // Local document content is passed in directly to the 'ask' function.
+    if (doc.source === 'local' && doc.content) {
+        return doc.content;
     }
 
     if (doc.source === 'drive') {
@@ -57,7 +59,8 @@ export async function ask(
       docList.map(async (d) => {
           let previewContent = '';
           if (d.source === 'local') {
-              previewContent = (localStorage.getItem(`document_content_${d.id}`) || '').substring(0, 2000);
+              // Local docs now have their content passed in directly
+              previewContent = (d.content || '').substring(0, 2000);
           } else {
               // For drive docs, we don't have content locally. We'll rely on the name for routing for now.
               // A more advanced implementation could fetch a preview.
