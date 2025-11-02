@@ -29,6 +29,7 @@ import { Progress } from '@/components/ui/progress';
 import { HyperdriveAnimation } from '@/components/animations/hyperdrive-animation';
 import { categorizeDocument } from '@/ai/flows/categorize-document-flow';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { extractPdfText } from '@/ai/flows/extract-pdf-text-flow';
 
 // ---------------------------------------------------------------------------
 // Main Documents Page Component
@@ -176,13 +177,34 @@ function DocumentsPage() {
     }
     
     try {
-        const { content } = await extractGoogleDocContent({ fileId: doc.id, mimeType: doc.mimeType, accessToken: token });
+        let content = '';
+
+        if (doc.mimeType === 'application/pdf') {
+            // Handle PDF from Google Drive: fetch raw data and use PDF extractor flow
+            const fileResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${doc.id}?alt=media`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!fileResponse.ok) throw new Error(`Failed to fetch PDF content from Drive: ${fileResponse.statusText}`);
+            
+            const arrayBuffer = await fileResponse.arrayBuffer();
+            const base64 = Buffer.from(arrayBuffer).toString('base64');
+            const dataURI = `data:${doc.mimeType};base64,${base64}`;
+
+            const { text } = await extractPdfText({ pdfDataUri: dataURI });
+            content = text;
+
+        } else {
+            // Handle Google Workspace docs (Docs, Sheets, Slides)
+            const result = await extractGoogleDocContent({ fileId: doc.id, mimeType: doc.mimeType, accessToken: token });
+            content = result.content;
+        }
+
         const updatedDoc = { ...doc, isImported: true };
-        // Don't store textContent in the main list, store it separately
         localStorage.setItem(`document_content_${doc.id}`, content);
         
         return updatedDoc;
     } catch (e: any) {
+        console.error("Import error for", doc.name, e);
         toast({ variant: 'destructive', title: `Failed to import "${doc.name}"`, description: e.message });
         return null; // Return null on failure
     }
@@ -197,19 +219,15 @@ function DocumentsPage() {
 
     const unimportedDocs = allDocs.filter(doc => doc.source === 'drive' && !doc.isImported);
     const totalToImport = unimportedDocs.length;
-    let importedSoFar = 0;
 
-    const importPromises = unimportedDocs.map(doc => 
+    const importPromises = unimportedDocs.map((doc, index) => 
       handleImport(doc).then(updatedDoc => {
-        if (updatedDoc) {
-            importedSoFar++;
-            const progress = (importedSoFar / totalToImport) * 100;
-            setImportProgress(progress);
-        }
-        return updatedDoc;
+          // Progress is updated inside the Promise.all loop for better responsiveness
+          setImportProgress(((index + 1) / totalToImport) * 100);
+          return updatedDoc;
       })
     );
-
+    
     const results = await Promise.all(importPromises);
     const successfulImports = results.filter(res => !!res);
 
@@ -364,7 +382,7 @@ function DocumentsPage() {
                           <CollapsibleContent>
                               <Card>
                                   <CardContent className="divide-y divide-border p-0">
-                                      {docs.map((d) => (
+                                      {docs.map((d: any) => (
                                           <div key={d.id} className="flex items-center justify-between p-4 hover:bg-accent/50 transition">
                                               <div className="flex items-center gap-4">
                                                   <CheckCircle2 className="h-5 w-5 text-green-500" />
