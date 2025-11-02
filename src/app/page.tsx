@@ -18,7 +18,8 @@ import {
   Zap,
   Rocket,
   Globe,
-  Lock
+  Lock,
+  RotateCw
 } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { ask } from '@/app/actions';
@@ -59,6 +60,9 @@ function LoggedInView() {
   useEffect(() => {
     if (user && messages.length > 0) {
       localStorage.setItem(`messages_${user.uid}`, JSON.stringify(messages));
+    } else if (user && messages.length === 0) {
+      // Also clear storage if messages are reset
+      localStorage.removeItem(`messages_${user.uid}`);
     }
   }, [messages, user]);
 
@@ -68,6 +72,15 @@ function LoggedInView() {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [messages, loading]);
+  
+  const handleResetChat = () => {
+    if (!user) return;
+    setMessages([]);
+    toast({
+      title: 'Chat Reset',
+      description: 'Your conversation history has been cleared.',
+    });
+  };
 
   const handleInteraction = async () => {
     if (!user || !input.trim()) return;
@@ -265,6 +278,18 @@ function LoggedInView() {
                         <span className="sr-only">Upload</span>
                       </Link>
                     </Button>
+                    
+                    {messages.length > 0 && (
+                       <Button
+                         size="icon"
+                         variant="ghost"
+                         onClick={handleResetChat}
+                         className="rounded-xl bg-white/10 hover:bg-white/20 text-white border-none transition-all duration-200 shrink-0 h-12 w-12"
+                       >
+                         <RotateCw className="w-6 h-6" />
+                         <span className="sr-only">Reset Chat</span>
+                       </Button>
+                    )}
 
                     <Input
                       placeholder="Ask anything..."
@@ -619,5 +644,3 @@ export default function Home() {
 
   return user ? <LoggedInView /> : <LandingPage />;
 }
-
-    
