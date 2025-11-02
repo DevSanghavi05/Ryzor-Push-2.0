@@ -1,16 +1,13 @@
-
 'use client';
 
-import { LogOut, MessageSquare } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { BookCopy, LogIn, Plus, Zap } from 'lucide-react';
 import { ThemeToggleButton } from '../theme-toggle';
 import { Logo } from './logo';
 import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
 
 export function Header() {
   const { user } = useUser();
@@ -27,16 +24,16 @@ export function Header() {
             {user ? (
                 // Nav for logged in users
                 <nav className="hidden md:flex items-center gap-2">
-                    <Button asChild variant="ghost" className={cn(pathname === '/' && "text-primary")}>
+                    <Button asChild variant="ghost" className={pathname === '/' ? "text-primary" : ""}>
                         <Link href="/">Workspace</Link>
                     </Button>
-                    <Button asChild variant="ghost" className={cn(pathname.startsWith('/documents') && "text-primary")}>
+                    <Button asChild variant="ghost" className={pathname.startsWith('/documents') ? "text-primary" : ""}>
                         <Link href="/documents">My Documents</Link>
                     </Button>
-                     <Button asChild variant="ghost" className={cn(pathname.startsWith('/history') && "text-primary")}>
+                     <Button asChild variant="ghost" className={pathname.startsWith('/history') ? "text-primary" : ""}>
                         <Link href="/history">Chat History</Link>
                     </Button>
-                    <Button asChild variant="ghost" className={cn(pathname.startsWith('/add') && "text-primary")}>
+                    <Button asChild variant="ghost" className={pathname.startsWith('/add') ? "text-primary" : ""}>
                         <Link href="/add">Add Source</Link>
                     </Button>
                 </nav>
