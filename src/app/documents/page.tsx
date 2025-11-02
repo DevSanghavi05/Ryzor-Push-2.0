@@ -197,13 +197,15 @@ function DocumentsPage() {
 
     const unimportedDocs = allDocs.filter(doc => doc.source === 'drive' && !doc.isImported);
     const totalToImport = unimportedDocs.length;
-    let importedSoFar = 0;
+    let importedCount = 0;
 
     const importPromises = unimportedDocs.map(doc => 
       handleImport(doc).then(updatedDoc => {
         if (updatedDoc) {
-          importedSoFar++;
-          setImportProgress((importedSoFar / totalToImport) * 100);
+          // This logic is safe for parallel updates.
+          importedCount++;
+          const progress = (importedCount / totalToImport) * 100;
+          setImportProgress(progress);
         }
         return updatedDoc;
       })
@@ -405,7 +407,7 @@ function DocumentsPage() {
                                         <div>
                                             <p className="font-medium flex items-center gap-2 text-muted-foreground">{d.name}</p>
                                             <p className="text-sm text-muted-foreground">
-                                                Google Drive ({d.accountType}) &middot; {new Date(d.uploaded).toLocaleDateString()}
+                                                Google Drive ({d.accountType}) &middot; {new Date(d.uploaded).toLocaleDateS tring()}
                                             </p>
                                         </div>
                                     </div>
