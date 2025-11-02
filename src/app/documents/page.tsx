@@ -197,13 +197,13 @@ function DocumentsPage() {
 
     const unimportedDocs = allDocs.filter(doc => doc.source === 'drive' && !doc.isImported);
     const totalToImport = unimportedDocs.length;
-    let importedCount = 0;
+    let importedSoFar = 0;
 
     const importPromises = unimportedDocs.map(doc => 
       handleImport(doc).then(updatedDoc => {
         if (updatedDoc) {
-            importedCount++;
-            const progress = (importedCount / totalToImport) * 100;
+            importedSoFar++;
+            const progress = (importedSoFar / totalToImport) * 100;
             setImportProgress(progress);
         }
         return updatedDoc;
@@ -378,10 +378,16 @@ function DocumentsPage() {
                                               <Button 
                                                   variant="ghost" 
                                                   size="sm"
-                                                  onClick={() => router.push(`/documents/${d.id}`)}
+                                                  onClick={() => {
+                                                    if (d.source === 'drive' && d.webViewLink) {
+                                                      window.open(d.webViewLink, '_blank');
+                                                    } else {
+                                                      router.push(`/documents/${d.id}`);
+                                                    }
+                                                  }}
                                                   disabled={isPending}
                                               >
-                                                  View
+                                                  {d.source === 'drive' ? 'View in Drive' : 'View'}
                                               </Button>
                                           </div>
                                       ))}
