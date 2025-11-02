@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -377,7 +376,7 @@ function LoggedInView() {
                     </Button>
 
                     <Input
-                      placeholder="Ask anything..."
+                      placeholder="Ask anything or mention a document with @..."
                       className="border-none focus-visible:ring-0 flex-1 text-base bg-transparent text-foreground placeholder:text-muted-foreground/60 px-4 h-12"
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
@@ -399,7 +398,7 @@ function LoggedInView() {
               <p className="text-xs text-center text-muted-foreground/60 mt-3">
                 {focusedDocIds.size > 0 
                     ? `Ryzor is focusing on ${focusedDocIds.size} document(s).` 
-                    : "Ryzor searches across all your documents to provide accurate answers"
+                    : "Ryzor can search across all your documents to provide accurate answers."
                 }
               </p>
             </div>

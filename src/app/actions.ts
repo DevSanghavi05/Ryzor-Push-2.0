@@ -6,9 +6,8 @@ import { extractGoogleDocContent } from '@/ai/flows/extract-google-doc-content';
 import { extractPdfText } from '@/ai/flows/extract-pdf-text-flow';
 
 async function getDocumentContent(doc: any, workToken?: string | null, personalToken?: string | null): Promise<string> {
-    // This function now only handles cloud-based documents.
-    // Local document content is passed in directly to the 'ask' function.
     if (doc.source === 'local' && doc.content) {
+        // For local files, the content is already extracted and passed from the client
         return doc.content;
     }
 
@@ -20,6 +19,7 @@ async function getDocumentContent(doc: any, workToken?: string | null, personalT
         }
         
         try {
+            // For Drive files, we always fetch content on the server using the appropriate flow
             if (doc.mimeType === 'application/pdf') {
                  const fileResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${doc.id}?alt=media`, {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -42,7 +42,8 @@ async function getDocumentContent(doc: any, workToken?: string | null, personalT
         }
     }
     
-    return '';
+    // Fallback for any other case
+    return doc.content || '';
 }
 
 
@@ -54,15 +55,26 @@ export async function ask(
 ): Promise<ReadableStream<Uint8Array>> {
   
   let relevantDocs = docList;
+  const mentionMatch = question.match(/@"(.*?)"/);
 
-  // Step 1: Route to relevant documents IF more than one document is available to choose from.
-  if (docList.length > 1) {
+  // Step 1: Handle @mentions first
+  if (mentionMatch) {
+    const mentionedDocName = mentionMatch[1];
+    const mentionedDoc = docList.find(d => d.name.toLowerCase() === mentionedDocName.toLowerCase());
+    if (mentionedDoc) {
+      relevantDocs = [mentionedDoc];
+    }
+  } 
+  // Step 2: If no @mention, route to relevant documents IF more than one document is available to choose from.
+  else if (docList.length > 1) {
     const previewDocs = await Promise.all(
         docList.map(async (d) => {
             let previewContent = '';
             if (d.source === 'local' && d.content) {
                 previewContent = (d.content || '').substring(0, 2000);
             } else {
+                // For Drive files, the preview is just the name and tags.
+                // We avoid fetching content here to keep routing fast.
                 previewContent = `Document from Google Drive. Name: ${d.name}`;
             }
             return { name: d.name, tags: d.tags || [], content: previewContent, id: d.id };
@@ -71,10 +83,10 @@ export async function ask(
 
     const findDocsPrompt = `
       You are an expert document router. Given a user's question and a list of available documents (with names, tags, and a short content preview), your task is to identify ALL relevant documents to answer the question.
-      Consider the document name, its tags, and the content preview. Respond with a list of the exact names of the relevant documents, each on a new line. Do not add any other text. If no documents are relevant, respond with an empty list.
+      Consider the document name, its tags, and the content preview. Respond with a list of the exact names of the relevant documents, each on a new line, prefixed with '- '. Do not add any other text. If no documents are relevant, respond with an empty list.
 
       Available documents:
-      ${previewDocs.map(d => `- ${d.name} (Tags: ${d.tags.join(', ') || 'None'})`).join('\n')}
+      ${previewDocs.map(d => `- ${d.name} (Tags: ${d.tags ? d.tags.join(', ') : 'None'})`).join('\n')}
 
       User question: "${question}"
 
@@ -98,7 +110,7 @@ export async function ask(
     // If routing fails or selects no docs, we fall back to using ALL provided docs in `docList`.
   }
 
-  // Step 2: Fetch the FULL content for the chosen documents.
+  // Step 3: Fetch the FULL content for the chosen documents on the server.
   const fullContentPromises = relevantDocs.map(d => getDocumentContent(d, tokens.work, tokens.personal));
   const fullContents = await Promise.all(fullContentPromises);
 
@@ -107,7 +119,7 @@ export async function ask(
   }).join('\n\n---\n\n');
 
 
-  // Step 3: Generate the answer using the full content.
+  // Step 4: Generate the answer using the full content.
   const stream = await generateAnswer(question, context, history);
   return stream;
 }
