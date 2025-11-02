@@ -12,31 +12,10 @@ import {
 import withAuth from '@/firebase/auth/with-auth';
 import { useUser, AccountType } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import * as pdfjs from 'pdfjs-dist';
 import { generateDocumentName } from '@/ai/flows/generate-doc-name-flow';
+import { extractPdfText } from '@/ai/flows/extract-pdf-text-flow';
 import { Progress } from '@/components/ui/progress';
 import { nanoid } from 'nanoid';
-
-type Source = {
-  name: string;
-  icon: React.ReactNode;
-  description: string;
-  action: 'create' | 'upload' | 'upload-folder' | 'sync-drive';
-  url?: string;
-  provider?: 'google';
-};
-
-const extractTextFromPdf = async (file: File): Promise<string> => {
-    const buffer = await file.arrayBuffer();
-    const pdf = await pdfjs.getDocument({ data: buffer }).promise;
-    let text = '';
-    for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        text += content.items.map(item => ('str' in item ? item.str : '')).join(' ') + '\n';
-    }
-    return text;
-};
 
 
 function AddDocumentPage() {
@@ -51,13 +30,6 @@ function AddDocumentPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.mjs`;
-    }
-  }, []);
 
   const sources: Source[] = useMemo(() => {
     const available: Source[] = [];
@@ -133,15 +105,14 @@ function AddDocumentPage() {
 
     for (const file of filesToUpload) {
         try {
-            const textContent = await extractTextFromPdf(file);
-            const { name: aiName } = await generateDocumentName({ textContent });
+            const arrayBuffer = await file.arrayBuffer();
+            const base64 = Buffer.from(arrayBuffer).toString('base64');
+            const dataURI = `data:${file.type};base64,${base64}`;
 
-            const fileDataUrl = await new Promise<string>((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => resolve(e.target?.result as string);
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
+            // Use the AI flow for text extraction
+            const { text: textContent } = await extractPdfText({ pdfDataUri: dataURI });
+
+            const { name: aiName } = await generateDocumentName({ textContent });
             
             const newDoc = {
                 id: nanoid(),
@@ -156,8 +127,8 @@ function AddDocumentPage() {
             // Store metadata in the main list
             existingDocuments.unshift(newDoc);
 
-            // Store content separately
-            localStorage.setItem(`document_content_${newDoc.id}`, fileDataUrl);
+            // Store extracted text content separately
+            localStorage.setItem(`document_content_${newDoc.id}`, textContent);
 
         } catch (error: any) {
             toast({ variant: 'destructive', title: `Failed to process ${file.name}`, description: error.message });
@@ -266,5 +237,4 @@ function AddDocumentPage() {
 }
 
 export default withAuth(AddDocumentPage);
-
     
