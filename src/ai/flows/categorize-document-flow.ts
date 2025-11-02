@@ -9,7 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z} from 'zod';
 
 // Define Zod schemas for input and output
 const CategorizeDocumentInputSchema = z.object({
