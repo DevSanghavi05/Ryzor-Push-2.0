@@ -197,14 +197,13 @@ function DocumentsPage() {
 
     const unimportedDocs = allDocs.filter(doc => doc.source === 'drive' && !doc.isImported);
     const totalToImport = unimportedDocs.length;
-    let importedCount = 0;
+    let importedSoFar = 0;
 
     const importPromises = unimportedDocs.map(doc => 
       handleImport(doc).then(updatedDoc => {
         if (updatedDoc) {
-          // This logic is safe for parallel updates.
-          importedCount++;
-          const progress = (importedCount / totalToImport) * 100;
+          importedSoFar++;
+          const progress = (importedSoFar / totalToImport) * 100;
           setImportProgress(progress);
         }
         return updatedDoc;
@@ -213,6 +212,7 @@ function DocumentsPage() {
 
     const results = await Promise.all(importPromises);
     const successfulImports = results.filter(res => !!res);
+    const successfulCount = successfulImports.length;
 
     startTransition(() => {
       const updatedDocs = allDocs.map(doc => {
@@ -225,7 +225,7 @@ function DocumentsPage() {
       
       setIsImporting(false);
       setImportComplete(true); 
-      toast({ title: 'Bulk Import Complete', description: `${successfulImports.length} document(s) have been processed.` });
+      toast({ title: 'Bulk Import Complete', description: `${successfulCount} document(s) have been processed.` });
     });
   };
 
@@ -290,158 +290,157 @@ function DocumentsPage() {
 
   return (
     <>
-    <HyperdriveAnimation show={importComplete} onComplete={() => setImportComplete(false)} />
-    <div className="relative min-h-screen w-full pt-16">
-      <div className="bg-aurora"></div>
-        <div className="relative container mx-auto py-12">
-            <div className="flex items-center justify-between mb-8">
-                <h1 className="text-3xl font-bold font-headline">Your Documents</h1>
-                <div className="flex gap-3">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button disabled={syncing || isImporting}>
-                          <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} /> Connect Account
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem onSelect={() => handleConnect('work')} disabled={!!workProvider}>Connect Google Work</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleConnect('personal')} disabled={!!personalProvider}>Connect Google Personal</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    <Button onClick={() => router.push('/add')} disabled={isImporting}>
-                        <FolderPlus className="h-4 w-4 mr-2" /> Manage Sources
+      <HyperdriveAnimation show={importComplete} onComplete={() => setImportComplete(false)} />
+      <div className="relative min-h-screen w-full pt-16">
+        <div className="bg-aurora"></div>
+          <div className="relative container mx-auto py-12">
+              <div className="flex items-center justify-between mb-8">
+                  <h1 className="text-3xl font-bold font-headline">Your Documents</h1>
+                  <div className="flex gap-3">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button disabled={syncing || isImporting}>
+                            <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} /> Connect Account
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem onSelect={() => handleConnect('work')} disabled={!!workProvider}>Connect Google Work</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleConnect('personal')} disabled={!!personalProvider}>Connect Google Personal</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <Button onClick={() => router.push('/add')} disabled={isImporting}>
+                          <FolderPlus className="h-4 w-4 mr-2" /> Manage Sources
+                      </Button>
+                  </div>
+              </div>
+               <div className="flex items-center gap-3 mb-6">
+                  <Input
+                  placeholder="Search documents..."
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  className="max-w-sm"
+                  />
+                  <Select value={filter} onValueChange={(v) => setFilter(v as any)}>
+                      <SelectTrigger className="w-[240px]">
+                          <Filter className="mr-2 h-4 w-4" />
+                          <SelectValue placeholder="Filter" />
+                      </SelectTrigger>
+                      <SelectContent>
+                          <SelectItem value="all">All Sources</SelectItem>
+                          <SelectItem value="local">Local Uploads</SelectItem>
+                          <SelectItem value="google-work">Google (Work)</SelectItem>
+                          <SelectItem value="google-personal">Google (Personal)</SelectItem>
+                      </SelectContent>
+                  </Select>
+                   <Button onClick={handleOrganize} disabled={isImporting || isOrganizing || importedDocs.length === 0} variant="secondary">
+                        <FolderSync className={`h-4 w-4 mr-2 ${isOrganizing ? 'animate-spin' : ''}`} /> 
+                        {isOrganizing ? `Organizing... (${Math.round(organizingProgress)}%)` : `Organize Docs`}
                     </Button>
-                </div>
-            </div>
-             <div className="flex items-center gap-3 mb-6">
-                <Input
-                placeholder="Search documents..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                className="max-w-sm"
-                />
-                <Select value={filter} onValueChange={(v) => setFilter(v as any)}>
-                    <SelectTrigger className="w-[240px]">
-                        <Filter className="mr-2 h-4 w-4" />
-                        <SelectValue placeholder="Filter" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Sources</SelectItem>
-                        <SelectItem value="local">Local Uploads</SelectItem>
-                        <SelectItem value="google-work">Google (Work)</SelectItem>
-                        <SelectItem value="google-personal">Google (Personal)</SelectItem>
-                    </SelectContent>
-                </Select>
-                 <Button onClick={handleOrganize} disabled={isImporting || isOrganizing || importedDocs.length === 0} variant="secondary">
-                      <FolderSync className={`h-4 w-4 mr-2 ${isOrganizing ? 'animate-spin' : ''}`} /> 
-                      {isOrganizing ? `Organizing... (${Math.round(organizingProgress)}%)` : `Organize Docs`}
-                  </Button>
-                 {unimportedCount > 0 && (
-                    <Button onClick={handleImportAll} disabled={isImporting || isPending} variant="secondary">
-                        <Sparkles className={`h-4 w-4 mr-2 ${isImporting ? 'animate-spin' : ''}`} /> 
-                        {isImporting ? `Importing... (${Math.round(importProgress)}%)` : `Import All (${unimportedCount})`}
-                    </Button>
-                )}
-            </div>
-             {(isImporting || isOrganizing) && (
-                <div className="mb-4">
-                    <Progress value={isImporting ? importProgress : organizingProgress} className="w-full h-2" />
-                    <p className="text-sm text-center mt-1 text-muted-foreground">{isImporting ? 'Importing documents...' : 'AI is organizing your files...'}</p>
-                </div>
-            )}
-            
-             <div className="space-y-4">
-                {filteredAndGroupedDocs.map(([folderName, docs]) => (
-                    <Collapsible key={folderName} defaultOpen>
-                        <CollapsibleTrigger className="w-full flex items-center gap-2 group mb-2">
-                           <ChevronDown className="h-5 w-5 transform transition-transform duration-200 group-data-[state=open]:rotate-0 -rotate-90" />
-                            <Input 
-                                defaultValue={folderName}
-                                onBlur={(e) => handleRenameFolder(folderName, e.target.value)}
-                                className="text-xl font-bold font-headline border-none bg-transparent focus-visible:ring-1 focus-visible:ring-primary p-1 h-auto"
-                            />
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                            <Card>
-                                <CardContent className="divide-y divide-border p-0">
-                                    {docs.map((d) => (
-                                        <div key={d.id} className="flex items-center justify-between p-4 hover:bg-accent/50 transition">
-                                            <div className="flex items-center gap-4">
-                                                <CheckCircle2 className="h-5 w-5 text-green-500" />
-                                                <div>
-                                                    <p className="font-medium flex items-center gap-2">{d.name}</p>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {d.source === 'drive' ? `Google Drive (${d.accountType})` : 'Local Upload'} &middot; {new Date(d.uploaded).toLocaleDateString()}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <Button 
-                                                variant="ghost" 
-                                                size="sm"
-                                                onClick={() => router.push(`/documents/${d.id}`)}
-                                                disabled={isPending}
-                                            >
-                                                View
-                                            </Button>
-                                        </div>
-                                    ))}
-                                </CardContent>
-                            </Card>
-                        </CollapsibleContent>
-                    </Collapsible>
-                ))}
-                
-                {unimportedList.length > 0 && (
-                    <Collapsible defaultOpen>
-                         <CollapsibleTrigger className="w-full flex items-center gap-2 group mb-2">
-                            <ChevronDown className="h-5 w-5 transform transition-transform duration-200 group-data-[state=open]:rotate-0 -rotate-90" />
-                            <h2 className="text-xl font-bold font-headline p-1">Unimported from Google Drive</h2>
-                         </CollapsibleTrigger>
-                         <CollapsibleContent>
-                            <Card>
-                               <CardContent className="divide-y divide-border p-0">
-                                {unimportedList.map((d) => (
-                                    <div key={d.id} className="flex items-center justify-between p-4 hover:bg-accent/50 transition">
-                                    <div className="flex items-center gap-4">
-                                        <FileText className="h-5 w-5 text-muted-foreground" />
-                                        <div>
-                                            <p className="font-medium flex items-center gap-2 text-muted-foreground">{d.name}</p>
-                                            <p className="text-sm text-muted-foreground">
-                                                Google Drive ({d.accountType}) &middot; {new Date(d.uploaded).toLocaleDateS tring()}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className='flex items-center gap-2'>
-                                        <Button variant="ghost" size="sm" onClick={() => handleImport(d).then(res => res && loadDocs())} disabled={isImporting || isPending}>
-                                            <Wand className="h-4 w-4 mr-2" /> Import
-                                        </Button>
-                                        <Button 
-                                            variant="ghost" 
-                                            size="sm"
-                                            onClick={() => router.push(d.webViewLink)}
-                                            target="_blank"
-                                            disabled={isPending}
-                                        >
-                                            View in Drive
-                                        </Button>
-                                    </div>
-                                    </div>
-                                ))}
-                                </CardContent>
-                            </Card>
-                         </CollapsibleContent>
-                    </Collapsible>
-                )}
+                   {unimportedCount > 0 && (
+                      <Button onClick={handleImportAll} disabled={isImporting || isPending} variant="secondary">
+                          <Sparkles className={`h-4 w-4 mr-2 ${isImporting ? 'animate-spin' : ''}`} /> 
+                          {isImporting ? `Importing... (${Math.round(importProgress)}%)` : `Import All (${unimportedCount})`}
+                      </Button>
+                  )}
+              </div>
+               {(isImporting || isOrganizing) && (
+                  <div className="mb-4">
+                      <Progress value={isImporting ? importProgress : organizingProgress} className="w-full h-2" />
+                      <p className="text-sm text-center mt-1 text-muted-foreground">{isImporting ? 'Importing documents...' : 'AI is organizing your files...'}</p>
+                  </div>
+              )}
+              
+               <div className="space-y-4">
+                  {filteredAndGroupedDocs.map(([folderName, docs]) => (
+                      <Collapsible key={folderName} defaultOpen>
+                          <CollapsibleTrigger className="w-full flex items-center gap-2 group mb-2">
+                             <ChevronDown className="h-5 w-5 transform transition-transform duration-200 group-data-[state=open]:rotate-0 -rotate-90" />
+                              <Input 
+                                  defaultValue={folderName}
+                                  onBlur={(e) => handleRenameFolder(folderName, e.target.value)}
+                                  className="text-xl font-bold font-headline border-none bg-transparent focus-visible:ring-1 focus-visible:ring-primary p-1 h-auto"
+                              />
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                              <Card>
+                                  <CardContent className="divide-y divide-border p-0">
+                                      {docs.map((d) => (
+                                          <div key={d.id} className="flex items-center justify-between p-4 hover:bg-accent/50 transition">
+                                              <div className="flex items-center gap-4">
+                                                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+                                                  <div>
+                                                      <p className="font-medium flex items-center gap-2">{d.name}</p>
+                                                      <p className="text-sm text-muted-foreground">
+                                                          {d.source === 'drive' ? `Google Drive (${d.accountType})` : 'Local Upload'} &middot; {new Date(d.uploaded).toLocaleDateString()}
+                                                      </p>
+                                                  </div>
+                                              </div>
+                                              <Button 
+                                                  variant="ghost" 
+                                                  size="sm"
+                                                  onClick={() => router.push(`/documents/${d.id}`)}
+                                                  disabled={isPending}
+                                              >
+                                                  View
+                                              </Button>
+                                          </div>
+                                      ))}
+                                  </CardContent>
+                              </Card>
+                          </CollapsibleContent>
+                      </Collapsible>
+                  ))}
+                  
+                  {unimportedList.length > 0 && (
+                      <Collapsible defaultOpen>
+                           <CollapsibleTrigger className="w-full flex items-center gap-2 group mb-2">
+                              <ChevronDown className="h-5 w-5 transform transition-transform duration-200 group-data-[state=open]:rotate-0 -rotate-90" />
+                              <h2 className="text-xl font-bold font-headline p-1">Unimported from Google Drive</h2>
+                           </CollapsibleTrigger>
+                           <CollapsibleContent>
+                              <Card>
+                                 <CardContent className="divide-y divide-border p-0">
+                                  {unimportedList.map((d) => (
+                                      <div key={d.id} className="flex items-center justify-between p-4 hover:bg-accent/50 transition">
+                                      <div className="flex items-center gap-4">
+                                          <FileText className="h-5 w-5 text-muted-foreground" />
+                                          <div>
+                                              <p className="font-medium flex items-center gap-2 text-muted-foreground">{d.name}</p>
+                                              <p className="text-sm text-muted-foreground">
+                                                  Google Drive ({d.accountType}) &middot; {new Date(d.uploaded).toLocaleDateS tring()}
+                                              </p>
+                                          </div>
+                                      </div>
+                                      <div className='flex items-center gap-2'>
+                                          <Button variant="ghost" size="sm" onClick={() => handleImport(d).then(res => res && loadDocs())} disabled={isImporting || isPending}>
+                                              <Wand className="h-4 w-4 mr-2" /> Import
+                                          </Button>
+                                          <Button 
+                                              variant="ghost" 
+                                              size="sm"
+                                              onClick={() => window.open(d.webViewLink, '_blank')}
+                                              disabled={isPending}
+                                          >
+                                              View in Drive
+                                          </Button>
+                                      </div>
+                                      </div>
+                                  ))}
+                                  </CardContent>
+                              </Card>
+                           </CollapsibleContent>
+                      </Collapsible>
+                  )}
 
 
-                {(filteredAndGroupedDocs.length === 0 && unimportedList.length === 0 && !isPending && !syncing) && (
-                     <div className="p-8 text-center text-muted-foreground border-2 border-dashed rounded-lg">
-                        <p>No documents found matching your criteria.</p>
-                    </div>
-                )}
-            </div>
-        </div>
-    </div>
+                  {(filteredAndGroupedDocs.length === 0 && unimportedList.length === 0 && !isPending && !syncing) && (
+                       <div className="p-8 text-center text-muted-foreground border-2 border-dashed rounded-lg">
+                          <p>No documents found matching your criteria.</p>
+                      </div>
+                  )}
+              </div>
+          </div>
+      </div>
     </>
   );
 }
