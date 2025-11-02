@@ -44,6 +44,8 @@ function LoggedInView() {
   const { toast } = useToast();
   const router = useRouter();
 
+  const [responseToStream, setResponseToStream] = useState<{ fullText: string; index: number } | null>(null);
+
   // Load chat from local storage
   useEffect(() => {
     if (user) {
@@ -68,14 +70,48 @@ function LoggedInView() {
     }
   }, [messages, loading]);
 
+  // Typewriter effect for AI response
+  useEffect(() => {
+    if (!responseToStream) return;
+
+    const { fullText, index } = responseToStream;
+
+    if (index < fullText.length) {
+      const timeoutId = setTimeout(() => {
+        setMessages(prev => {
+          const newMessages = [...prev];
+          const lastMessage = newMessages[newMessages.length - 1];
+          if (lastMessage && lastMessage.role === 'model') {
+            lastMessage.content = fullText.slice(0, index + 1) + '▋';
+          }
+          return newMessages;
+        });
+        setResponseToStream({ fullText, index: index + 1 });
+      }, 25);
+      return () => clearTimeout(timeoutId);
+    } else {
+      // Clean up the cursor at the end
+      setMessages(prev => {
+        const newMessages = [...prev];
+        const lastMessage = newMessages[newMessages.length - 1];
+        if (lastMessage && lastMessage.role === 'model') {
+          lastMessage.content = fullText;
+        }
+        return newMessages;
+      });
+      setResponseToStream(null);
+    }
+  }, [responseToStream]);
+
+
   const handleInteraction = async () => {
-    if (!user || !input.trim()) return;
+    if (!user || !input.trim() || responseToStream) return;
 
     const currentInput = input;
     const userMessage: Message = { role: 'user', content: currentInput };
     
-    setMessages(prevMessages => [...prevMessages, userMessage]);
-
+    // Add user message and a placeholder for the model's response
+    setMessages(prevMessages => [...prevMessages, userMessage, { role: 'model', content: '▋' }]);
     setInput('');
     setLoading(true);
 
@@ -94,47 +130,29 @@ function LoggedInView() {
           title: 'No Documents Found',
           description: 'Upload or import a document before chatting.',
         });
+        setMessages(prev => prev.slice(0, -2)); // Remove user message and placeholder
         setLoading(false);
         router.push('/add');
         return;
       }
       
       const stream = await ask(currentInput, contextDocuments, messages.slice(-10));
-
-      let fullResponse = '';
-      
-      const modelMessage: Message = { role: 'model', content: '' };
-       setMessages(prevMessages => [...prevMessages, modelMessage]);
-
-
       const reader = stream.getReader();
       const decoder = new TextDecoder();
+      let fullResponse = '';
       let done = false;
 
+      // Read the entire stream first
       while (!done) {
         const { value, done: readerDone } = await reader.read();
         done = readerDone;
-        const chunk = decoder.decode(value, { stream: !done });
-        fullResponse += chunk;
-        
-        setMessages(prev => {
-            const newMessages = [...prev];
-            const lastMessage = newMessages[newMessages.length - 1];
-            if (lastMessage.role === 'model') {
-                lastMessage.content = fullResponse + '▋';
-            }
-            return newMessages;
-        });
+        fullResponse += decoder.decode(value, { stream: !done });
       }
 
-      setMessages(prev => {
-         const newMessages = [...prev];
-         const lastMessage = newMessages[newMessages.length - 1];
-         if (lastMessage.role === 'model') {
-            lastMessage.content = fullResponse;
-         }
-         return newMessages;
-      });
+      setLoading(false);
+      
+      // Start the typewriter effect
+      setResponseToStream({ fullText: fullResponse, index: 0 });
 
     } catch (error) {
       console.error(error);
@@ -143,13 +161,9 @@ function LoggedInView() {
          const lastMessage = newMessages[newMessages.length - 1];
          if (lastMessage.role === 'model') {
             lastMessage.content = 'Something went wrong. Please try again.';
-         } else {
-             // If the last message isn't from the model, add an error message
-             return [...newMessages, {role: 'model', content: 'Something went wrong. Please try again.'}];
          }
          return newMessages;
         });
-    } finally {
       setLoading(false);
     }
   };
@@ -254,7 +268,7 @@ function LoggedInView() {
                 </motion.div>
               ))}
 
-              {loading && messages[messages.length - 1]?.role === 'user' && (
+              {loading && messages[messages.length - 1]?.role !== 'model' && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -295,14 +309,14 @@ function LoggedInView() {
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleInteraction()}
-                      disabled={loading}
+                      disabled={loading || !!responseToStream}
                     />
 
                     <Button
                       size="icon"
                       className="rounded-xl bg-gradient-to-br from-blue-500 to-violet-500 hover:from-blue-600 hover:to-violet-600 text-white shadow-lg shadow-blue-500/40 transition-all duration-200 shrink-0 h-12 w-12"
                       onClick={handleInteraction}
-                      disabled={loading || !input.trim()}
+                      disabled={loading || !!responseToStream || !input.trim()}
                     >
                       {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Send className="w-6 h-6" />}
                     </Button>
@@ -642,3 +656,5 @@ export default function Home() {
 
   return user ? <LoggedInView /> : <LandingPage />;
 }
+
+    
