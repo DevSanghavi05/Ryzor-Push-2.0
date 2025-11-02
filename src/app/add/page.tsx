@@ -61,20 +61,21 @@ function AddDocumentPage() {
 
   const sources: Source[] = useMemo(() => {
     const available: Source[] = [];
-    const connected = new Set([personalProvider, workProvider].filter(Boolean));
-
-    if (connected.has('google')) {
-      available.push(
+    
+    available.push(
+      { name: 'Upload Files', icon: <UploadCloud className="w-6 h-6 text-purple-500" />, description: 'Upload one or more PDF files.', action: 'upload' },
+      { name: 'Sync Google Drive', icon: <Cloud className="w-6 h-6 text-sky-500" />, description: 'Sync and import your Drive files.', action: 'sync-drive' }
+    );
+      
+    // Add create links if any google account is connected
+    if (personalProvider === 'google' || workProvider === 'google') {
+       available.unshift(
         { name: 'Google Docs', icon: <FileText className="w-6 h-6 text-blue-500" />, description: 'Create a new Google Doc.', action: 'create', url: 'https://docs.google.com/document/create', provider: 'google' },
         { name: 'Google Sheets', icon: <Sheet className="w-6 h-6 text-green-500" />, description: 'Create a new Google Sheet.', action: 'create', url: 'https://docs.google.com/spreadsheets/create', provider: 'google' },
         { name: 'Google Slides', icon: <Presentation className="w-6 h-6 text-yellow-500" />, description: 'Create a new Google Slide deck.', action: 'create', url: 'https://docs.google.com/presentation/create', provider: 'google' },
       );
     }
     
-    available.push(
-      { name: 'Sync Google Drive', icon: <Cloud className="w-6 h-6 text-sky-500" />, description: 'Sync and import your Drive files.', action: 'sync-drive', provider: 'google' },
-      { name: 'Upload Files', icon: <UploadCloud className="w-6 h-6 text-purple-500" />, description: 'Upload one or more PDF files.', action: 'upload' },
-    );
     return available;
   }, [personalProvider, workProvider]);
 
@@ -135,8 +136,8 @@ function AddDocumentPage() {
             const textContent = await extractTextFromPdf(file);
             const { name: aiName } = await generateDocumentName({ textContent });
 
-            const reader = new FileReader();
             const fileDataUrl = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
                 reader.onload = (e) => resolve(e.target?.result as string);
                 reader.onerror = reject;
                 reader.readAsDataURL(file);
@@ -148,11 +149,14 @@ function AddDocumentPage() {
                 uploaded: new Date().toISOString(),
                 source: 'local',
                 mimeType: file.type,
-                textContent,
                 accountType: 'personal' as AccountType, // Assume local uploads are personal
+                isImported: true, // Local files are always "imported"
             };
             
+            // Store metadata in the main list
             existingDocuments.unshift(newDoc);
+
+            // Store content separately
             localStorage.setItem(`document_content_${newDoc.id}`, fileDataUrl);
 
         } catch (error: any) {
@@ -262,3 +266,5 @@ function AddDocumentPage() {
 }
 
 export default withAuth(AddDocumentPage);
+
+    

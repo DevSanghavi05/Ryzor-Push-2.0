@@ -11,8 +11,6 @@ import { useUser } from '@/firebase';
 type LocalDocument = {
     id: string;
     name: string;
-    // The main document list doesn't need the full content, so it's optional here
-    content?: string; 
     uploaded: string;
 }
 
@@ -43,8 +41,8 @@ export default function DocumentPage() {
                         // It's a data URL, safe for iframe
                         setIframeSrc(storedContent);
                     } else {
-                        // This case handles legacy raw text or plain text from Google Docs
-                        const blob = new Blob([storedContent], { type: 'text/plain' });
+                        // This case handles raw text from Google Docs
+                        const blob = new Blob([storedContent], { type: 'text/plain;charset=utf-8' });
                         setIframeSrc(URL.createObjectURL(blob));
                     }
                 }
@@ -86,3 +84,5 @@ export default function DocumentPage() {
     </div>
   );
 }
+
+    

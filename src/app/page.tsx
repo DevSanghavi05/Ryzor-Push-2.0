@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -81,13 +82,11 @@ function LoggedInView() {
     try {
       const storageKey = `documents_${user.uid}`;
       const documentsString = localStorage.getItem(storageKey);
-      const documents = documentsString ? JSON.parse(documentsString) : [];
+      const documentsMeta = documentsString ? JSON.parse(documentsString) : [];
 
-      const contextDocuments = documents
-        .filter((doc: any) => doc.textContent?.trim()?.length > 0)
-        .map((doc: any) => ({ name: doc.name, content: doc.textContent }));
+      const importedDocsMeta = documentsMeta.filter((doc: any) => doc.isImported);
 
-      if (contextDocuments.length === 0) {
+      if (importedDocsMeta.length === 0) {
         toast({
           variant: 'destructive',
           title: 'No Documents Found',
@@ -99,6 +98,11 @@ function LoggedInView() {
         return;
       }
       
+      const contextDocuments = importedDocsMeta.map((doc: any) => {
+          const content = localStorage.getItem(`document_content_${doc.id}`) || '';
+          return { name: doc.name, content };
+      }).filter((doc: any) => doc.content.trim().length > 0);
+
       const stream = await ask(currentInput, contextDocuments, messages.slice(-10));
       const reader = stream.getReader();
       const decoder = new TextDecoder();
@@ -615,3 +619,5 @@ export default function Home() {
 
   return user ? <LoggedInView /> : <LandingPage />;
 }
+
+    

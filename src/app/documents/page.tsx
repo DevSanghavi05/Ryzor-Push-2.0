@@ -16,9 +16,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/firebase';
 import withAuth from '@/firebase/auth/with-auth';
-import * as pdfjs from 'pdfjs-dist';
-import { generateDocumentName } from '@/ai/flows/generate-doc-name-flow';
-import { RefreshCw, UploadCloud, FolderPlus, Filter, FileText, Wand, Sparkles, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { RefreshCw, UploadCloud, FolderPlus, Filter, FileText, Wand, Sparkles, CheckCircle2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,16 +24,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { AccountType } from '@/firebase/auth/use-user';
-import { nanoid } from 'nanoid';
 import { extractGoogleDocContent } from '@/ai/flows/extract-google-doc-content';
 import { Progress } from '@/components/ui/progress';
 import { HyperdriveAnimation } from '@/components/animations/hyperdrive-animation';
-
-
-// Lazy PDF worker setup
-if (typeof window !== 'undefined') {
-  pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.mjs`;
-}
 
 // ---------------------------------------------------------------------------
 // Main Documents Page Component
@@ -45,8 +36,7 @@ function DocumentsPage() {
   const { user, fetchDriveFiles, signInWithGoogle, workProvider, personalProvider, workAccessToken, personalAccessToken } = useUser();
   const { toast } = useToast();
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
+  
   const [allDocs, setAllDocs] = useState<any[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [query, setQuery] = useState('');
@@ -143,71 +133,6 @@ function DocumentsPage() {
       }
   };
   
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || file.type !== 'application/pdf') {
-      toast({ variant: 'destructive', title: 'Invalid File', description: 'Only PDF files supported.' });
-      return;
-    }
-
-    if (!user) {
-      toast({ variant: 'destructive', title: 'Not Logged In', description: 'You must be signed in.' });
-      return;
-    }
-    
-    toast({ title: 'Processing file...', description: 'Extracting text and generating name.' });
-    
-    try {
-        const textContent = await pdfjs.getDocument(await file.arrayBuffer()).promise.then(async pdf => {
-            let text = '';
-            for (let i = 1; i <= pdf.numPages; i++) {
-                const page = await pdf.getPage(i);
-                const content = await page.getTextContent();
-                text += content.items.map((item: any) => item.str).join(' ') + '\n';
-            }
-            return text;
-        });
-
-        let name = file.name;
-        try {
-            const ai = await generateDocumentName({ textContent });
-            name = ai.name;
-            toast({ title: 'AI Named Document', description: `"${name}"` });
-        } catch {
-            toast({ variant: 'destructive', title: 'AI Naming Failed', description: 'Using original filename.' });
-        }
-
-        const entry = {
-            id: nanoid(),
-            name,
-            source: 'local',
-            mimeType: file.type,
-            textContent,
-            uploaded: new Date().toISOString(),
-            isImported: true,
-            accountType: 'personal',
-        };
-
-        const existing = JSON.parse(localStorage.getItem(`documents_${user.uid}`) || '[]');
-        const updated = [entry, ...existing];
-        localStorage.setItem(`documents_${user.uid}`, JSON.stringify(updated));
-        
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            if(event.target?.result) {
-                localStorage.setItem(`document_content_${entry.id}`, event.target.result as string);
-            }
-        };
-        reader.readAsDataURL(file);
-
-        setAllDocs(updated);
-        toast({ title: 'Upload Complete', description: `"${entry.name}" has been saved.` });
-    } catch (error: any) {
-        toast({ variant: 'destructive', title: 'Upload Failed', description: error.message });
-    }
-  };
-
-
   const handleConnect = async (accountType: AccountType) => {
       toast({ title: 'Connecting to Google...', description: 'Please follow the prompts.'});
       try {
@@ -229,7 +154,8 @@ function DocumentsPage() {
     
     try {
         const { content } = await extractGoogleDocContent({ fileId: doc.id, mimeType: doc.mimeType, accessToken: token });
-        const updatedDoc = { ...doc, textContent: content, isImported: true };
+        const updatedDoc = { ...doc, isImported: true };
+        // Don't store textContent in the main list, store it separately
         localStorage.setItem(`document_content_${doc.id}`, content);
         
         return updatedDoc;
@@ -240,7 +166,7 @@ function DocumentsPage() {
   }
   
   const handleImportAll = async () => {
-    if (isImporting || unimportedCount === 0) return;
+    if (isImporting || unimportedCount === 0 || !user) return;
     
     setIsImporting(true);
     setImportProgress(0);
@@ -252,14 +178,16 @@ function DocumentsPage() {
 
     const importPromises = unimportedDocs.map(doc => 
       handleImport(doc).then(updatedDoc => {
-        importedSoFar++;
-        setImportProgress((importedSoFar / totalToImport) * 100);
-        return updatedDoc; // Return the result (updated or original doc)
+        if (updatedDoc) {
+          importedSoFar++;
+          setImportProgress((importedSoFar / totalToImport) * 100);
+        }
+        return updatedDoc;
       })
     );
 
     const results = await Promise.all(importPromises);
-    const successfulImports = results.filter(res => res && res.isImported && unimportedDocs.some(ud => ud.id === res.id));
+    const successfulImports = results.filter(res => !!res);
 
     startTransition(() => {
       const updatedDocs = allDocs.map(doc => {
@@ -268,7 +196,7 @@ function DocumentsPage() {
       });
 
       setAllDocs(updatedDocs);
-      localStorage.setItem(`documents_${user!.uid}`, JSON.stringify(updatedDocs));
+      localStorage.setItem(`documents_${user.uid}`, JSON.stringify(updatedDocs));
       
       setIsImporting(false);
       setImportComplete(true); 
@@ -285,31 +213,23 @@ function DocumentsPage() {
             <div className="flex items-center justify-between mb-8">
                 <h1 className="text-3xl font-bold font-headline">Your Documents</h1>
                 <div className="flex gap-3">
-                    <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isImporting}>
-                        <UploadCloud className="h-4 w-4 mr-2" /> Upload PDF
-                    </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button disabled={syncing || isImporting}>
-                          <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} /> Connect & Sync
+                          <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} /> Connect Account
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
-                        {!workProvider && <DropdownMenuItem onSelect={() => handleConnect('work')}>Connect Work Account</DropdownMenuItem>}
-                        {workProvider && <DropdownMenuItem onSelect={() => syncAndProcessDrive('work')} disabled={syncing}>Sync Work Account</DropdownMenuItem>}
-                        
-                        {!personalProvider && <DropdownMenuItem onSelect={() => handleConnect('personal')}>Connect Personal Account</DropdownMenuItem>}
-                        {personalProvider && <DropdownMenuItem onSelect={() => syncAndProcessDrive('personal')} disabled={syncing}>Sync Personal Account</DropdownMenuItem>}
+                        <DropdownMenuItem onSelect={() => handleConnect('work')} disabled={!!workProvider}>Connect Google Work</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleConnect('personal')} disabled={!!personalProvider}>Connect Google Personal</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                     <Button onClick={() => router.push('/add')} disabled={isImporting}>
                         <FolderPlus className="h-4 w-4 mr-2" /> Manage Sources
                     </Button>
                 </div>
-                <input type="file" accept="application/pdf" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
             </div>
-
-            <div className="flex items-center gap-3 mb-6">
+             <div className="flex items-center gap-3 mb-6">
                 <Input
                 placeholder="Search documents..."
                 value={query}
@@ -317,13 +237,13 @@ function DocumentsPage() {
                 className="max-w-sm"
                 />
                 <Select value={filter} onValueChange={(v) => setFilter(v as any)}>
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-[240px]">
                         <Filter className="mr-2 h-4 w-4" />
                         <SelectValue placeholder="Filter" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All Sources</SelectItem>
-                        <SelectItem value="local">Local</SelectItem>
+                        <SelectItem value="local">Local Uploads</SelectItem>
                         <SelectItem value="google-work">Google (Work)</SelectItem>
                         <SelectItem value="google-personal">Google (Personal)</SelectItem>
                     </SelectContent>
@@ -365,12 +285,13 @@ function DocumentsPage() {
 
                          <div className='flex items-center gap-2'>
                           {d.source === 'drive' && !d.isImported && (
-                              <Button variant="ghost" onClick={() => handleImport(d)} disabled={isImporting || isPending}>
+                              <Button variant="ghost" size="sm" onClick={() => handleImport(d).then(res => res && loadDocs())} disabled={isImporting || isPending}>
                                   <Wand className="h-4 w-4 mr-2" /> Import
                               </Button>
                           )}
                           <Button 
                             variant="ghost" 
+                            size="sm"
                             onClick={() => router.push(d.source === 'drive' && !d.isImported ? d.webViewLink : `/documents/${d.id}`)}
                             target={d.source === 'drive' && !d.isImported ? '_blank' : ''}
                             disabled={isPending}
@@ -391,3 +312,5 @@ function DocumentsPage() {
 }
 
 export default withAuth(DocumentsPage);
+
+    
