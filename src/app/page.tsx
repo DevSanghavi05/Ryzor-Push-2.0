@@ -44,8 +44,6 @@ function LoggedInView() {
   const { toast } = useToast();
   const router = useRouter();
 
-  const [responseToStream, setResponseToStream] = useState<{ fullText: string; index: number } | null>(null);
-
   // Load chat from local storage
   useEffect(() => {
     if (user) {
@@ -70,48 +68,13 @@ function LoggedInView() {
     }
   }, [messages, loading]);
 
-  // Typewriter effect for AI response
-  useEffect(() => {
-    if (!responseToStream) return;
-
-    const { fullText, index } = responseToStream;
-
-    if (index < fullText.length) {
-      const timeoutId = setTimeout(() => {
-        setMessages(prev => {
-          const newMessages = [...prev];
-          const lastMessage = newMessages[newMessages.length - 1];
-          if (lastMessage && lastMessage.role === 'model') {
-            lastMessage.content = fullText.slice(0, index + 1) + '▋';
-          }
-          return newMessages;
-        });
-        setResponseToStream({ fullText, index: index + 1 });
-      }, 25);
-      return () => clearTimeout(timeoutId);
-    } else {
-      // Clean up the cursor at the end
-      setMessages(prev => {
-        const newMessages = [...prev];
-        const lastMessage = newMessages[newMessages.length - 1];
-        if (lastMessage && lastMessage.role === 'model') {
-          lastMessage.content = fullText;
-        }
-        return newMessages;
-      });
-      setResponseToStream(null);
-    }
-  }, [responseToStream]);
-
-
   const handleInteraction = async () => {
-    if (!user || !input.trim() || responseToStream) return;
+    if (!user || !input.trim()) return;
 
     const currentInput = input;
     const userMessage: Message = { role: 'user', content: currentInput };
     
-    // Add user message and a placeholder for the model's response
-    setMessages(prevMessages => [...prevMessages, userMessage, { role: 'model', content: '▋' }]);
+    setMessages(prevMessages => [...prevMessages, userMessage, { role: 'model', content: '' }]);
     setInput('');
     setLoading(true);
 
@@ -139,20 +102,24 @@ function LoggedInView() {
       const stream = await ask(currentInput, contextDocuments, messages.slice(-10));
       const reader = stream.getReader();
       const decoder = new TextDecoder();
-      let fullResponse = '';
       let done = false;
 
-      // Read the entire stream first
       while (!done) {
         const { value, done: readerDone } = await reader.read();
         done = readerDone;
-        fullResponse += decoder.decode(value, { stream: !done });
+        const chunk = decoder.decode(value, { stream: !done });
+        
+        setMessages(prev => {
+          const newMessages = [...prev];
+          const lastMessage = newMessages[newMessages.length - 1];
+          if (lastMessage.role === 'model') {
+            lastMessage.content += chunk;
+          }
+          return newMessages;
+        });
       }
-
-      setLoading(false);
       
-      // Start the typewriter effect
-      setResponseToStream({ fullText: fullResponse, index: 0 });
+      setLoading(false);
 
     } catch (error) {
       console.error(error);
@@ -258,7 +225,14 @@ function LoggedInView() {
                         : 'bg-white/10 border border-white/10 backdrop-blur-sm'
                     }`}
                   >
-                    <MarkdownContent content={msg.content} />
+                     {msg.role === 'model' && msg.content === '' && loading ? (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Ryzor is thinking...</span>
+                        </div>
+                    ) : (
+                        <MarkdownContent content={msg.content + (loading && i === messages.length -1 ? '▋' : '')} />
+                    )}
                   </div>
                   {msg.role === 'user' && (
                     <div className="w-9 h-9 rounded-2xl bg-white/10 flex items-center justify-center text-muted-foreground shrink-0 border border-white/10">
@@ -267,21 +241,6 @@ function LoggedInView() {
                   )}
                 </motion.div>
               ))}
-
-              {loading && messages[messages.length - 1]?.role !== 'model' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex gap-4 justify-start items-start"
-                >
-                  <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-blue-500 via-violet-500 to-pink-500 flex items-center justify-center text-white p-2 shrink-0 shadow-lg shadow-violet-500/30">
-                    <Logo />
-                  </div>
-                  <div className="px-5 py-3.5 rounded-2xl bg-white/10 border border-white/10 backdrop-blur-sm">
-                    <MarkdownContent content={'▋'} />
-                  </div>
-                </motion.div>
-              )}
             </div>
           </div>
 
@@ -309,14 +268,14 @@ function LoggedInView() {
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleInteraction()}
-                      disabled={loading || !!responseToStream}
+                      disabled={loading}
                     />
 
                     <Button
                       size="icon"
                       className="rounded-xl bg-gradient-to-br from-blue-500 to-violet-500 hover:from-blue-600 hover:to-violet-600 text-white shadow-lg shadow-blue-500/40 transition-all duration-200 shrink-0 h-12 w-12"
                       onClick={handleInteraction}
-                      disabled={loading || !!responseToStream || !input.trim()}
+                      disabled={loading || !input.trim()}
                     >
                       {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Send className="w-6 h-6" />}
                     </Button>
@@ -656,5 +615,3 @@ export default function Home() {
 
   return user ? <LoggedInView /> : <LandingPage />;
 }
-
-    
