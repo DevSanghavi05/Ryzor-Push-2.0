@@ -197,14 +197,14 @@ function DocumentsPage() {
 
     const unimportedDocs = allDocs.filter(doc => doc.source === 'drive' && !doc.isImported);
     const totalToImport = unimportedDocs.length;
-    let importedSoFar = 0;
+    let importedCount = 0;
 
     const importPromises = unimportedDocs.map(doc => 
       handleImport(doc).then(updatedDoc => {
         if (updatedDoc) {
-          importedSoFar++;
-          const progress = (importedSoFar / totalToImport) * 100;
-          setImportProgress(progress);
+            importedCount++;
+            const progress = (importedCount / totalToImport) * 100;
+            setImportProgress(progress);
         }
         return updatedDoc;
       })
@@ -212,20 +212,20 @@ function DocumentsPage() {
 
     const results = await Promise.all(importPromises);
     const successfulImports = results.filter(res => !!res);
-    const successfulCount = successfulImports.length;
 
     startTransition(() => {
-      const updatedDocs = allDocs.map(doc => {
-        const updatedVersion = successfulImports.find(res => res && res.id === doc.id);
-        return updatedVersion || doc;
-      });
+        if (successfulImports.length > 0) {
+            const updatedDocs = allDocs.map(doc => {
+                const updatedVersion = successfulImports.find(res => res && res.id === doc.id);
+                return updatedVersion || doc;
+            });
+            setAllDocs(updatedDocs);
+            localStorage.setItem(`documents_${user.uid}`, JSON.stringify(updatedDocs));
+        }
 
-      setAllDocs(updatedDocs);
-      localStorage.setItem(`documents_${user.uid}`, JSON.stringify(updatedDocs));
-      
-      setIsImporting(false);
-      setImportComplete(true); 
-      toast({ title: 'Bulk Import Complete', description: `${successfulCount} document(s) have been processed.` });
+        setIsImporting(false);
+        setImportComplete(true); 
+        toast({ title: 'Bulk Import Complete', description: `${successfulImports.length} document(s) have been processed.` });
     });
   };
 
@@ -407,7 +407,7 @@ function DocumentsPage() {
                                           <div>
                                               <p className="font-medium flex items-center gap-2 text-muted-foreground">{d.name}</p>
                                               <p className="text-sm text-muted-foreground">
-                                                  Google Drive ({d.accountType}) &middot; {new Date(d.uploaded).toLocaleDateS tring()}
+                                                  Google Drive ({d.accountType}) &middot; {new Date(d.uploaded).toLocaleDateString()}
                                               </p>
                                           </div>
                                       </div>
