@@ -7,7 +7,7 @@ import { extractPdfText } from '@/ai/flows/extract-pdf-text-flow';
 
 async function getDocumentContent(doc: any, workToken?: string | null, personalToken?: string | null): Promise<string> {
     if (doc.source === 'local' && doc.content) {
-        // For local files, the content is already extracted and passed from the client
+        // For local files, the content is already passed from the client
         return doc.content;
     }
 

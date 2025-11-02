@@ -17,7 +17,9 @@ import {
   Globe,
   Lock,
   RotateCw,
-  Target
+  Target,
+  Paperclip,
+  ChevronDown
 } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { ask } from '@/app/actions';
@@ -316,91 +318,76 @@ function LoggedInView() {
           {/* Chat Bar */}
           <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none">
             <div className="mx-auto max-w-4xl pointer-events-auto">
-              <div className="relative">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 via-violet-500 to-pink-500 rounded-2xl blur-lg opacity-40" />
-                <div className="bg-background/80 backdrop-blur-xl rounded-2xl border border-border shadow-2xl">
-                  <div className="p-3 flex items-center gap-3">
-                    <Button
-                      asChild
-                      size="icon"
-                      variant="ghost"
-                      className="rounded-xl bg-background/50 hover:bg-accent/50 text-foreground border-none transition-all duration-200 shrink-0 h-12 w-12"
-                    >
-                      <Link href="/add">
-                        <PlusCircle className="w-6 h-6" />
-                        <span className="sr-only">Upload</span>
-                      </Link>
-                    </Button>
-                    
-                    {messages.length > 0 && (
-                        <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
-                            <AlertDialogTrigger asChild>
-                               <Button
-                                 size="icon"
-                                 variant="ghost"
-                                 className="rounded-xl bg-background/50 hover:bg-accent/50 text-foreground border-none transition-all duration-200 shrink-0 h-12 w-12"
-                               >
-                                 <RotateCw className="w-6 h-6" />
-                                 <span className="sr-only">Reset Chat</span>
-                               </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Reset Chat</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Would you like to save this conversation to your chat history before resetting?
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <Button variant="destructive" onClick={handleResetWithoutSaving}>Reset Without Saving</Button>
-                                    <AlertDialogAction onClick={handleSaveAndReset}>Save and Reset</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    )}
-
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => setIsDocPickerOpen(true)}
-                      className="relative rounded-xl bg-background/50 hover:bg-accent/50 text-foreground border-none transition-all duration-200 shrink-0 h-12 w-12"
-                    >
-                      <Target className="w-6 h-6" />
-                      <span className="sr-only">Focus on specific documents</span>
-                      {focusedDocIds.size > 0 && (
-                        <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
-                          {focusedDocIds.size}
-                        </Badge>
-                      )}
-                    </Button>
-
+                <div className="bg-background rounded-full border border-border shadow-2xl shadow-primary/10 overflow-hidden">
+                  <div className="p-2 flex items-center gap-2">
+                     <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => setIsDocPickerOpen(true)}
+                        className="relative rounded-full hover:bg-accent/50 text-foreground transition-all duration-200 shrink-0 h-10 w-10"
+                      >
+                        <Paperclip className="w-5 h-5" />
+                        <span className="sr-only">Focus on specific documents</span>
+                        {focusedDocIds.size > 0 && (
+                          <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                            {focusedDocIds.size}
+                          </Badge>
+                        )}
+                      </Button>
                     <Input
-                      placeholder="Ask anything or mention a document with @..."
-                      className="border-none focus-visible:ring-0 flex-1 text-base bg-transparent text-foreground placeholder:text-muted-foreground/60 px-4 h-12"
+                      placeholder="What do you want to know?"
+                      className="border-none focus-visible:ring-0 flex-1 text-base bg-transparent text-foreground placeholder:text-muted-foreground/60 px-2 h-10"
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleInteraction()}
                       disabled={loading}
                     />
 
+                    <Button variant="ghost" className="rounded-full flex items-center gap-1.5 h-10 px-3">
+                      <Rocket className="w-4 h-4" />
+                      Auto
+                      <ChevronDown className="w-4 h-4 opacity-50" />
+                    </Button>
+
                     <Button
                       size="icon"
-                      className="rounded-xl bg-gradient-to-br from-blue-500 to-violet-500 hover:from-blue-600 hover:to-violet-600 text-white shadow-lg shadow-blue-500/40 transition-all duration-200 shrink-0 h-12 w-12"
+                      className="rounded-full bg-primary/20 hover:bg-primary/30 text-primary transition-all duration-200 shrink-0 h-10 w-10"
                       onClick={handleInteraction}
                       disabled={loading || !input.trim()}
                     >
-                      {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Send className="w-6 h-6" />}
+                      {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                     </Button>
                   </div>
                 </div>
-              </div>
-              <p className="text-xs text-center text-muted-foreground/60 mt-3">
-                {focusedDocIds.size > 0 
-                    ? `Ryzor is focusing on ${focusedDocIds.size} document(s).` 
-                    : "Ryzor can search across all your documents to provide accurate answers."
-                }
-              </p>
+               {messages.length > 0 && (
+                  <div className="flex justify-center mt-3">
+                     <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+                            <AlertDialogTrigger asChild>
+                               <Button
+                                 size="sm"
+                                 variant="ghost"
+                                 className="rounded-full text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                               >
+                                 <RotateCw className="w-4 h-4 mr-2" />
+                                 New Chat
+                               </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Start a New Chat</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Would you like to save this conversation to your chat history before starting a new one?
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <Button variant="destructive" onClick={handleResetWithoutSaving}>Clear Without Saving</Button>
+                                    <AlertDialogAction onClick={handleSaveAndReset}>Save and Start New Chat</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                  </div>
+                )}
             </div>
           </div>
         </div>
