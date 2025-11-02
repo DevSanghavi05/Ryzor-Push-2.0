@@ -49,6 +49,7 @@ export function Header() {
                     <Link href="#why" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</Link>
                     <Link href="#roadmap" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Roadmap</Link>
                     <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">About</Link>
+                    <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy</Link>
                 </nav>
             )}
 
