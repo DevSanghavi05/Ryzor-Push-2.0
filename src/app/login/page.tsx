@@ -84,8 +84,9 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center">
+        <div className="bg-aurora"></div>
         <div className="relative">
-            <Card className="w-full max-w-sm bg-background/50 backdrop-blur-sm border-white/10">
+            <Card className="w-full max-w-sm bg-card/50 backdrop-blur-sm border-border">
                 <CardHeader className="text-center">
                     <Logo className="h-10 w-10 mx-auto mb-4" />
                     <CardTitle className="font-headline text-2xl">Welcome Back</CardTitle>
@@ -134,7 +135,7 @@ export default function LoginPage() {
                     </div>
                     
                     <div className="space-y-2 w-full">
-                      <Button variant="outline" className="w-full bg-white/5 border-white/10 hover:bg-white/10" onClick={() => signInWithGoogle()}>
+                      <Button variant="outline" className="w-full" onClick={() => signInWithGoogle()}>
                           <GoogleIcon />
                           <span>Continue with Google</span>
                       </Button>

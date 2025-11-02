@@ -189,16 +189,8 @@ function LoggedInView() {
   ];
 
   return (
-      <div className="flex w-full h-dvh pt-16 relative overflow-hidden bg-gradient-to-br from-slate-950 via-purple-950/20 to-slate-950">
-        {/* Dynamic background */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '7s' }} />
-          <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '9s', animationDelay: '2s' }} />
-          <div className="absolute top-1/2 left-1/2 w-[500px] h-[500px] bg-gradient-to-r from-pink-500/20 to-rose-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '11s', animationDelay: '4s' }} />
-        </div>
-        
-        {/* Gradient mesh overlay */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.1),transparent_50%)] pointer-events-none" />
+      <div className="flex w-full h-dvh pt-16 relative overflow-hidden">
+        <div className="bg-aurora"></div>
         
         {/* Main Chat Area */}
         <div className="flex-1 flex flex-col h-full bg-transparent relative z-10">
@@ -220,7 +212,7 @@ function LoggedInView() {
                       <Sparkles className="w-12 h-12 text-white" />
                     </div>
                   </div>
-                  <h1 className="text-5xl font-bold mb-4 mt-6 tracking-tight bg-gradient-to-br from-white to-gray-400 bg-clip-text text-transparent">Your intelligent workspace.</h1>
+                  <h1 className="text-5xl font-bold mb-4 mt-6 tracking-tight bg-gradient-to-br from-foreground to-muted-foreground bg-clip-text text-transparent">Your intelligent workspace.</h1>
                   <p className="text-muted-foreground text-lg mb-10">
                     Ask anything about your documents. I'll search across everything to find what you need.
                   </p>
@@ -233,7 +225,7 @@ function LoggedInView() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4, delay: 0.1 * i }}
                         onClick={() => setInput(q.text)}
-                        className="w-full text-left p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-200 group relative overflow-hidden"
+                        className="w-full text-left p-4 rounded-xl bg-background/50 border border-border hover:bg-accent/10 hover:border-border transition-all duration-200 group relative overflow-hidden"
                       >
                         <div className={`absolute -inset-px bg-gradient-to-r ${q.gradient} rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md`} />
                         <div className="relative flex items-center gap-3">
@@ -269,7 +261,7 @@ function LoggedInView() {
                     className={`px-5 py-3.5 rounded-2xl max-w-[80%] ${
                       msg.role === 'user' 
                         ? 'bg-gradient-to-br from-blue-500 to-violet-500 text-white shadow-lg shadow-blue-500/30' 
-                        : 'bg-white/10 border border-white/10 backdrop-blur-sm'
+                        : 'bg-card border border-border'
                     }`}
                   >
                      {msg.role === 'model' && msg.content === '' && loading ? (
@@ -282,7 +274,7 @@ function LoggedInView() {
                     )}
                   </div>
                   {msg.role === 'user' && (
-                    <div className="w-9 h-9 rounded-2xl bg-white/10 flex items-center justify-center text-muted-foreground shrink-0 border border-white/10">
+                    <div className="w-9 h-9 rounded-2xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-border">
                       <User size={18} />
                     </div>
                   )}
@@ -292,16 +284,17 @@ function LoggedInView() {
           </div>
 
           {/* Chat Bar */}
-          <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent pointer-events-none">
+          <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none">
             <div className="mx-auto max-w-4xl pointer-events-auto">
               <div className="relative">
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 via-violet-500 to-pink-500 rounded-2xl blur-lg opacity-40" />
-                <div className="bg-slate-900/80 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl">
+                <div className="bg-background/80 backdrop-blur-xl rounded-2xl border border-border shadow-2xl">
                   <div className="p-3 flex items-center gap-3">
                     <Button
                       asChild
                       size="icon"
-                      className="rounded-xl bg-white/10 hover:bg-white/20 text-white border-none transition-all duration-200 shrink-0 h-12 w-12"
+                      variant="ghost"
+                      className="rounded-xl bg-background/50 hover:bg-accent/50 text-foreground border-none transition-all duration-200 shrink-0 h-12 w-12"
                     >
                       <Link href="/add">
                         <PlusCircle className="w-6 h-6" />
@@ -315,7 +308,7 @@ function LoggedInView() {
                                <Button
                                  size="icon"
                                  variant="ghost"
-                                 className="rounded-xl bg-white/10 hover:bg-white/20 text-white border-none transition-all duration-200 shrink-0 h-12 w-12"
+                                 className="rounded-xl bg-background/50 hover:bg-accent/50 text-foreground border-none transition-all duration-200 shrink-0 h-12 w-12"
                                >
                                  <RotateCw className="w-6 h-6" />
                                  <span className="sr-only">Reset Chat</span>
@@ -339,7 +332,7 @@ function LoggedInView() {
 
                     <Input
                       placeholder="Ask anything..."
-                      className="border-none focus-visible:ring-0 flex-1 text-base bg-transparent text-white placeholder:text-muted-foreground/60 px-4 h-12"
+                      className="border-none focus-visible:ring-0 flex-1 text-base bg-transparent text-foreground placeholder:text-muted-foreground/60 px-4 h-12"
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleInteraction()}
@@ -427,13 +420,13 @@ function LandingPage() {
     }, []);
 
     return (
-        <div className="w-full overflow-x-hidden relative text-white">
+        <div className="w-full overflow-x-hidden relative">
             <div className="bg-aurora"></div>
 
             <div className="container mx-auto px-6 relative z-10">
                 <section className="hero text-center pt-32 pb-24">
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}>
-                        <div className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-500/10 via-violet-500/10 to-pink-500/10 border border-white/20 text-white py-2 px-5 rounded-full text-sm mb-10 backdrop-blur-xl shadow-lg">
+                        <div className="inline-flex items-center gap-3 bg-background/50 border border-border text-foreground py-2 px-5 rounded-full text-sm mb-10 backdrop-blur-xl shadow-lg">
                             <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 animate-pulse" />
                             <Sparkles className="w-4 h-4 text-violet-400" />
                             <span className="font-semibold bg-gradient-to-r from-blue-400 via-violet-400 to-pink-400 bg-clip-text text-transparent">Stop searching. Start knowing.</span>
@@ -448,13 +441,13 @@ function LandingPage() {
                           No More Folders,
                         </span>
                         <br />
-                        <span className="bg-gradient-to-r from-violet-300 via-pink-300 to-rose-300 bg-clip-text text-transparent">
+                        <span className="bg-gradient-to-r from-violet-500 via-pink-500 to-rose-500 bg-clip-text text-transparent">
                           Just Answers
                         </span>
                     </motion.h1>
                     
                     <motion.p 
-                        className="max-w-3xl mx-auto text-lg md:text-xl text-slate-300 leading-relaxed mb-14 font-light"
+                        className="max-w-3xl mx-auto text-lg md:text-xl text-muted-foreground leading-relaxed mb-14 font-light"
                         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}
                     >
                         Ryzor instantly transforms your scattered digital life into a unified, intelligent brain you can talk to. Seamlessly sync documents from both your work and personal accounts—whether it's PDFs from your desktop or files from your Google Drive—and ask complex questions to get immediate, synthesized answers.
@@ -464,7 +457,7 @@ function LandingPage() {
                         className="flex gap-5 justify-center flex-wrap"
                         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }}
                     >
-                        <Button asChild size="lg" className="relative group bg-gradient-to-r from-blue-500 via-violet-500 to-pink-500 hover:from-blue-600 hover:via-violet-600 hover:to-pink-600 h-14 px-10 text-lg font-bold border-0 shadow-2xl shadow-violet-500/50 hover:shadow-violet-500/80 hover:scale-105 transition-all duration-300">
+                        <Button asChild size="lg" className="relative group bg-gradient-to-r from-blue-500 via-violet-500 to-pink-500 hover:from-blue-600 hover:via-violet-600 hover:to-pink-600 h-14 px-10 text-lg font-bold text-primary-foreground border-0 shadow-2xl shadow-violet-500/50 hover:shadow-violet-500/80 hover:scale-105 transition-all duration-300">
                             <Link href="/login">
                               <span className="relative z-10 flex items-center gap-2">
                                 Start Free Trial
@@ -473,7 +466,7 @@ function LandingPage() {
                               <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
                             </Link>
                         </Button>
-                        <Button asChild size="lg" variant="outline" className="bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/40 h-14 px-10 text-lg font-bold backdrop-blur-xl shadow-lg hover:scale-105 transition-all duration-300">
+                        <Button asChild size="lg" variant="outline" className="bg-background/50 border-border hover:bg-accent/10 hover:border-accent h-14 px-10 text-lg font-bold backdrop-blur-xl shadow-lg hover:scale-105 transition-all duration-300">
                             <Link href="#why">See How It Works</Link>
                         </Button>
                     </motion.div>
@@ -484,15 +477,15 @@ function LandingPage() {
                     >
                         <div className="relative group">
                           <div className="absolute -inset-4 bg-gradient-to-r from-blue-500 via-violet-500 to-pink-500 rounded-[2.5rem] blur-2xl opacity-20 group-hover:opacity-30 transition-opacity duration-500" />
-                          <div className="relative browser-frame bg-black/60 border border-white/20 rounded-[2rem] overflow-hidden shadow-2xl backdrop-blur-2xl">
-                              <div className="browser-header bg-gradient-to-r from-slate-900/80 to-slate-800/80 px-6 py-5 flex items-center gap-3 border-b border-white/10 backdrop-blur-xl">
+                          <div className="relative browser-frame bg-background/60 border border-border rounded-[2rem] overflow-hidden shadow-2xl backdrop-blur-2xl">
+                              <div className="browser-header bg-background/80 px-6 py-5 flex items-center gap-3 border-b border-border backdrop-blur-xl">
                                   <div className="flex gap-2.5">
                                     <div className="dot w-3.5 h-3.5 rounded-full bg-gradient-to-br from-red-500 to-red-600 shadow-lg shadow-red-500/50"></div>
                                     <div className="dot w-3.5 h-3.5 rounded-full bg-gradient-to-br from-yellow-500 to-yellow-600 shadow-lg shadow-yellow-500/50"></div>
                                     <div className="dot w-3.5 h-3.5 rounded-full bg-gradient-to-br from-green-500 to-green-600 shadow-lg shadow-green-500/50"></div>
                                   </div>
                                   <div className="flex-1 flex justify-center">
-                                    <div className="bg-white/5 border border-white/10 rounded-xl px-6 py-2 text-xs text-slate-400 font-mono backdrop-blur-sm">
+                                    <div className="bg-secondary border border-border rounded-xl px-6 py-2 text-xs text-muted-foreground font-mono backdrop-blur-sm">
                                       ryzor.pro/workspace
                                     </div>
                                   </div>
@@ -500,7 +493,7 @@ function LandingPage() {
                               <div className="browser-content p-10 md:p-14">
                                   <div className="search-demo relative group/search mb-8">
                                     <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-violet-500/20 to-pink-500/20 rounded-2xl blur-xl opacity-0 group-hover/search:opacity-100 transition-opacity duration-500" />
-                                    <div className="relative bg-white/5 border border-white/20 rounded-2xl px-7 py-6 text-lg text-slate-300 backdrop-blur-xl min-h-[60px] flex items-center">
+                                    <div className="relative bg-secondary/50 border border-border rounded-2xl px-7 py-6 text-lg text-foreground backdrop-blur-xl min-h-[60px] flex items-center">
                                       {typedText}
                                       {isTyping && (
                                         <span className="inline-block w-0.5 h-6 bg-gradient-to-b from-blue-400 via-violet-400 to-pink-400 ml-2 animate-blink shadow-lg"></span>
@@ -522,8 +515,8 @@ function LandingPage() {
                                             <Sparkles className="w-6 h-6" />
                                           </div>
                                         </div>
-                                        <div className="flex-1 bg-black/40 border border-white/20 rounded-2xl px-6 py-5 backdrop-blur-xl shadow-xl">
-                                          <p className="text-slate-200 leading-relaxed">
+                                        <div className="flex-1 bg-background/40 border border-border rounded-2xl px-6 py-5 backdrop-blur-xl shadow-xl">
+                                          <p className="text-foreground leading-relaxed">
                                             {aiResponse}
                                             {aiResponse.length < fullAnswer.length && (
                                               <span className="inline-block w-0.5 h-5 bg-gradient-to-b from-blue-400 via-violet-400 to-pink-400 ml-1 animate-blink"></span>
@@ -535,25 +528,25 @@ function LandingPage() {
                                   )}
 
                                   <div className="feature-pills flex gap-4 flex-wrap">
-                                      <div className="pill bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/30 py-4 px-6 rounded-2xl text-sm text-slate-200 flex items-center gap-3 backdrop-blur-xl hover:border-blue-400/50 hover:from-blue-500/20 hover:to-cyan-500/20 transition-all duration-300 shadow-lg group/pill">
+                                      <div className="pill bg-background/50 border border-blue-500/30 py-4 px-6 rounded-2xl text-sm text-foreground flex items-center gap-3 backdrop-blur-xl hover:border-blue-400/50 hover:bg-blue-500/10 transition-all duration-300 shadow-lg group/pill">
                                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/50 group-hover/pill:scale-110 transition-transform">
                                           <FileText className="w-5 h-5 text-white" />
                                         </div>
                                         <span className="font-semibold">All your documents</span>
                                       </div>
-                                      <div className="pill bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-500/30 py-4 px-6 rounded-2xl text-sm text-slate-200 flex items-center gap-3 backdrop-blur-xl hover:border-violet-400/50 hover:from-violet-500/20 hover:to-purple-500/20 transition-all duration-300 shadow-lg group/pill">
+                                      <div className="pill bg-background/50 border border-violet-500/30 py-4 px-6 rounded-2xl text-sm text-foreground flex items-center gap-3 backdrop-blur-xl hover:border-violet-400/50 hover:bg-violet-500/10 transition-all duration-300 shadow-lg group/pill">
                                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center shadow-lg shadow-violet-500/50 group-hover/pill:scale-110 transition-transform">
                                           <Brain className="w-5 h-5 text-white" />
                                         </div>
                                         <span className="font-semibold">Smart search</span>
                                       </div>
-                                      <div className="pill bg-gradient-to-r from-pink-500/10 to-rose-500/10 border border-pink-500/30 py-4 px-6 rounded-2xl text-sm text-slate-200 flex items-center gap-3 backdrop-blur-xl hover:border-pink-400/50 hover:from-pink-500/20 hover:to-rose-500/20 transition-all duration-300 shadow-lg group/pill">
+                                      <div className="pill bg-background/50 border border-pink-500/30 py-4 px-6 rounded-2xl text-sm text-foreground flex items-center gap-3 backdrop-blur-xl hover:border-pink-400/50 hover:bg-pink-500/10 transition-all duration-300 shadow-lg group/pill">
                                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center shadow-lg shadow-pink-500/50 group-hover/pill:scale-110 transition-transform">
                                           <MessageSquare className="w-5 h-5 text-white" />
                                         </div>
                                         <span className="font-semibold">Natural questions</span>
                                       </div>
-                                      <div className="pill bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 py-4 px-6 rounded-2xl text-sm text-slate-200 flex items-center gap-3 backdrop-blur-xl hover:border-amber-400/50 hover:from-amber-500/20 hover:to-orange-500/20 transition-all duration-300 shadow-lg group/pill">
+                                      <div className="pill bg-background/50 border border-amber-500/30 py-4 px-6 rounded-2xl text-sm text-foreground flex items-center gap-3 backdrop-blur-xl hover:border-amber-400/50 hover:bg-amber-500/10 transition-all duration-300 shadow-lg group/pill">
                                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/50 group-hover/pill:scale-110 transition-transform">
                                           <Zap className="w-5 h-5 text-white" />
                                         </div>
@@ -568,66 +561,66 @@ function LandingPage() {
 
                 <section className="py-32" id="why">
                     <AnimatedSection className="max-w-3xl mx-auto mb-20 text-center">
-                        <h2 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 bg-gradient-to-r from-slate-200 to-slate-400 bg-clip-text text-transparent">
+                        <h2 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 bg-gradient-to-r from-slate-700 to-slate-900 dark:from-slate-200 dark:to-slate-400 bg-clip-text text-transparent">
                           Beyond Simple Search
                         </h2>
-                        <p className="text-lg md:text-xl text-slate-300 font-light leading-relaxed">
+                        <p className="text-lg md:text-xl text-muted-foreground font-light leading-relaxed">
                           We built Ryzor to handle the chaos of your digital life, so you can stop looking for information and start using it.
                         </p>
                     </AnimatedSection>
                     
                     <div className="grid md:grid-cols-2 gap-8">
                       {/* Card 1 */}
-                      <AnimatedSection className="group relative bg-gradient-to-br from-white/10 to-white/5 border border-white/20 p-10 rounded-3xl backdrop-blur-xl shadow-2xl hover:border-blue-500/50 transition-all duration-300">
+                      <AnimatedSection className="group relative bg-card/50 border border-border p-10 rounded-3xl backdrop-blur-xl shadow-2xl hover:border-blue-500/50 transition-all duration-300">
                         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-500/10 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
                         <div className="relative z-10">
                           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mb-6 shadow-lg shadow-blue-500/50 group-hover:scale-105 transition-transform">
                             <Globe className="w-8 h-8 text-white" />
                           </div>
-                          <h3 className="text-3xl font-bold mb-4 text-white">One Workspace, Every File</h3>
-                          <p className="text-slate-300 leading-relaxed">
+                          <h3 className="text-3xl font-bold mb-4 text-foreground">One Workspace, Every File</h3>
+                          <p className="text-muted-foreground leading-relaxed">
                             Connect Google Drive, upload local PDFs, and more. Ryzor unifies your work and personal documents without mixing them up, giving you a single, secure place to find anything.
                           </p>
                         </div>
                       </AnimatedSection>
 
                       {/* Card 2 */}
-                      <AnimatedSection className="group relative bg-gradient-to-br from-white/10 to-white/5 border border-white/20 p-10 rounded-3xl backdrop-blur-xl shadow-2xl hover:border-violet-500/50 transition-all duration-300">
+                      <AnimatedSection className="group relative bg-card/50 border border-border p-10 rounded-3xl backdrop-blur-xl shadow-2xl hover:border-violet-500/50 transition-all duration-300">
                         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-violet-500/10 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
                         <div className="relative z-10">
                           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center mb-6 shadow-lg shadow-violet-500/50 group-hover:scale-105 transition-transform">
                             <Zap className="w-8 h-8 text-white" />
                           </div>
-                          <h3 className="text-3xl font-bold mb-4 text-white">Answers, Not Links</h3>
-                          <p className="text-slate-300 leading-relaxed">
+                          <h3 className="text-3xl font-bold mb-4 text-foreground">Answers, Not Links</h3>
+                          <p className="text-muted-foreground leading-relaxed">
                             Ask complex questions that span multiple documents. Instead of a list of files, you get direct, synthesized answers with the information you need, saving you hours of manual searching.
                           </p>
                         </div>
                       </AnimatedSection>
                       
                       {/* Card 3 */}
-                      <AnimatedSection className="group relative bg-gradient-to-br from-white/10 to-white/5 border border-white/20 p-10 rounded-3xl backdrop-blur-xl shadow-2xl hover:border-pink-500/50 transition-all duration-300">
+                      <AnimatedSection className="group relative bg-card/50 border border-border p-10 rounded-3xl backdrop-blur-xl shadow-2xl hover:border-pink-500/50 transition-all duration-300">
                         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-pink-500/10 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
                         <div className="relative z-10">
                           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center mb-6 shadow-lg shadow-pink-500/50 group-hover:scale-105 transition-transform">
                             <Brain className="w-8 h-8 text-white" />
                           </div>
-                          <h3 className="text-3xl font-bold mb-4 text-white">Uncover Hidden Insights</h3>
-                          <p className="text-slate-300 leading-relaxed">
+                          <h3 className="text-3xl font-bold mb-4 text-foreground">Uncover Hidden Insights</h3>
+                          <p className="text-muted-foreground leading-relaxed">
                             Let our AI connect the dots across your entire knowledge base, revealing patterns and summaries you might have missed. Go from data to decision in a fraction of the time.
                           </p>
                         </div>
                       </AnimatedSection>
                       
                       {/* Card 4 */}
-                      <AnimatedSection className="group relative bg-gradient-to-br from-white/10 to-white/5 border border-white/20 p-10 rounded-3xl backdrop-blur-xl shadow-2xl hover:border-amber-500/50 transition-all duration-300">
+                      <AnimatedSection className="group relative bg-card/50 border border-border p-10 rounded-3xl backdrop-blur-xl shadow-2xl hover:border-amber-500/50 transition-all duration-300">
                         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-amber-500/10 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
                         <div className="relative z-10">
                           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mb-6 shadow-lg shadow-amber-500/50 group-hover:scale-105 transition-transform">
                             <Lock className="w-8 h-8 text-white" />
                           </div>
-                          <h3 className="text-3xl font-bold mb-4 text-white">Private by Design</h3>
-                          <p className="text-slate-300 leading-relaxed">
+                          <h3 className="text-3xl font-bold mb-4 text-foreground">Private by Design</h3>
+                          <p className="text-muted-foreground leading-relaxed">
                             Your documents are yours alone. They are used only to answer *your* questions. We never train our models on your data. Work and personal knowledge bases remain separate and secure.
                           </p>                        </div>
                       </AnimatedSection>
@@ -635,19 +628,19 @@ function LandingPage() {
                 </section>
 
                 <section className="py-32">
-                    <AnimatedSection className="relative overflow-hidden bg-gradient-to-br from-blue-500/10 via-violet-500/5 to-blue-500/10 border border-blue-500/20 p-14 rounded-3xl text-center backdrop-blur-sm" id="roadmap">
+                    <AnimatedSection className="relative overflow-hidden bg-background/50 border border-border p-14 rounded-3xl text-center backdrop-blur-sm" id="roadmap">
                         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-violet-500/5 animate-pulse" style={{ animationDuration: '4s' }} />
                         <div className="relative z-10">
                           <div className="inline-block bg-violet-500/15 border border-violet-500/30 py-2 px-4 rounded-full text-xs text-violet-300 mb-6 font-semibold tracking-wider uppercase backdrop-blur-sm">Coming Soon</div>
-                          <h3 className="text-4xl md:text-5xl font-bold mb-5 text-white">Your Complete AI Workspace</h3>
-                          <p className="text-lg text-slate-300 max-w-2xl mx-auto mb-8 leading-relaxed font-light">
+                          <h3 className="text-4xl md:text-5xl font-bold mb-5 text-foreground">Your Complete AI Workspace</h3>
+                          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed font-light">
                             Soon, you'll be able to ask Ryzor about your calendar, emails, and more. Schedule meetings, find that message from last week, and manage everything through natural conversation.
                           </p>
                           <div className="flex gap-4 justify-center flex-wrap">
-                              <div className="bg-white/5 border border-white/10 py-3 px-5 rounded-xl text-sm text-slate-300 backdrop-blur-sm">📅 Google Calendar</div>
-                              <div className="bg-white/5 border border-white/10 py-3 px-5 rounded-xl text-sm text-slate-300 backdrop-blur-sm">✉️ Gmail</div>
-                              <div className="bg-white/5 border border-white/10 py-3 px-5 rounded-xl text-sm text-slate-300 backdrop-blur-sm">📅 Outlook Calendar</div>
-                              <div className="bg-white/5 border border-white/10 py-3 px-5 rounded-xl text-sm text-slate-300 backdrop-blur-sm">✉️ Outlook</div>
+                              <div className="bg-secondary border border-border py-3 px-5 rounded-xl text-sm text-muted-foreground backdrop-blur-sm">📅 Google Calendar</div>
+                              <div className="bg-secondary border border-border py-3 px-5 rounded-xl text-sm text-muted-foreground backdrop-blur-sm">✉️ Gmail</div>
+                              <div className="bg-secondary border border-border py-3 px-5 rounded-xl text-sm text-muted-foreground backdrop-blur-sm">📅 Outlook Calendar</div>
+                              <div className="bg-secondary border border-border py-3 px-5 rounded-xl text-sm text-muted-foreground backdrop-blur-sm">✉️ Outlook</div>
                           </div>
                         </div>
                     </AnimatedSection>
@@ -655,11 +648,11 @@ function LandingPage() {
 
                 <section className="text-center py-32">
                     <AnimatedSection>
-                        <h2 className="text-5xl md:text-7xl font-bold mb-6 tracking-tighter bg-gradient-to-r from-slate-200 to-slate-400 bg-clip-text text-transparent">Ready to end the search?</h2>
-                        <p className="text-lg md:text-xl text-slate-300 mb-12 font-light">
+                        <h2 className="text-5xl md:text-7xl font-bold mb-6 tracking-tighter bg-gradient-to-r from-slate-700 to-slate-900 dark:from-slate-200 dark:to-slate-400 bg-clip-text text-transparent">Ready to end the search?</h2>
+                        <p className="text-lg md:text-xl text-muted-foreground mb-12 font-light">
                           Get started for free. No credit card required.
                         </p>
-                        <Button asChild size="lg" className="relative group bg-gradient-to-r from-blue-500 via-violet-500 to-pink-500 hover:from-blue-600 hover:via-violet-600 hover:to-pink-600 h-14 px-10 text-lg font-bold border-0 shadow-2xl shadow-violet-500/50 hover:shadow-violet-500/80 hover:scale-105 transition-all duration-300">
+                        <Button asChild size="lg" className="relative group bg-gradient-to-r from-blue-500 via-violet-500 to-pink-500 hover:from-blue-600 hover:via-violet-600 hover:to-pink-600 h-14 px-10 text-lg font-bold text-primary-foreground border-0 shadow-2xl shadow-violet-500/50 hover:shadow-violet-500/80 hover:scale-105 transition-all duration-300">
                             <Link href="/login">
                               <span className="relative z-10">
                                 Sign Up Now
@@ -681,8 +674,8 @@ export default function Home() {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <div className="relative">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-          <div className="absolute inset-0 blur-xl bg-blue-500/30 animate-pulse" />
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <div className="absolute inset-0 blur-xl bg-primary/30 animate-pulse" />
         </div>
       </div>
     );

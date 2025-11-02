@@ -18,9 +18,9 @@ export function Header() {
   const isLandingPage = pathname === '/';
 
   return (
-    <div className={cn("fixed top-0 left-0 right-0 z-50 p-2", isLandingPage && !user ? "bg-transparent" : "bg-transparent")}>
+    <div className={cn("fixed top-0 left-0 right-0 z-50 p-2", isLandingPage && !user ? "bg-transparent" : "")}>
         <header className={cn("container mx-auto px-4 lg:px-6 h-14 flex items-center justify-between gap-6 transition-all duration-300", 
-          isLandingPage && !user ? "" : "border border-white/10 bg-background/50 backdrop-blur-sm rounded-xl shadow-lg"
+          isLandingPage && !user ? "" : "border border-border bg-background/50 backdrop-blur-sm rounded-xl shadow-lg"
         )}>
             <Link href="/" className="flex items-center gap-2 font-bold font-headline text-lg">
                 <Logo className="h-6 w-6" />
@@ -46,13 +46,14 @@ export function Header() {
             ) : (
                  // Nav for logged out users on landing page
                 <nav className="hidden md:flex items-center gap-6">
-                    <Link href="#why" className="text-sm text-muted-foreground hover:text-white transition-colors">Features</Link>
-                    <Link href="#roadmap" className="text-sm text-muted-foreground hover:text-white transition-colors">Roadmap</Link>
-                    <Link href="/about" className="text-sm text-muted-foreground hover:text-white transition-colors">About</Link>
+                    <Link href="#why" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</Link>
+                    <Link href="#roadmap" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Roadmap</Link>
+                    <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">About</Link>
                 </nav>
             )}
 
             <div className="flex items-center gap-4">
+              <ThemeToggleButton />
               {user ? (
                   <UserAvatar />
               ) : (
@@ -62,7 +63,6 @@ export function Header() {
                     </Link>
                  </Button>
               )}
-              {/* <ThemeToggleButton /> */}
             </div>
         </header>
     </div>
@@ -80,9 +80,8 @@ function UserAvatar() {
         <AvatarFallback>{user.displayName?.[0] || 'U'}</AvatarFallback>
       </Avatar>
       <Button onClick={signOut} variant="ghost" size="icon" className="group">
-        <LogOut className="h-4 w-4 text-muted-foreground group-hover:text-white transition-colors" />
+        <LogOut className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
       </Button>
     </div>
   );
 }
-
