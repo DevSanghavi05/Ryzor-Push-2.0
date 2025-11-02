@@ -16,7 +16,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/firebase';
 import withAuth from '@/firebase/auth/with-auth';
-import { RefreshCw, UploadCloud, FolderPlus, Filter, FileText, Wand, Sparkles, CheckCircle2 } from 'lucide-react';
+import { RefreshCw, UploadCloud, FolderPlus, Filter, FileText, Wand, Sparkles, CheckCircle2, FolderSync, ChevronDown, Loader2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +27,8 @@ import { AccountType } from '@/firebase/auth/use-user';
 import { extractGoogleDocContent } from '@/ai/flows/extract-google-doc-content';
 import { Progress } from '@/components/ui/progress';
 import { HyperdriveAnimation } from '@/components/animations/hyperdrive-animation';
+import { categorizeDocument } from '@/ai/flows/categorize-document-flow';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 // ---------------------------------------------------------------------------
 // Main Documents Page Component
@@ -44,6 +46,9 @@ function DocumentsPage() {
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
   const [importComplete, setImportComplete] = useState(false);
+  const [isOrganizing, setIsOrganizing] = useState(false);
+  const [organizingProgress, setOrganizingProgress] = useState(0);
+
 
   const [isPending, startTransition] = useTransition();
 
@@ -51,8 +56,10 @@ function DocumentsPage() {
     return allDocs.filter(doc => doc.source === 'drive' && !doc.isImported).length;
   }, [allDocs]);
 
-  const filteredDocs = useMemo(() => {
-      return allDocs
+  const importedDocs = useMemo(() => allDocs.filter(d => d.isImported), [allDocs]);
+
+  const filteredAndGroupedDocs = useMemo(() => {
+      const filtered = importedDocs
         .filter((doc) => {
           const nameMatch = doc.name.toLowerCase().includes(query.toLowerCase());
           if (!nameMatch) return false;
@@ -68,9 +75,24 @@ function DocumentsPage() {
             default:
               return true;
           }
-        })
-        .sort((a, b) => new Date(b.uploaded).getTime() - new Date(a.uploaded).getTime());
-    }, [allDocs, query, filter]);
+        });
+        
+      const grouped = filtered.reduce((acc, doc) => {
+        const folderName = doc.folder || 'Uncategorized';
+        if (!acc[folderName]) {
+            acc[folderName] = [];
+        }
+        acc[folderName].push(doc);
+        return acc;
+      }, {} as Record<string, any[]>);
+
+      return Object.entries(grouped).sort(([a], [b]) => {
+          if (a === 'Uncategorized') return 1;
+          if (b === 'Uncategorized') return -1;
+          return a.localeCompare(b);
+      });
+
+    }, [importedDocs, query, filter]);
 
 
   const loadDocs = useCallback(() => {
@@ -117,6 +139,7 @@ function DocumentsPage() {
             ...file,
             isImported: false,
             uploaded: file.modifiedTime,
+            folder: null
           }));
 
           const updatedDocs = [...driveDocsToAdd, ...currentLocalDocs];
@@ -204,6 +227,65 @@ function DocumentsPage() {
     });
   };
 
+  const handleOrganize = async () => {
+    if (!user || isOrganizing) return;
+    setIsOrganizing(true);
+    setOrganizingProgress(0);
+
+    const docsToOrganize = importedDocs.filter(d => d.isImported);
+    const totalCount = docsToOrganize.length;
+    if (totalCount === 0) {
+      toast({ title: 'No documents to organize.' });
+      setIsOrganizing(false);
+      return;
+    }
+
+    toast({ title: 'Starting organization...', description: 'AI is analyzing your documents.' });
+    
+    let processedCount = 0;
+    const updatedDocs = [...allDocs];
+
+    for (const doc of docsToOrganize) {
+        try {
+            const content = localStorage.getItem(`document_content_${doc.id}`);
+            if (content) {
+                const { category } = await categorizeDocument({ textContent: content });
+                const docIndex = updatedDocs.findIndex(d => d.id === doc.id);
+                if (docIndex !== -1) {
+                    updatedDocs[docIndex].folder = category;
+                }
+            }
+        } catch (error: any) {
+            console.error(`Failed to categorize ${doc.name}: ${error.message}`);
+        } finally {
+            processedCount++;
+            setOrganizingProgress((processedCount / totalCount) * 100);
+        }
+    }
+
+    setAllDocs(updatedDocs);
+    localStorage.setItem(`documents_${user.uid}`, JSON.stringify(updatedDocs));
+    setIsOrganizing(false);
+    toast({ title: 'Organization Complete', description: 'Your documents have been grouped into folders.' });
+  }
+
+  const handleRenameFolder = (oldName: string, newName: string) => {
+    if (!user || oldName === newName) return;
+
+    startTransition(() => {
+        const updatedDocs = allDocs.map(doc => {
+            if (doc.folder === oldName) {
+                return { ...doc, folder: newName.trim() || 'Uncategorized' };
+            }
+            return doc;
+        });
+        setAllDocs(updatedDocs);
+        localStorage.setItem(`documents_${user.uid}`, JSON.stringify(updatedDocs));
+    });
+  }
+
+  const unimportedList = useMemo(() => allDocs.filter(doc => !doc.isImported), [allDocs]);
+
   return (
     <>
     <HyperdriveAnimation show={importComplete} onComplete={() => setImportComplete(false)} />
@@ -248,6 +330,10 @@ function DocumentsPage() {
                         <SelectItem value="google-personal">Google (Personal)</SelectItem>
                     </SelectContent>
                 </Select>
+                 <Button onClick={handleOrganize} disabled={isImporting || isOrganizing || importedDocs.length === 0} variant="secondary">
+                      <FolderSync className={`h-4 w-4 mr-2 ${isOrganizing ? 'animate-spin' : ''}`} /> 
+                      {isOrganizing ? `Organizing... (${Math.round(organizingProgress)}%)` : `Organize Docs`}
+                  </Button>
                  {unimportedCount > 0 && (
                     <Button onClick={handleImportAll} disabled={isImporting || isPending} variant="secondary">
                         <Sparkles className={`h-4 w-4 mr-2 ${isImporting ? 'animate-spin' : ''}`} /> 
@@ -255,56 +341,103 @@ function DocumentsPage() {
                     </Button>
                 )}
             </div>
-             {isImporting && (
+             {(isImporting || isOrganizing) && (
                 <div className="mb-4">
-                    <Progress value={importProgress} className="w-full h-2" />
-                    <p className="text-sm text-center mt-1 text-muted-foreground">Importing documents... this may take a moment.</p>
+                    <Progress value={isImporting ? importProgress : organizingProgress} className="w-full h-2" />
+                    <p className="text-sm text-center mt-1 text-muted-foreground">{isImporting ? 'Importing documents...' : 'AI is organizing your files...'}</p>
                 </div>
             )}
             
-            <Card>
-                <CardContent className="divide-y divide-border p-0">
-                {filteredDocs.length === 0 ? (
-                    <div className="p-8 text-center text-muted-foreground">
-                        {syncing ? 'Syncing...' : 'No documents found.'}
-                    </div>
-                ) : (
-                    filteredDocs.map((d) => (
-                    <div key={d.id} className="flex items-center justify-between p-4 hover:bg-accent/50 transition">
-                        <div className="flex items-center gap-4">
-                            {d.isImported ? <CheckCircle2 className="h-5 w-5 text-green-500" /> : <FileText className="h-5 w-5" />}
-                            <div>
-                                <p className="font-medium flex items-center gap-2">
-                                    {d.name}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                    {d.source === 'drive' ? `Google Drive (${d.accountType})` : 'Local Upload'} &middot; {new Date(d.uploaded).toLocaleDateString()}
-                                </p>
-                            </div>
-                        </div>
-
-                         <div className='flex items-center gap-2'>
-                          {d.source === 'drive' && !d.isImported && (
-                              <Button variant="ghost" size="sm" onClick={() => handleImport(d).then(res => res && loadDocs())} disabled={isImporting || isPending}>
-                                  <Wand className="h-4 w-4 mr-2" /> Import
-                              </Button>
-                          )}
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => router.push(d.source === 'drive' && !d.isImported ? d.webViewLink : `/documents/${d.id}`)}
-                            target={d.source === 'drive' && !d.isImported ? '_blank' : ''}
-                            disabled={isPending}
-                           >
-                            View
-                          </Button>
-                        </div>
-
-                    </div>
-                    ))
+             <div className="space-y-4">
+                {filteredAndGroupedDocs.map(([folderName, docs]) => (
+                    <Collapsible key={folderName} defaultOpen>
+                        <CollapsibleTrigger className="w-full flex items-center gap-2 group mb-2">
+                           <ChevronDown className="h-5 w-5 transform transition-transform duration-200 group-data-[state=open]:rotate-0 -rotate-90" />
+                            <Input 
+                                defaultValue={folderName}
+                                onBlur={(e) => handleRenameFolder(folderName, e.target.value)}
+                                className="text-xl font-bold font-headline border-none bg-transparent focus-visible:ring-1 focus-visible:ring-primary p-1 h-auto"
+                            />
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                            <Card>
+                                <CardContent className="divide-y divide-border p-0">
+                                    {docs.map((d) => (
+                                        <div key={d.id} className="flex items-center justify-between p-4 hover:bg-accent/50 transition">
+                                            <div className="flex items-center gap-4">
+                                                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                                                <div>
+                                                    <p className="font-medium flex items-center gap-2">{d.name}</p>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {d.source === 'drive' ? `Google Drive (${d.accountType})` : 'Local Upload'} &middot; {new Date(d.uploaded).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="sm"
+                                                onClick={() => router.push(`/documents/${d.id}`)}
+                                                disabled={isPending}
+                                            >
+                                                View
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </CardContent>
+                            </Card>
+                        </CollapsibleContent>
+                    </Collapsible>
+                ))}
+                
+                {unimportedList.length > 0 && (
+                    <Collapsible defaultOpen>
+                         <CollapsibleTrigger className="w-full flex items-center gap-2 group mb-2">
+                            <ChevronDown className="h-5 w-5 transform transition-transform duration-200 group-data-[state=open]:rotate-0 -rotate-90" />
+                            <h2 className="text-xl font-bold font-headline p-1">Unimported from Google Drive</h2>
+                         </CollapsibleTrigger>
+                         <CollapsibleContent>
+                            <Card>
+                               <CardContent className="divide-y divide-border p-0">
+                                {unimportedList.map((d) => (
+                                    <div key={d.id} className="flex items-center justify-between p-4 hover:bg-accent/50 transition">
+                                    <div className="flex items-center gap-4">
+                                        <FileText className="h-5 w-5 text-muted-foreground" />
+                                        <div>
+                                            <p className="font-medium flex items-center gap-2 text-muted-foreground">{d.name}</p>
+                                            <p className="text-sm text-muted-foreground">
+                                                Google Drive ({d.accountType}) &middot; {new Date(d.uploaded).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className='flex items-center gap-2'>
+                                        <Button variant="ghost" size="sm" onClick={() => handleImport(d).then(res => res && loadDocs())} disabled={isImporting || isPending}>
+                                            <Wand className="h-4 w-4 mr-2" /> Import
+                                        </Button>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="sm"
+                                            onClick={() => router.push(d.webViewLink)}
+                                            target="_blank"
+                                            disabled={isPending}
+                                        >
+                                            View in Drive
+                                        </Button>
+                                    </div>
+                                    </div>
+                                ))}
+                                </CardContent>
+                            </Card>
+                         </CollapsibleContent>
+                    </Collapsible>
                 )}
-                </CardContent>
-            </Card>
+
+
+                {(filteredAndGroupedDocs.length === 0 && unimportedList.length === 0 && !isPending && !syncing) && (
+                     <div className="p-8 text-center text-muted-foreground border-2 border-dashed rounded-lg">
+                        <p>No documents found matching your criteria.</p>
+                    </div>
+                )}
+            </div>
         </div>
     </div>
     </>
