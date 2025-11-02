@@ -7,11 +7,9 @@ import { useUser } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ThemeToggleButton } from '../theme-toggle';
 import { Logo } from './logo';
-import { usePathname } from 'next/navigation';
 
 export function Header() {
   const { user } = useUser();
-  const pathname = usePathname();
   
   return (
     <div className="fixed top-0 left-0 right-0 z-50 p-2">
@@ -24,16 +22,16 @@ export function Header() {
             {user ? (
                 // Nav for logged in users
                 <nav className="hidden md:flex items-center gap-2">
-                    <Button asChild variant="ghost" className={pathname === '/' ? "text-primary" : ""}>
+                    <Button asChild variant="ghost">
                         <Link href="/">Workspace</Link>
                     </Button>
-                    <Button asChild variant="ghost" className={pathname.startsWith('/documents') ? "text-primary" : ""}>
+                    <Button asChild variant="ghost">
                         <Link href="/documents">My Documents</Link>
                     </Button>
-                     <Button asChild variant="ghost" className={pathname.startsWith('/history') ? "text-primary" : ""}>
+                     <Button asChild variant="ghost">
                         <Link href="/history">Chat History</Link>
                     </Button>
-                    <Button asChild variant="ghost" className={pathname.startsWith('/add') ? "text-primary" : ""}>
+                    <Button asChild variant="ghost">
                         <Link href="/add">Add Source</Link>
                     </Button>
                 </nav>
