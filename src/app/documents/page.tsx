@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useMemo, useRef, useState, useCallback, useTransition } from 'react';
@@ -282,7 +283,7 @@ function DocumentsPage() {
                         });
                         if (fileResponse.ok) {
                              const arrayBuffer = await fileResponse.arrayBuffer();
-                             const base64 = Buffer.from(arrayBuffer).toString('base64');
+                             const base64 = btoa(new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), ''));
                              const dataURI = `data:${doc.mimeType};base64,${base64}`;
                              const { text } = await extractPdfText({ pdfDataUri: dataURI });
                              content = text;
@@ -540,3 +541,5 @@ function DocumentsPage() {
 }
 
 export default withAuth(DocumentsPage);
+
+    
