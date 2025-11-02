@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,7 +18,7 @@ import { useUser } from '@/firebase';
 import withAuth from '@/firebase/auth/with-auth';
 import * as pdfjs from 'pdfjs-dist';
 import { generateDocumentName } from '@/ai/flows/generate-doc-name-flow';
-import { RefreshCw, UploadCloud, FolderPlus, Filter, FileText } from 'lucide-react';
+import { RefreshCw, UploadCloud, FolderPlus, Filter, FileText, Wand, Sparkles, AlertTriangle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +27,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { AccountType } from '@/firebase/auth/use-user';
 import { nanoid } from 'nanoid';
+import { extractGoogleDocContent } from '@/ai/flows/extract-google-doc-content';
+import { Progress } from '@/components/ui/progress';
 
 // Lazy PDF worker setup
 if (typeof window !== 'undefined') {
@@ -34,29 +36,11 @@ if (typeof window !== 'undefined') {
 }
 
 // ---------------------------------------------------------------------------
-// Helper functions
-// ---------------------------------------------------------------------------
-
-async function extractTextFromPdf(file: File | Blob): Promise<string> {
-  const buffer = await file.arrayBuffer();
-  const pdf = await pdfjs.getDocument({ data: buffer }).promise;
-  let text = '';
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    text +=
-      content.items.map((item) => ('str' in item ? item.str : '')).join(' ') +
-      '\n';
-  }
-  return text;
-}
-
-// ---------------------------------------------------------------------------
 // Main Documents Page Component
 // ---------------------------------------------------------------------------
 
 function DocumentsPage() {
-  const { user, fetchDriveFiles, signInWithGoogle, workProvider, personalProvider } = useUser();
+  const { user, fetchDriveFiles, signInWithGoogle, workProvider, personalProvider, workAccessToken, personalAccessToken } = useUser();
   const { toast } = useToast();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -65,6 +49,14 @@ function DocumentsPage() {
   const [syncing, setSyncing] = useState(false);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'local' | 'google-work' | 'google-personal'>('all');
+  const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
+
+  const [isPending, startTransition] = useTransition();
+
+  const unimportedCount = useMemo(() => {
+    return allDocs.filter(doc => doc.source === 'drive' && !doc.isImported).length;
+  }, [allDocs]);
 
   const filteredDocs = useMemo(() => {
       return allDocs
@@ -108,8 +100,9 @@ function DocumentsPage() {
 
       try {
           const driveFiles = await fetchDriveFiles(accountType);
-          if (!driveFiles) {
+          if (!driveFiles || driveFiles.length === 0) {
               toast({ title: 'Sync complete', description: 'No new files found.' });
+              setSyncing(false);
               return;
           }
           
@@ -117,17 +110,17 @@ function DocumentsPage() {
           const currentLocalDocs = JSON.parse(localStorage.getItem(localKey) || '[]');
           
           const existingIds = new Set(currentLocalDocs.map((d: any) => d.id));
-          const newDriveFiles = driveFiles.filter(f => !existingIds.has(f.id));
+          const newDriveFiles = driveFiles.filter((f:any) => !existingIds.has(f.id));
 
           if (newDriveFiles.length === 0) {
               toast({ title: 'Sync complete', description: 'All files are up to date.' });
+              setSyncing(false);
               return;
           }
 
           toast({ title: 'Processing new files...', description: `${newDriveFiles.length} new file(s) found.`});
 
           for (const file of newDriveFiles) {
-              // We'll just add the metadata for now. Import will happen from the UI.
               currentLocalDocs.unshift({
                 ...file,
                 isImported: false,
@@ -147,7 +140,7 @@ function DocumentsPage() {
       }
   };
   
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || file.type !== 'application/pdf') {
       toast({ variant: 'destructive', title: 'Invalid File', description: 'Only PDF files supported.' });
@@ -162,9 +155,17 @@ function DocumentsPage() {
     toast({ title: 'Processing file...', description: 'Extracting text and generating name.' });
     
     try {
-        const textContent = await extractTextFromPdf(file);
-        let name = file.name;
+        const textContent = await pdfjs.getDocument(await file.arrayBuffer()).promise.then(async pdf => {
+            let text = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                text += content.items.map((item: any) => item.str).join(' ') + '\n';
+            }
+            return text;
+        });
 
+        let name = file.name;
         try {
             const ai = await generateDocumentName({ textContent });
             name = ai.name;
@@ -188,7 +189,6 @@ function DocumentsPage() {
         const updated = [entry, ...existing];
         localStorage.setItem(`documents_${user.uid}`, JSON.stringify(updated));
         
-        // Also save the content for the viewer
         const reader = new FileReader();
         reader.onload = (event) => {
             if(event.target?.result) {
@@ -204,11 +204,62 @@ function DocumentsPage() {
     }
   };
 
+
   const handleConnect = async (accountType: AccountType) => {
       toast({ title: 'Connecting to Google...', description: 'Please follow the prompts.'});
-      await signInWithGoogle(accountType);
-      await syncAndProcessDrive(accountType);
+      try {
+        await signInWithGoogle(accountType);
+        await syncAndProcessDrive(accountType);
+      } catch(e: any) {
+        toast({ variant: 'destructive', title: 'Connection Failed', description: e.message });
+      }
   }
+
+  const handleImport = async (docId: string) => {
+    if (!user) return;
+    const docs = [...allDocs];
+    const docIndex = docs.findIndex(d => d.id === docId);
+    if (docIndex === -1) return;
+
+    const doc = docs[docIndex];
+    const token = doc.accountType === 'work' ? workAccessToken : personalAccessToken;
+    if (!token) {
+        toast({ variant: 'destructive', title: 'Authentication Error', description: `Please re-connect your ${doc.accountType} account.`});
+        return null;
+    }
+    
+    try {
+        const { content } = await extractGoogleDocContent({ fileId: doc.id, mimeType: doc.mimeType, accessToken: token });
+        docs[docIndex] = { ...doc, textContent: content, isImported: true };
+        localStorage.setItem(`document_content_${doc.id}`, content);
+        
+        setAllDocs(docs);
+        localStorage.setItem(`documents_${user.uid}`, JSON.stringify(docs));
+        toast({ title: 'Imported!', description: `"${doc.name}" is ready.`});
+    } catch (e: any) {
+        toast({ variant: 'destructive', title: `Failed to import "${doc.name}"`, description: e.message });
+    }
+  }
+  
+  const handleImportAll = async () => {
+    if (isImporting) return;
+    
+    startTransition(async () => {
+        setIsImporting(true);
+        const unimportedDocs = allDocs.filter(doc => doc.source === 'drive' && !doc.isImported);
+        const totalToImport = unimportedDocs.length;
+        
+        for (let i = 0; i < totalToImport; i++) {
+            const doc = unimportedDocs[i];
+            await handleImport(doc.id);
+            setImportProgress(((i + 1) / totalToImport) * 100);
+        }
+
+        setIsImporting(false);
+        setImportProgress(0);
+        toast({ title: 'Bulk Import Complete', description: 'All new documents have been processed.' });
+    });
+  };
 
   return (
     <div className="relative min-h-screen w-full pt-16">
@@ -217,12 +268,12 @@ function DocumentsPage() {
             <div className="flex items-center justify-between mb-8">
                 <h1 className="text-3xl font-bold font-headline">Your Documents</h1>
                 <div className="flex gap-3">
-                    <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                    <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isImporting}>
                         <UploadCloud className="h-4 w-4 mr-2" /> Upload PDF
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button>
+                        <Button disabled={syncing || isImporting}>
                           <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} /> Connect & Sync
                         </Button>
                       </DropdownMenuTrigger>
@@ -234,7 +285,7 @@ function DocumentsPage() {
                         {personalProvider && <DropdownMenuItem onSelect={() => syncAndProcessDrive('personal')} disabled={syncing}>Sync Personal Account</DropdownMenuItem>}
                       </DropdownMenuContent>
                     </DropdownMenu>
-                    <Button onClick={() => router.push('/add')}>
+                    <Button onClick={() => router.push('/add')} disabled={isImporting}>
                         <FolderPlus className="h-4 w-4 mr-2" /> Manage Sources
                     </Button>
                 </div>
@@ -260,8 +311,20 @@ function DocumentsPage() {
                         <SelectItem value="google-personal">Google (Personal)</SelectItem>
                     </SelectContent>
                 </Select>
+                 {unimportedCount > 0 && (
+                    <Button onClick={handleImportAll} disabled={isImporting} variant="secondary">
+                        <Sparkles className={`h-4 w-4 mr-2 ${isImporting ? 'animate-spin' : ''}`} /> 
+                        {isImporting ? 'Importing...' : `Import All (${unimportedCount})`}
+                    </Button>
+                )}
             </div>
-
+             {isImporting && (
+                <div className="mb-4">
+                    <Progress value={importProgress} className="w-full h-2" />
+                    <p className="text-sm text-center mt-1 text-muted-foreground">Importing documents... please wait.</p>
+                </div>
+            )}
+            
             <Card>
                 <CardContent className="divide-y divide-border p-0">
                 {filteredDocs.length === 0 ? (
@@ -271,18 +334,34 @@ function DocumentsPage() {
                 ) : (
                     filteredDocs.map((d) => (
                     <div key={d.id} className="flex items-center justify-between p-4 hover:bg-accent/50 transition">
-                        <div>
-                            <p className="font-medium flex items-center gap-2">
-                                <FileText className="h-4 w-4" />
-                                {d.name}
-                            </p>
-                            <p className="text-sm text-muted-foreground ml-6">
-                                {d.source === 'drive' ? `Google Drive (${d.accountType})` : 'Local Upload'} &middot; {new Date(d.uploaded).toLocaleDateString()}
-                            </p>
+                        <div className="flex items-center gap-4">
+                            <FileText className="h-5 w-5" />
+                            <div>
+                                <p className="font-medium flex items-center gap-2">
+                                    {d.name}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                    {d.source === 'drive' ? `Google Drive (${d.accountType})` : 'Local Upload'} &middot; {new Date(d.uploaded).toLocaleDateString()}
+                                </p>
+                            </div>
                         </div>
-                        <Button variant="ghost" onClick={() => router.push(d.isImported ? `/documents/${d.id}`: d.webViewLink)} target={d.isImported ? '' : '_blank'}>
+
+                         <div className='flex items-center gap-2'>
+                          {d.source === 'drive' && !d.isImported && (
+                              <Button variant="ghost" onClick={() => handleImport(d.id)} disabled={isImporting}>
+                                  <Wand className="h-4 w-4 mr-2" /> Import
+                              </Button>
+                          )}
+                          <Button 
+                            variant="ghost" 
+                            onClick={() => router.push(d.isImported ? `/documents/${d.id}` : d.webViewLink)} 
+                            target={d.isImported || d.source === 'local' ? '' : '_blank'}
+                            disabled={d.source === 'drive' && !d.isImported}
+                           >
                             View
-                        </Button>
+                          </Button>
+                        </div>
+
                     </div>
                     ))
                 )}
@@ -294,3 +373,5 @@ function DocumentsPage() {
 }
 
 export default withAuth(DocumentsPage);
+
+    
