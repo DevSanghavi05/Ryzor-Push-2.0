@@ -6,9 +6,9 @@ import { extractGoogleDocContent } from '@/ai/flows/extract-google-doc-content';
 import { extractPdfText } from '@/ai/flows/extract-pdf-text-flow';
 
 async function getDocumentContent(doc: any, workToken?: string | null, personalToken?: string | null): Promise<string> {
-    if (doc.source === 'local' && doc.content) {
-        // For local files, the content is already passed from the client
-        return doc.content;
+    // For local files, the content is passed directly in the 'doc' object from the client.
+    if (doc.source === 'local') {
+        return doc.content || '';
     }
 
     if (doc.source === 'drive') {
@@ -69,14 +69,8 @@ export async function ask(
   else if (docList.length > 1) {
     const previewDocs = await Promise.all(
         docList.map(async (d) => {
-            let previewContent = '';
-            if (d.source === 'local' && d.content) {
-                previewContent = (d.content || '').substring(0, 2000);
-            } else {
-                // For Drive files, the preview is just the name and tags.
-                // We avoid fetching content here to keep routing fast.
-                previewContent = `Document from Google Drive. Name: ${d.name}`;
-            }
+            // Server-side content preview generation
+            const previewContent = (await getDocumentContent(d, tokens.work, tokens.personal)).substring(0, 2000);
             return { name: d.name, tags: d.tags || [], content: previewContent, id: d.id };
         })
     );
@@ -86,7 +80,7 @@ export async function ask(
       Consider the document name, its tags, and the content preview. Respond with a list of the exact names of the relevant documents, each on a new line, prefixed with '- '. Do not add any other text. If no documents are relevant, respond with an empty list.
 
       Available documents:
-      ${previewDocs.map(d => `- ${d.name} (Tags: ${d.tags ? d.tags.join(', ') : 'None'})`).join('\n')}
+      ${previewDocs.map(d => `- ${d.name} (Tags: ${d.tags ? d.tags.join(', ') : 'None'})\nPreview: ${d.content.substring(0,100)}...`).join('\n')}
 
       User question: "${question}"
 
@@ -99,7 +93,7 @@ export async function ask(
       history: [], // History is not needed for routing
     });
 
-    const relevantDocNames = docChoiceResponse.text.trim().split('\n').filter(name => name.trim() !== '' && name.startsWith('- ')).map(name => name.substring(2).trim().replace(/ \(Tags:.*\)/, ''));
+    const relevantDocNames = docChoiceResponse.text.trim().split('\n').filter(name => name.trim() !== '' && name.startsWith('- ')).map(name => name.substring(2).trim().replace(/ \(Tags:.*\)/, '').replace(/Preview:.*$/, '').trim());
     
     if (relevantDocNames.length > 0) {
         const foundDocs = docList.filter(d => relevantDocNames.includes(d.name));

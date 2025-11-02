@@ -157,11 +157,14 @@ function LoggedInView() {
         : allDocs;
 
       // For local docs, retrieve content from local storage and add it to the object
+      // The server will now handle all content fetching, so we just pass the metadata.
       const docsWithContent = docsForContext.map((doc: any) => {
           if (doc.source === 'local') {
               const content = localStorage.getItem(`document_content_${doc.id}`);
               return { ...doc, content: content || '' };
           }
+          // For Drive docs, we don't need to pass content from the client.
+          // The server action will fetch it.
           return doc;
       });
 
@@ -318,7 +321,7 @@ function LoggedInView() {
           {/* Chat Bar */}
           <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none">
             <div className="mx-auto max-w-4xl pointer-events-auto">
-                <div className="bg-background rounded-full border border-border shadow-2xl shadow-primary/10 overflow-hidden">
+                <div className="bg-background/80 backdrop-blur-xl rounded-full border border-border shadow-2xl shadow-primary/10 overflow-hidden">
                   <div className="p-2 flex items-center gap-2">
                      <Button
                         size="icon"
@@ -326,7 +329,7 @@ function LoggedInView() {
                         onClick={() => setIsDocPickerOpen(true)}
                         className="relative rounded-full hover:bg-accent/50 text-foreground transition-all duration-200 shrink-0 h-10 w-10"
                       >
-                        <Paperclip className="w-5 h-5" />
+                        <Target className="w-5 h-5" />
                         <span className="sr-only">Focus on specific documents</span>
                         {focusedDocIds.size > 0 && (
                           <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
@@ -335,7 +338,7 @@ function LoggedInView() {
                         )}
                       </Button>
                     <Input
-                      placeholder="What do you want to know?"
+                      placeholder='Ask anything, or mention a file with @"document name"...'
                       className="border-none focus-visible:ring-0 flex-1 text-base bg-transparent text-foreground placeholder:text-muted-foreground/60 px-2 h-10"
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
@@ -343,15 +346,9 @@ function LoggedInView() {
                       disabled={loading}
                     />
 
-                    <Button variant="ghost" className="rounded-full flex items-center gap-1.5 h-10 px-3">
-                      <Rocket className="w-4 h-4" />
-                      Auto
-                      <ChevronDown className="w-4 h-4 opacity-50" />
-                    </Button>
-
                     <Button
                       size="icon"
-                      className="rounded-full bg-primary/20 hover:bg-primary/30 text-primary transition-all duration-200 shrink-0 h-10 w-10"
+                      className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 shrink-0 h-10 w-10"
                       onClick={handleInteraction}
                       disabled={loading || !input.trim()}
                     >
