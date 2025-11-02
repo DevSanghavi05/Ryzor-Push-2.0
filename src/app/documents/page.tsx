@@ -174,7 +174,6 @@ function DocumentsPage() {
         const updatedDoc = { ...doc, isImported: true };
 
         // For Google Drive PDFs, we need to fetch the content and pass it to the text extractor
-        // We no longer save content to localStorage to avoid quota errors
         if (doc.source === 'drive' && doc.mimeType === 'application/pdf') {
             const token = doc.accountType === 'work' ? workAccessToken : personalAccessToken;
             if (!token) throw new Error('Missing authentication token for Drive.');
@@ -184,12 +183,7 @@ function DocumentsPage() {
             });
             if (!fileResponse.ok) throw new Error('Failed to fetch PDF content from Drive.');
             
-            const arrayBuffer = await fileResponse.arrayBuffer();
-            const base64 = Buffer.from(arrayBuffer).toString('base64');
-            const dataURI = `data:application/pdf;base64,${base64}`;
-            
-            // This is now done on-demand in the ask action.
-            // const { text } = await extractPdfText({ pdfDataUri: dataURI });
+            // We no longer save content to localStorage to avoid quota errors
         }
         
         return updatedDoc;
@@ -209,11 +203,15 @@ function DocumentsPage() {
 
     const unimportedDocs = allDocs.filter(doc => doc.source === 'drive' && !doc.isImported);
     const totalToImport = unimportedDocs.length;
+    let importedSoFar = 0;
 
-    const importPromises = unimportedDocs.map((doc, index) => 
+    const importPromises = unimportedDocs.map((doc) => 
       handleImport(doc).then(updatedDoc => {
-          setImportProgress(((index + 1) / totalToImport) * 100);
-          return updatedDoc;
+        if (updatedDoc) {
+          importedSoFar++;
+        }
+        setImportProgress(((importedSoFar) / totalToImport) * 100);
+        return updatedDoc;
       })
     );
     
