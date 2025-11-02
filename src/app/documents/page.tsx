@@ -18,7 +18,7 @@ import { useUser } from '@/firebase';
 import withAuth from '@/firebase/auth/with-auth';
 import * as pdfjs from 'pdfjs-dist';
 import { generateDocumentName } from '@/ai/flows/generate-doc-name-flow';
-import { RefreshCw, UploadCloud, FolderPlus, Filter, FileText, Wand, Sparkles, AlertTriangle } from 'lucide-react';
+import { RefreshCw, UploadCloud, FolderPlus, Filter, FileText, Wand, Sparkles, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +29,8 @@ import { AccountType } from '@/firebase/auth/use-user';
 import { nanoid } from 'nanoid';
 import { extractGoogleDocContent } from '@/ai/flows/extract-google-doc-content';
 import { Progress } from '@/components/ui/progress';
+import { HyperdriveAnimation } from '@/components/animations/hyperdrive-animation';
+
 
 // Lazy PDF worker setup
 if (typeof window !== 'undefined') {
@@ -51,6 +53,7 @@ function DocumentsPage() {
   const [filter, setFilter] = useState<'all' | 'local' | 'google-work' | 'google-personal'>('all');
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
+  const [importComplete, setImportComplete] = useState(false);
 
   const [isPending, startTransition] = useTransition();
 
@@ -120,19 +123,19 @@ function DocumentsPage() {
 
           toast({ title: 'Processing new files...', description: `${newDriveFiles.length} new file(s) found.`});
 
-          for (const file of newDriveFiles) {
-              currentLocalDocs.unshift({
-                ...file,
-                isImported: false,
-                uploaded: file.modifiedTime,
-              });
-          }
+          const driveDocsToAdd = newDriveFiles.map(file => ({
+            ...file,
+            isImported: false,
+            uploaded: file.modifiedTime,
+          }));
+
+          const updatedDocs = [...driveDocsToAdd, ...currentLocalDocs];
           
-          localStorage.setItem(localKey, JSON.stringify(currentLocalDocs));
-          setAllDocs(currentLocalDocs);
+          localStorage.setItem(localKey, JSON.stringify(updatedDocs));
+          setAllDocs(updatedDocs);
           toast({ title: 'Drive Synced', description: `Added ${newDriveFiles.length} new file references.` });
 
-      } catch (e: any) {
+      } catch (e: any) => {
           console.error(e);
           toast({ variant: 'destructive', title: `Drive Sync Failed for ${accountType}`, description: e.message });
       } finally {
@@ -215,13 +218,9 @@ function DocumentsPage() {
       }
   }
 
-  const handleImport = async (docId: string) => {
-    if (!user) return;
-    const docs = [...allDocs];
-    const docIndex = docs.findIndex(d => d.id === docId);
-    if (docIndex === -1) return;
+  const handleImport = async (doc: any): Promise<any | null> => {
+    if (!user) return null;
 
-    const doc = docs[docIndex];
     const token = doc.accountType === 'work' ? workAccessToken : personalAccessToken;
     if (!token) {
         toast({ variant: 'destructive', title: 'Authentication Error', description: `Please re-connect your ${doc.accountType} account.`});
@@ -230,38 +229,58 @@ function DocumentsPage() {
     
     try {
         const { content } = await extractGoogleDocContent({ fileId: doc.id, mimeType: doc.mimeType, accessToken: token });
-        docs[docIndex] = { ...doc, textContent: content, isImported: true };
+        const updatedDoc = { ...doc, textContent: content, isImported: true };
         localStorage.setItem(`document_content_${doc.id}`, content);
         
-        setAllDocs(docs);
-        localStorage.setItem(`documents_${user.uid}`, JSON.stringify(docs));
-        toast({ title: 'Imported!', description: `"${doc.name}" is ready.`});
+        return updatedDoc;
     } catch (e: any) {
         toast({ variant: 'destructive', title: `Failed to import "${doc.name}"`, description: e.message });
+        return null; // Return null on failure
     }
   }
   
   const handleImportAll = async () => {
-    if (isImporting) return;
+    if (isImporting || unimportedCount === 0) return;
     
-    startTransition(async () => {
-        setIsImporting(true);
-        const unimportedDocs = allDocs.filter(doc => doc.source === 'drive' && !doc.isImported);
-        const totalToImport = unimportedDocs.length;
-        
-        for (let i = 0; i < totalToImport; i++) {
-            const doc = unimportedDocs[i];
-            await handleImport(doc.id);
-            setImportProgress(((i + 1) / totalToImport) * 100);
-        }
+    setIsImporting(true);
+    setImportProgress(0);
+    setImportComplete(false);
 
-        setIsImporting(false);
-        setImportProgress(0);
-        toast({ title: 'Bulk Import Complete', description: 'All new documents have been processed.' });
+    const unimportedDocs = allDocs.filter(doc => doc.source === 'drive' && !doc.isImported);
+    const totalToImport = unimportedDocs.length;
+    let importedCount = 0;
+
+    const importPromises = unimportedDocs.map(doc => 
+      handleImport(doc).then(updatedDoc => {
+        if (updatedDoc) {
+          importedCount++;
+          setImportProgress((importedCount / totalToImport) * 100);
+          return updatedDoc;
+        }
+        return doc; // Return original doc if import failed
+      })
+    );
+
+    const results = await Promise.all(importPromises);
+
+    startTransition(() => {
+      const updatedDocs = allDocs.map(doc => {
+        const updatedVersion = results.find(res => res.id === doc.id);
+        return updatedVersion || doc;
+      });
+
+      setAllDocs(updatedDocs);
+      localStorage.setItem(`documents_${user.uid}`, JSON.stringify(updatedDocs));
+      
+      setIsImporting(false);
+      setImportComplete(true); // Trigger animation
+      toast({ title: 'Bulk Import Complete', description: `${importedCount} documents have been processed.` });
     });
   };
 
   return (
+    <>
+    <HyperdriveAnimation show={importComplete} onComplete={() => setImportComplete(false)} />
     <div className="relative min-h-screen w-full pt-16">
       <div className="bg-aurora"></div>
         <div className="relative container mx-auto py-12">
@@ -312,16 +331,16 @@ function DocumentsPage() {
                     </SelectContent>
                 </Select>
                  {unimportedCount > 0 && (
-                    <Button onClick={handleImportAll} disabled={isImporting} variant="secondary">
+                    <Button onClick={handleImportAll} disabled={isImporting || isPending} variant="secondary">
                         <Sparkles className={`h-4 w-4 mr-2 ${isImporting ? 'animate-spin' : ''}`} /> 
-                        {isImporting ? 'Importing...' : `Import All (${unimportedCount})`}
+                        {isImporting ? `Importing... (${Math.round(importProgress)}%)` : `Import All (${unimportedCount})`}
                     </Button>
                 )}
             </div>
              {isImporting && (
                 <div className="mb-4">
                     <Progress value={importProgress} className="w-full h-2" />
-                    <p className="text-sm text-center mt-1 text-muted-foreground">Importing documents... please wait.</p>
+                    <p className="text-sm text-center mt-1 text-muted-foreground">Importing documents... this may take a moment.</p>
                 </div>
             )}
             
@@ -335,7 +354,7 @@ function DocumentsPage() {
                     filteredDocs.map((d) => (
                     <div key={d.id} className="flex items-center justify-between p-4 hover:bg-accent/50 transition">
                         <div className="flex items-center gap-4">
-                            <FileText className="h-5 w-5" />
+                            {d.isImported ? <CheckCircle2 className="h-5 w-5 text-green-500" /> : <FileText className="h-5 w-5" />}
                             <div>
                                 <p className="font-medium flex items-center gap-2">
                                     {d.name}
@@ -348,14 +367,14 @@ function DocumentsPage() {
 
                          <div className='flex items-center gap-2'>
                           {d.source === 'drive' && !d.isImported && (
-                              <Button variant="ghost" onClick={() => handleImport(d.id)} disabled={isImporting}>
+                              <Button variant="ghost" onClick={() => handleImport(d)} disabled={isImporting || isPending}>
                                   <Wand className="h-4 w-4 mr-2" /> Import
                               </Button>
                           )}
                           <Button 
                             variant="ghost" 
-                            onClick={() => router.push(d.isImported ? `/documents/${d.id}` : d.webViewLink)} 
-                            target={d.isImported || d.source === 'local' ? '' : '_blank'}
+                            onClick={() => router.push(d.source === 'drive' && !d.isImported ? d.webViewLink : `/documents/${d.id}`)}
+                            target={d.source === 'drive' && !d.isImported ? '_blank' : ''}
                             disabled={d.source === 'drive' && !d.isImported}
                            >
                             View
@@ -369,9 +388,8 @@ function DocumentsPage() {
             </Card>
         </div>
     </div>
+    </>
   );
 }
 
 export default withAuth(DocumentsPage);
-
-    
