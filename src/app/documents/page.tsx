@@ -135,7 +135,7 @@ function DocumentsPage() {
           setAllDocs(updatedDocs);
           toast({ title: 'Drive Synced', description: `Added ${newDriveFiles.length} new file references.` });
 
-      } catch (e: any) => {
+      } catch (e: any) {
           console.error(e);
           toast({ variant: 'destructive', title: `Drive Sync Failed for ${accountType}`, description: e.message });
       } finally {
@@ -270,7 +270,7 @@ function DocumentsPage() {
       });
 
       setAllDocs(updatedDocs);
-      localStorage.setItem(`documents_${user.uid}`, JSON.stringify(updatedDocs));
+      localStorage.setItem(`documents_${user!.uid}`, JSON.stringify(updatedDocs));
       
       setIsImporting(false);
       setImportComplete(true); // Trigger animation
