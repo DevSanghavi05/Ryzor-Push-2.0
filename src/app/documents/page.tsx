@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useMemo, useRef, useState, useCallback, useTransition } from 'react';
@@ -541,5 +540,3 @@ function DocumentsPage() {
 }
 
 export default withAuth(DocumentsPage);
-
-    
