@@ -151,20 +151,15 @@ function LoggedInView() {
         return;
       }
       
-      // Determine which documents to use for context
       const docsForContext = focusedDocIds.size > 0 
         ? allDocs.filter(doc => focusedDocIds.has(doc.id)) 
         : allDocs;
 
-      // For local docs, retrieve content from local storage and add it to the object
-      // The server will now handle all content fetching, so we just pass the metadata.
       const docsWithContent = docsForContext.map((doc: any) => {
           if (doc.source === 'local') {
               const content = localStorage.getItem(`document_content_${doc.id}`);
               return { ...doc, content: content || '' };
           }
-          // For Drive docs, we don't need to pass content from the client.
-          // The server action will fetch it.
           return doc;
       });
 
@@ -209,12 +204,6 @@ function LoggedInView() {
     }
   };
 
-  const suggestedQuestions = [
-    { icon: FileText, text: "Summarize my recent documents", gradient: "from-blue-500 to-cyan-500" },
-    { icon: Zap, text: "Find information about revenue", gradient: "from-violet-500 to-purple-500" },
-    { icon: Brain, text: "Compare Q2 and Q3 reports", gradient: "from-pink-500 to-rose-500" },
-  ];
-
   return (
       <div className="flex w-full h-dvh pt-16 relative overflow-hidden">
         <div className="bg-aurora"></div>
@@ -232,138 +221,118 @@ function LoggedInView() {
           {/* Chat Messages */}
           <div
             ref={chatContainerRef}
-            className="flex-1 p-6 pb-40 overflow-y-auto"
+            className="flex-1 p-6 overflow-y-auto"
           >
-            {messages.length === 0 && !loading && (
-              <div className="text-center mt-20 max-w-3xl mx-auto">
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <div className="relative inline-flex items-center justify-center w-24 h-24 mb-8">
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-violet-500 to-pink-500 rounded-3xl blur-2xl opacity-60 animate-pulse" />
-                    <div className="relative z-10 inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-r from-blue-500 via-violet-500 to-pink-500">
-                      <Sparkles className="w-12 h-12 text-white" />
-                    </div>
-                  </div>
-                  <h1 className="text-5xl font-bold mb-4 mt-6 tracking-tight bg-gradient-to-br from-foreground to-muted-foreground bg-clip-text text-transparent">Your intelligent workspace.</h1>
-                  <p className="text-muted-foreground text-lg mb-10">
-                    Ask anything about your documents. I'll search across everything to find what you need.
-                  </p>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {suggestedQuestions.map((q, i) => (
-                      <motion.button
-                        key={i}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: 0.1 * i }}
-                        onClick={() => setInput(q.text)}
-                        className="w-full text-left p-4 rounded-xl bg-background/50 border border-border hover:bg-accent/10 hover:border-border transition-all duration-200 group relative overflow-hidden"
-                      >
-                        <div className={`absolute -inset-px bg-gradient-to-r ${q.gradient} rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md`} />
-                        <div className="relative flex items-center gap-3">
-                          <div className={`flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-r ${q.gradient} text-white shadow-lg`}>
-                            <q.icon className="w-5 h-5" />
-                          </div>
-                          <span className="text-sm font-medium">{q.text}</span>
+            {messages.length > 0 ? (
+                <div className="space-y-6 max-w-4xl mx-auto pb-40">
+                  {messages.map((msg, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4 }}
+                      className={`flex gap-4 items-start ${
+                        msg.role === 'user' ? 'justify-end' : 'justify-start'
+                      }`}
+                    >
+                      {msg.role === 'model' && (
+                        <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-blue-500 via-violet-500 to-pink-500 flex items-center justify-center text-white p-2 shrink-0 shadow-lg shadow-violet-500/30">
+                          <Logo />
                         </div>
-                      </motion.button>
-                    ))}
-                  </div>
-                </motion.div>
+                      )}
+                      <div
+                        className={`px-5 py-3.5 rounded-2xl max-w-[80%] ${
+                          msg.role === 'user' 
+                            ? 'bg-gradient-to-br from-blue-500 to-violet-500 text-white shadow-lg shadow-blue-500/30' 
+                            : 'bg-card border border-border'
+                        }`}
+                      >
+                         {msg.role === 'model' && msg.content === '' && loading ? (
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                <span>Ryzor is thinking...</span>
+                            </div>
+                        ) : (
+                            <MarkdownContent content={msg.content + (loading && i === messages.length -1 ? '▋' : '')} />
+                        )}
+                      </div>
+                      {msg.role === 'user' && (
+                        <div className="w-9 h-9 rounded-2xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-border">
+                          <User size={18} />
+                        </div>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center max-w-2xl mx-auto -mt-16">
+                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+                     <h1 className="text-6xl font-bold tracking-tighter bg-gradient-to-br from-foreground to-muted-foreground bg-clip-text text-transparent">
+                        Ryzor
+                      </h1>
+                      <p className="text-muted-foreground text-lg mt-2 mb-12">
+                          Your intelligent workspace for instant answers.
+                      </p>
+                  </motion.div>
               </div>
             )}
-
-            <div className="space-y-6 max-w-4xl mx-auto">
-              {messages.map((msg, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4 }}
-                  className={`flex gap-4 items-start ${
-                    msg.role === 'user' ? 'justify-end' : 'justify-start'
-                  }`}
-                >
-                  {msg.role === 'model' && (
-                    <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-blue-500 via-violet-500 to-pink-500 flex items-center justify-center text-white p-2 shrink-0 shadow-lg shadow-violet-500/30">
-                      <Logo />
-                    </div>
-                  )}
-                  <div
-                    className={`px-5 py-3.5 rounded-2xl max-w-[80%] ${
-                      msg.role === 'user' 
-                        ? 'bg-gradient-to-br from-blue-500 to-violet-500 text-white shadow-lg shadow-blue-500/30' 
-                        : 'bg-card border border-border'
-                    }`}
-                  >
-                     {msg.role === 'model' && msg.content === '' && loading ? (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <span>Ryzor is thinking...</span>
-                        </div>
-                    ) : (
-                        <MarkdownContent content={msg.content + (loading && i === messages.length -1 ? '▋' : '')} />
-                    )}
-                  </div>
-                  {msg.role === 'user' && (
-                    <div className="w-9 h-9 rounded-2xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-border">
-                      <User size={18} />
-                    </div>
-                  )}
-                </motion.div>
-              ))}
-            </div>
           </div>
 
           {/* Chat Bar */}
-          <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none">
-            <div className="mx-auto max-w-4xl pointer-events-auto">
-                <div className="bg-background/80 backdrop-blur-xl rounded-full border border-border shadow-2xl shadow-primary/10 overflow-hidden">
-                  <div className="p-2 flex items-center gap-2">
-                     <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => setIsDocPickerOpen(true)}
-                        className="relative rounded-full hover:bg-accent/50 text-foreground transition-all duration-200 shrink-0 h-10 w-10"
-                      >
-                        <Target className="w-5 h-5" />
-                        <span className="sr-only">Focus on specific documents</span>
-                        {focusedDocIds.size > 0 && (
-                          <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
-                            {focusedDocIds.size}
-                          </Badge>
-                        )}
-                      </Button>
-                    <Input
-                      placeholder='Ask anything, or mention a file with @"document name"...'
-                      className="border-none focus-visible:ring-0 flex-1 text-base bg-transparent text-foreground placeholder:text-muted-foreground/60 px-2 h-10"
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleInteraction()}
-                      disabled={loading}
-                    />
+           <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-background via-background/80 to-transparent">
+            <div className="mx-auto max-w-4xl">
+                 <motion.div 
+                    initial={{ opacity: 0, y: 20 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                    className="relative"
+                  >
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-primary via-accent to-primary rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000" />
+                    <div className="relative bg-background/80 backdrop-blur-xl rounded-2xl border border-border shadow-lg">
+                      <div className="p-4 flex items-center gap-2">
+                        <Input
+                          placeholder='Ask anything about your documents...'
+                          className="border-none focus-visible:ring-0 flex-1 text-base bg-transparent text-foreground placeholder:text-muted-foreground/60 px-2 h-10"
+                          value={input}
+                          onChange={(e) => setInput(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleInteraction()}
+                          disabled={loading}
+                        />
 
-                    <Button
-                      size="icon"
-                      className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 shrink-0 h-10 w-10"
-                      onClick={handleInteraction}
-                      disabled={loading || !input.trim()}
-                    >
-                      {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-                    </Button>
-                  </div>
-                </div>
-               {messages.length > 0 && (
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => setIsDocPickerOpen(true)}
+                            className="relative rounded-full hover:bg-accent/10 text-muted-foreground hover:text-foreground transition-all duration-200 shrink-0 h-10 w-10"
+                          >
+                            <Target className="w-5 h-5" />
+                            <span className="sr-only">Focus on specific documents</span>
+                            {focusedDocIds.size > 0 && (
+                              <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                                {focusedDocIds.size}
+                              </Badge>
+                            )}
+                          </Button>
+
+                        <Button
+                          size="icon"
+                          className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 shrink-0 h-10 w-10"
+                          onClick={handleInteraction}
+                          disabled={loading || !input.trim()}
+                        >
+                          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                        </Button>
+                      </div>
+                    </div>
+                </motion.div>
+                {messages.length > 0 && (
                   <div className="flex justify-center mt-3">
                      <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
                             <AlertDialogTrigger asChild>
                                <Button
                                  size="sm"
                                  variant="ghost"
-                                 className="rounded-full text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                                 className="rounded-full text-muted-foreground hover:bg-accent/10 hover:text-foreground"
                                >
                                  <RotateCw className="w-4 h-4 mr-2" />
                                  New Chat
@@ -387,6 +356,7 @@ function LoggedInView() {
                 )}
             </div>
           </div>
+
         </div>
       </div>
   );
@@ -560,25 +530,25 @@ function LandingPage() {
                                   )}
 
                                   <div className="feature-pills flex gap-4 flex-wrap">
-                                      <div className="pill bg-background/50 border border-blue-500/30 py-4 px-6 rounded-2xl text-sm text-foreground flex items-center gap-3 backdrop-blur-xl hover:border-blue-400/50 hover:bg-blue-500/10 transition-all duration-300 shadow-lg group/pill">
+                                      <div className="bg-background/50 border border-blue-500/30 py-4 px-6 rounded-2xl text-sm text-foreground flex items-center gap-3 backdrop-blur-xl hover:border-blue-400/50 hover:bg-blue-500/10 transition-all duration-300 shadow-lg group/pill">
                                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/50 group-hover/pill:scale-110 transition-transform">
                                           <FileText className="w-5 h-5 text-white" />
                                         </div>
                                         <span className="font-semibold">All your documents</span>
                                       </div>
-                                      <div className="pill bg-background/50 border border-violet-500/30 py-4 px-6 rounded-2xl text-sm text-foreground flex items-center gap-3 backdrop-blur-xl hover:border-violet-400/50 hover:bg-violet-500/10 transition-all duration-300 shadow-lg group/pill">
+                                      <div className="bg-background/50 border border-violet-500/30 py-4 px-6 rounded-2xl text-sm text-foreground flex items-center gap-3 backdrop-blur-xl hover:border-violet-400/50 hover:bg-violet-500/10 transition-all duration-300 shadow-lg group/pill">
                                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center shadow-lg shadow-violet-500/50 group-hover/pill:scale-110 transition-transform">
                                           <Brain className="w-5 h-5 text-white" />
                                         </div>
                                         <span className="font-semibold">Smart search</span>
                                       </div>
-                                      <div className="pill bg-background/50 border border-pink-500/30 py-4 px-6 rounded-2xl text-sm text-foreground flex items-center gap-3 backdrop-blur-xl hover:border-pink-400/50 hover:bg-pink-500/10 transition-all duration-300 shadow-lg group/pill">
+                                      <div className="bg-background/50 border border-pink-500/30 py-4 px-6 rounded-2xl text-sm text-foreground flex items-center gap-3 backdrop-blur-xl hover:border-pink-400/50 hover:bg-pink-500/10 transition-all duration-300 shadow-lg group/pill">
                                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center shadow-lg shadow-pink-500/50 group-hover/pill:scale-110 transition-transform">
                                           <MessageSquare className="w-5 h-5 text-white" />
                                         </div>
                                         <span className="font-semibold">Natural questions</span>
                                       </div>
-                                      <div className="pill bg-background/50 border border-amber-500/30 py-4 px-6 rounded-2xl text-sm text-foreground flex items-center gap-3 backdrop-blur-xl hover:border-amber-400/50 hover:bg-amber-500/10 transition-all duration-300 shadow-lg group/pill">
+                                      <div className="bg-background/50 border border-amber-500/30 py-4 px-6 rounded-2xl text-sm text-foreground flex items-center gap-3 backdrop-blur-xl hover:border-amber-400/50 hover:bg-amber-500/10 transition-all duration-300 shadow-lg group/pill">
                                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/50 group-hover/pill:scale-110 transition-transform">
                                           <Zap className="w-5 h-5 text-white" />
                                         </div>

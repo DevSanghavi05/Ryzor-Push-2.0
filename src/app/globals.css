@@ -67,34 +67,34 @@
     height: 100vh;
     z-index: -10;
     background-color: hsl(var(--background));
-    --gradient-1: hsl(var(--primary) / 0.3);
-    --gradient-2: hsl(var(--accent) / 0.2);
-    --gradient-3: hsl(var(--primary) / 0.2);
+    --gradient-1: hsl(var(--primary) / 0.4);
+    --gradient-2: hsl(var(--accent) / 0.3);
+    --gradient-3: hsl(220 50% 50% / 0.2);
     background-image: 
-      radial-gradient(at 20% 25%, var(--gradient-1) 0px, transparent 50%),
-      radial-gradient(at 70% 30%, var(--gradient-2) 0px, transparent 50%),
-      radial-gradient(at 30% 80%, var(--gradient-3) 0px, transparent 50%);
-    animation: aurora 20s infinite alternate;
+      radial-gradient(at 10% 20%, var(--gradient-1) 0px, transparent 50%),
+      radial-gradient(at 80% 30%, var(--gradient-2) 0px, transparent 50%),
+      radial-gradient(at 30% 90%, var(--gradient-3) 0px, transparent 50%),
+      radial-gradient(at 90% 80%, var(--gradient-1) 0px, transparent 50%);
+    animation: aurora 25s infinite alternate;
   }
 
   .dark .bg-aurora {
-    background-color: #0d0d12;
+     background-color: #0A0A0F;
   }
 
   .bg-aurora::after {
     content: '';
     position: absolute;
     inset: 0;
-    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAMAAAAp4XiDAAAAUVBMVEWFhYWDg4N3d3dtbW17e3t1dXWBgYGHh4d5eXlzc3OLi4ubm5uVlZWPj4+NjY19fX2JiYl/f39ra2uRkZGZmZlpaWmXl5dvb29xcXGTk5NnZ2c8TV1mAAAAG3RSTlNAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEAvEOwtAAAFVklEQVR4XpWWB67c2BUFb3g557T/hRo9/WUMZHlgr4Bg8Z4qQgQJlHI4A8SzFVrapvmTF9O7dmYRFZ60YiBhJRCgh1FY5OEwWCsVRsUVxwFeA1mDGKwPEubgwFiggeRgIHorxIwVB40NhDpqQX3QvEI+oGNLFXCKU2KNWCgIChZoMGoJICEnaoGLQrQ4ULFAQyEe0EgbQRvUolIV5UoOsqmLEpBMA0sZ0IqFC5IUE2sVkeUVCTEHiRgprRCExNwSMW9BlGA5CESSxgEkEk8FRxwWR+121JBZCYh5hK+ASKgskMw4SoXKl4NKMwMsTARAoYIQBc5Ra2MQrQDcDw επιχειρήσεις κα κινすることにより social media κτλ. characteristically formatted text like this');
-    background-repeat: repeat;
-    opacity: 0.05;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.04'%3E%3Cpath opacity='.5' d='M96 95h4v1h-4v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9zm-1 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9z'/%3E%3Cpath d='M6 5V0h1v5h9V0h1v5h9V0h1v5h9V0h1v5h9V0h1v5h9V0h1v5h9V0h1v5h9V0h1v5h9V0h1v5h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v5h-1v-5h-9v5h-1v-5h-9v5h-1v-5h-9v5h-1v-5h-9v5h-1v-5h-9v5h-1v-5h-9v5h-1v-5h-9v5h-1v-5h-9v5H0v-1h5v-9H0v-1h5v-9H0v-1h5v-9H0v-1h5v-9H0v-1h5v-9H0v-1h5v-9H0v-1h5v-9H0v-1h5v-9H0V5h6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    opacity: 0.1;
     pointer-events: none;
   }
   
   @keyframes aurora {
-    0% { background-position: 20% 25%, 70% 30%, 30% 80%; }
-    50% { background-position: 40% 50%, 60% 40%, 40% 70%; }
-    100% { background-position: 25% 30%, 80% 20%, 20% 60%; }
+    0% { background-position: 10% 20%, 80% 30%, 30% 90%, 90% 80%; }
+    50% { background-position: 30% 60%, 70% 50%, 50% 80%, 80% 60%; }
+    100% { background-position: 10% 20%, 80% 30%, 30% 90%, 90% 80%; }
   }
 
   .bg-gears {
