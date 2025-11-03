@@ -156,17 +156,9 @@ function LoggedInView() {
         ? allDocs.filter(doc => focusedDocIds.has(doc.id)) 
         : allDocs;
 
-      const docsWithContent = docsForContext.map((doc: any) => {
-          if (doc.source === 'local') {
-              const content = localStorage.getItem(`document_content_${doc.id}`);
-              return { ...doc, content: content || '' };
-          }
-          return doc;
-      });
-
       const stream = await ask(
         currentInput, 
-        docsWithContent, 
+        docsForContext, 
         messages.slice(-10), 
         { work: workAccessToken, personal: personalAccessToken }
       );

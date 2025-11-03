@@ -15,7 +15,10 @@ async function getDocumentContent(
 ): Promise<string> {
   try {
     // 🟩 Local file: content already provided
-    if (doc.source === 'local') return doc.content || '';
+    if (doc.source === 'local') {
+        const content = localStorage.getItem(`document_content_${doc.id}`);
+        return content || '';
+    }
 
     // 🟨 Google Drive file
     if (doc.source === 'drive') {
