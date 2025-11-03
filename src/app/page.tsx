@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -265,13 +266,13 @@ function LoggedInView() {
                   ))}
                 </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center max-w-2xl mx-auto -mt-16">
-                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-                     <h1 className="text-6xl font-bold tracking-tighter bg-gradient-to-br from-foreground to-muted-foreground bg-clip-text text-transparent">
-                        Ryzor
+              <div className="flex flex-col items-center justify-center h-full text-center max-w-3xl mx-auto -mt-16">
+                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }}>
+                     <h1 className="text-4xl md:text-5xl font-bold tracking-tighter bg-gradient-to-br from-foreground to-muted-foreground bg-clip-text text-transparent mb-4">
+                        Your Intelligent Workspace
                       </h1>
-                      <p className="text-muted-foreground text-lg mt-2 mb-12">
-                          Your intelligent workspace for instant answers.
+                      <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+                          Ask questions, get summaries, and find insights across all your documents instantly.
                       </p>
                   </motion.div>
               </div>
@@ -279,7 +280,7 @@ function LoggedInView() {
           </div>
 
           {/* Chat Bar */}
-           <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-background via-background/80 to-transparent">
+           <div className="absolute bottom-12 left-0 right-0 p-4 bg-transparent">
             <div className="mx-auto max-w-4xl">
                  <motion.div 
                     initial={{ opacity: 0, y: 20 }} 
@@ -287,12 +288,12 @@ function LoggedInView() {
                     transition={{ duration: 0.5, delay: 0.2 }}
                     className="relative"
                   >
-                    <div className="absolute -inset-0.5 bg-gradient-to-r from-primary via-accent to-primary rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000" />
-                    <div className="relative bg-background/80 backdrop-blur-xl rounded-2xl border border-border shadow-lg">
-                      <div className="p-4 flex items-center gap-2">
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-primary via-accent to-primary rounded-full blur-lg opacity-25 group-hover:opacity-40 transition duration-1000" />
+                    <div className="relative bg-background/80 backdrop-blur-xl rounded-full border border-border shadow-2xl shadow-black/20">
+                      <div className="p-2 flex items-center gap-2">
                         <Input
                           placeholder='Ask anything about your documents...'
-                          className="border-none focus-visible:ring-0 flex-1 text-base bg-transparent text-foreground placeholder:text-muted-foreground/60 px-2 h-10"
+                          className="border-none focus-visible:ring-0 flex-1 text-base bg-transparent text-foreground placeholder:text-muted-foreground/60 px-4 h-12"
                           value={input}
                           onChange={(e) => setInput(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleInteraction()}
@@ -316,7 +317,7 @@ function LoggedInView() {
 
                         <Button
                           size="icon"
-                          className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 shrink-0 h-10 w-10"
+                          className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 shrink-0 h-10 w-10 shadow-lg shadow-primary/30"
                           onClick={handleInteraction}
                           disabled={loading || !input.trim()}
                         >
