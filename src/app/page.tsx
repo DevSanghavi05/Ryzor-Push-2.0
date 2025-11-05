@@ -152,24 +152,24 @@ function LoggedInView() {
         return;
       }
       
-      let docsForContext = focusedDocIds.size > 0 
+      const docsForContext = focusedDocIds.size > 0 
         ? allDocs.filter(doc => focusedDocIds.has(doc.id)) 
         : allDocs;
       
-      // For local files, we need to fetch their content from localStorage and add it to the object
-      docsForContext = docsForContext.map(doc => {
+      const contextText = docsForContext.map(doc => {
         if (doc.source === 'local') {
-          const content = localStorage.getItem(`document_content_${doc.id}`);
-          return { ...doc, content: content || '' };
+          const content = localStorage.getItem(`document_content_${doc.id}`) || '';
+          return `Document: ${doc.name}\nContent: ${content}`;
         }
-        return doc;
-      });
+        // For drive files, content will be fetched on the server
+        return `Document: ${doc.name}\nContent: (Content to be fetched for Drive file)`;
+      }).join('\n\n---\n\n');
+
 
       const stream = await ask(
         currentInput, 
-        docsForContext, 
-        messages.slice(-10), 
-        { work: workAccessToken, personal: personalAccessToken }
+        contextText, 
+        messages.slice(-10)
       );
       const reader = stream.getReader();
       const decoder = new TextDecoder();
@@ -190,18 +190,17 @@ function LoggedInView() {
         });
       }
       
-      setLoading(false);
-
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
        setMessages(prev => {
          const newMessages = [...prev];
          const lastMessage = newMessages[newMessages.length - 1];
          if (lastMessage.role === 'model') {
-            lastMessage.content = 'Something went wrong. Please try again.';
+            lastMessage.content = `Sorry, something went wrong: ${error.message}`;
          }
          return newMessages;
         });
+    } finally {
       setLoading(false);
     }
   };
