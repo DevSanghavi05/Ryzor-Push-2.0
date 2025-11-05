@@ -15,9 +15,15 @@ async function getDocumentContent(
   personalToken?: string | null
 ): Promise<string> {
   try {
-    // 🟩 Local file: content is now passed in directly from the client
+    // If content is already present (passed from client), use it.
+    if (doc.content) {
+      return doc.content;
+    }
+
+    // 🟩 Local file: content should have been passed from client
     if (doc.source === 'local') {
-      return doc.content || '';
+      console.warn(`Content for local file ${doc.name} was not provided by the client.`);
+      return '';
     }
 
     // 🟨 Google Drive file
@@ -200,3 +206,5 @@ ${question}
     },
   });
 }
+
+    
