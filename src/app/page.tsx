@@ -152,9 +152,18 @@ function LoggedInView() {
         return;
       }
       
-      const docsForContext = focusedDocIds.size > 0 
+      let docsForContext = focusedDocIds.size > 0 
         ? allDocs.filter(doc => focusedDocIds.has(doc.id)) 
         : allDocs;
+      
+      // For local files, we need to fetch their content from localStorage and add it to the object
+      docsForContext = docsForContext.map(doc => {
+        if (doc.source === 'local') {
+          const content = localStorage.getItem(`document_content_${doc.id}`);
+          return { ...doc, content: content || '' };
+        }
+        return doc;
+      });
 
       const stream = await ask(
         currentInput, 

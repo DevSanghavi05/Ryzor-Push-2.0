@@ -1,3 +1,4 @@
+
 'use server';
 
 import { ai } from '@/ai/genkit';
@@ -14,10 +15,9 @@ async function getDocumentContent(
   personalToken?: string | null
 ): Promise<string> {
   try {
-    // 🟩 Local file: content already provided
+    // 🟩 Local file: content is now passed in directly from the client
     if (doc.source === 'local') {
-        const content = localStorage.getItem(`document_content_${doc.id}`);
-        return content || '';
+      return doc.content || '';
     }
 
     // 🟨 Google Drive file
@@ -88,8 +88,9 @@ export async function ask(
   else if (docList.length > 1) {
     const previews = await Promise.all(
       docList.map(async (d) => {
+        // For local files, the content is already passed in. For Drive files, we need to fetch it.
         const previewText = (
-          await getDocumentContent(d, tokens.work, tokens.personal)
+          d.content || await getDocumentContent(d, tokens.work, tokens.personal)
         ).slice(0, 2000);
         return {
           name: d.name,
@@ -135,7 +136,11 @@ List the exact document names that are relevant, one per line, prefixed with "- 
 
   // 🔹 Step 3: Fetch full document content for AI context
   const fullContents = await Promise.all(
-    relevantDocs.map((d) => getDocumentContent(d, tokens.work, tokens.personal))
+    relevantDocs.map((d) => 
+        // If content is already on the doc object (passed from client for local files), use it.
+        // Otherwise, fetch it for Drive files.
+        d.content || getDocumentContent(d, tokens.work, tokens.personal)
+    )
   );
 
   const context = relevantDocs
