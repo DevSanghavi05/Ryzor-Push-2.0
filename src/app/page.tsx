@@ -152,25 +152,28 @@ function LoggedInView() {
         return;
       }
       
-      const docsForContext = focusedDocIds.size > 0 
+      const docsToQuery = focusedDocIds.size > 0 
         ? allDocs.filter(doc => focusedDocIds.has(doc.id)) 
         : allDocs;
-      
-      const contextText = docsForContext.map(doc => {
+
+      // Prepare documents with content for the server action
+      const documentsWithContent = docsToQuery.map(doc => {
+        let content;
+        // For local files, get content from localStorage.
         if (doc.source === 'local') {
-          const content = localStorage.getItem(`document_content_${doc.id}`) || '';
-          return `Document: ${doc.name}\nContent: ${content}`;
+          content = localStorage.getItem(`document_content_${doc.id}`) || '(Content not found in local storage)';
         }
-        // For drive files, content will be fetched on the server
-        return `Document: ${doc.name}\nContent: (Content to be fetched for Drive file)`;
-      }).join('\n\n---\n\n');
+        return { ...doc, content }; // For Drive files, content will be fetched on the server
+      });
 
+      const stream = await ask({
+        question: currentInput, 
+        documents: documentsWithContent,
+        history: messages.slice(-10),
+        workAccessToken,
+        personalAccessToken
+      });
 
-      const stream = await ask(
-        currentInput, 
-        contextText, 
-        messages.slice(-10)
-      );
       const reader = stream.getReader();
       const decoder = new TextDecoder();
       let done = false;
