@@ -10,7 +10,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import * as pdfjs from 'pdfjs-dist';
+import pdf from 'pdf-parse';
 
 // Define Zod schemas for input and output
 const ExtractPdfTextInputSchema = z.object({
@@ -46,18 +46,10 @@ const extractPdfTextFlow = ai.defineFlow(
       }
       const pdfBuffer = Buffer.from(base64Data, 'base64');
       
-      const pdf = await pdfjs.getDocument(pdfBuffer).promise;
-      const numPages = pdf.numPages;
-      let fullText = '';
+      // 2. Use pdf-parse to extract text
+      const data = await pdf(pdfBuffer);
 
-      for (let i = 1; i <= numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items.map(item => ('str' in item ? item.str : '')).join(' ');
-        fullText += pageText + '\n';
-      }
-
-      return { text: fullText };
+      return { text: data.text };
     } catch (error: any) {
       console.error("Error in PDF text extraction flow:", error);
       // Re-throw to make the error visible to the caller
