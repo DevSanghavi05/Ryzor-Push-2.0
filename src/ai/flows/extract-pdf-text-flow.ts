@@ -38,7 +38,7 @@ const extractPdfTextFlow = ai.defineFlow(
   },
   async (input) => {
     try {
-      // Dynamically import pdf-parse to avoid build-time issues
+      // Dynamically import pdf-parse to avoid build-time issues in Next.js server environment
       const pdf = (await import('pdf-parse')).default;
 
       // 1. Convert data URI to a Buffer
