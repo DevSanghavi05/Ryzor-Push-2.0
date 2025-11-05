@@ -54,7 +54,9 @@ const generateTagsFlow = ai.defineFlow(
     if (!input.textContent.trim()) {
         return { tags: [] };
     }
-    const {output} = await prompt(input);
+    const {output} = await prompt({
+        textContent: input.textContent.substring(0, 5000)
+    });
     return output!;
   }
 );

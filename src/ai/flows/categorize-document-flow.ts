@@ -56,7 +56,9 @@ const categorizeDocumentFlow = ai.defineFlow(
         return { category: "Notes and Drafts" };
     }
     
-    const {output} = await prompt(input);
+    const {output} = await prompt({
+        textContent: input.textContent.substring(0, 5000)
+    });
     return output!;
   }
 );

@@ -68,7 +68,11 @@ export async function ask(params: AskApiParams): Promise<ReadableStream<Uint8Arr
 
   // Concurrently fetch content for all documents
   const contentPromises = documents.map(doc => 
-    getDocumentContent(doc, workAccessToken, personalAccessToken).then(content => `Document: ${doc.name}\nContent: ${content}`)
+    getDocumentContent(doc, workAccessToken, personalAccessToken).then(content => {
+        // Truncate content to first 5000 characters to avoid rate limits
+        const truncatedContent = content.substring(0, 5000);
+        return `Document: ${doc.name}\nContent: ${truncatedContent}`
+    })
   );
 
   const resolvedContents = await Promise.all(contentPromises);
