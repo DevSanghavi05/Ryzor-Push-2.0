@@ -10,7 +10,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import pdf from 'pdf-parse';
+import * as pdf from 'pdf-parse';
 
 // Define Zod schemas for input and output
 const ExtractPdfTextInputSchema = z.object({
