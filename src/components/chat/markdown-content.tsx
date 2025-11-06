@@ -27,7 +27,7 @@ const toHtml = (markdown: string): string => {
     if (line.includes('<span class="animate-blink') && line.trim().length < 50) {
         return line;
     }
-    return line === '' ? '<br />' : line;
+    return line;
   }).join('<br />').replace(/<br \/>\s*<br \/>/g, '<br />');
 
   // Cleanup extra breaks around lists
