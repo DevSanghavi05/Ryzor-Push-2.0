@@ -199,7 +199,7 @@ function LoggedInView() {
          const newMessages = [...prev];
          const lastMessage = newMessages[newMessages.length - 1];
          if (lastMessage.role === 'model') {
-            lastMessage.content = `Sorry, something went wrong: ${error.message}`;
+            lastMessage.content = `Sorry, something went wrong: ${'error' in error ? error.error.message : error.message}`;
          }
          return newMessages;
         });

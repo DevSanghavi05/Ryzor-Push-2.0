@@ -5,13 +5,11 @@ import { FC, memo } from 'react';
 const toHtml = (markdown: string): string => {
   if (!markdown) return '';
   
-  let processedMarkdown = markdown;
+  // First, handle the blinking cursor special character
+  let html = markdown.replace(/▋/g, '<span class="animate-blink">▋</span>');
 
-  // Render the blinking cursor if present
-  processedMarkdown = processedMarkdown.replace(/▋/g, '<span class="animate-blink">▋</span>');
-
-  // Convert markdown to HTML
-  let html = processedMarkdown
+  // Convert markdown to HTML without affecting the cursor span
+  html = html
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
     .replace(/\*(.*?)\*/g, '<em>$1</em>'); // Italics
 
@@ -20,10 +18,14 @@ const toHtml = (markdown: string): string => {
   html = html.replace(/((<li>.*<\/li>\s*)+)/g, '<ul>$1</ul>');
   html = html.replace(/<\/ul>\s*<ul>/g, '');
 
-  // Handle newlines, but be careful not to add <br> inside list structure
+  // Handle newlines, but be careful not to add <br> inside list structure or after the cursor
   html = html.split('\n').map(line => {
     if (line.trim().startsWith('<li') || line.trim().startsWith('<ul') || line.trim().startsWith('</ul')) {
       return line;
+    }
+    // Don't add a <br> if the line is just the cursor
+    if (line.includes('<span class="animate-blink">▋</span>') && line.trim().length < 40) {
+        return line;
     }
     return line === '' ? '<br />' : line;
   }).join('<br />').replace(/<br \/>\s*<br \/>/g, '<br />');
