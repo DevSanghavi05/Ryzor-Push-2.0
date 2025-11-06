@@ -10,6 +10,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
+import pdf from 'pdf-parse';
 
 // Define Zod schemas for input and output
 const ExtractPdfTextInputSchema = z.object({
@@ -38,9 +39,6 @@ const extractPdfTextFlow = ai.defineFlow(
   },
   async (input) => {
     try {
-      // Dynamically import pdf-parse to avoid build-time issues in Next.js server environment
-      const pdf = (await import('pdf-parse')).default;
-
       // 1. Convert data URI to a Buffer
       const base64Data = input.pdfDataUri.split(',')[1];
       if (!base64Data) {
