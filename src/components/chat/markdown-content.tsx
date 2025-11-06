@@ -1,4 +1,3 @@
-
 import { FC, memo } from 'react';
 
 // A simple markdown to HTML converter
