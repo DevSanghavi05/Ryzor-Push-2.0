@@ -6,7 +6,7 @@ const toHtml = (markdown: string): string => {
   if (!markdown) return '';
   
   // First, handle the blinking cursor special character
-  let html = markdown.replace(/▋/g, '<span class="animate-blink">▋</span>');
+  let html = markdown.replace(/▋/g, '<span class="animate-blink inline-block">▋</span>');
 
   // Convert markdown to HTML without affecting the cursor span
   html = html
@@ -24,7 +24,7 @@ const toHtml = (markdown: string): string => {
       return line;
     }
     // Don't add a <br> if the line is just the cursor
-    if (line.includes('<span class="animate-blink">▋</span>') && line.trim().length < 40) {
+    if (line.includes('<span class="animate-blink') && line.trim().length < 50) {
         return line;
     }
     return line === '' ? '<br />' : line;
