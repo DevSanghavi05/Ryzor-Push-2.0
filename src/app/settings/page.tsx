@@ -1,18 +1,20 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import withAuth from '@/firebase/auth/with-auth';
-import { Palette, UserCog, Link as LinkIcon, AlertTriangle, ShieldCheck, MessageSquare } from 'lucide-react';
+import { UserCog, AlertTriangle, ShieldCheck, MessageSquare, Mail, Calendar, Folder } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useUser, AccountType } from '@/firebase/auth/use-user';
 import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 const GoogleIcon = () => (
     <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2">
@@ -24,52 +26,41 @@ const GoogleIcon = () => (
     </svg>
 );
 
+const ServiceToggle = ({
+    label,
+    icon,
+    accountType,
+    serviceConnected,
+    onToggle
+}: {
+    label: string,
+    icon: React.ReactNode,
+    accountType: AccountType,
+    serviceConnected: boolean,
+    onToggle: (checked: boolean) => void
+}) => {
+    return (
+        <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div className='flex items-center gap-3'>
+                {icon}
+                <div>
+                    <h3 className="font-semibold">{label}</h3>
+                    <p className="text-sm text-muted-foreground">{serviceConnected ? `Connected` : 'Not connected'}</p>
+                </div>
+            </div>
+            <Switch
+                checked={serviceConnected}
+                onCheckedChange={onToggle}
+            />
+        </div>
+    )
+}
+
 function SettingsPage() {
   const { toast } = useToast();
-  const router = useRouter();
   const { user, workProvider, personalProvider, signInWithGoogle, disconnectGoogleAccount } = useUser();
   const [feedback, setFeedback] = useState('');
   
-  const [hue, setHue] = useState(240);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const rootStyle = getComputedStyle(document.documentElement);
-      const primaryColor = rootStyle.getPropertyValue('--primary-hue')?.trim();
-      if (primaryColor && !isNaN(parseInt(primaryColor, 10))) {
-        setHue(parseInt(primaryColor, 10));
-      }
-    }
-  }, []);
-
-  const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newHue = parseInt(e.target.value, 10);
-    setHue(newHue);
-    document.documentElement.style.setProperty('--primary-hue', newHue.toString());
-  };
-  
-  const handleSaveTheme = () => {
-    // In a real app, you would save this to a user profile in a database.
-    // For now, we'll save it to localStorage.
-    localStorage.setItem(`theme_hue_${user?.uid}`, hue.toString());
-    toast({
-      title: 'Theme Saved!',
-      description: 'Your new brand color has been applied.',
-    });
-  };
-
-  useEffect(() => {
-    if (user) {
-      const savedHue = localStorage.getItem(`theme_hue_${user.uid}`);
-      if (savedHue && !isNaN(parseInt(savedHue, 10))) {
-        const newHue = parseInt(savedHue, 10);
-        setHue(newHue);
-        document.documentElement.style.setProperty('--primary-hue', newHue.toString());
-      }
-    }
-  }, [user]);
-
-
   const handleConnect = async (accountType: AccountType) => {
       toast({ title: `Connecting to Google ${accountType} account...`});
       try {
@@ -97,6 +88,15 @@ function SettingsPage() {
     setFeedback('');
   }
 
+  const handleToggle = (accountType: AccountType, serviceConnected: boolean) => {
+    if (serviceConnected) {
+      // Logic to show a confirmation dialog before disconnecting
+      disconnectGoogleAccount(accountType);
+    } else {
+      handleConnect(accountType);
+    }
+  }
+
   return (
     <div className="relative min-h-screen w-full pt-16">
       <div className="bg-aurora"></div>
@@ -116,100 +116,67 @@ function SettingsPage() {
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><UserCog /> Accounts & Permissions</CardTitle>
-                    <CardDescription>Connect or disconnect your accounts. Permissions are managed through your provider.</CardDescription>
+                    <CardDescription>Connect or disconnect your accounts to grant or revoke access to services.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-6">
                     {/* Work Account */}
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                            <h3 className="font-semibold flex items-center gap-2"><GoogleIcon /> Google Work Account</h3>
-                            <p className="text-sm text-muted-foreground">{workProvider ? `Connected` : 'Not connected'}</p>
+                    <div className='space-y-4'>
+                        <h3 className="font-semibold text-lg flex items-center gap-2"><GoogleIcon /> Google Work Account</h3>
+                        <div className="space-y-2 pl-4 border-l-2">
+                             <ServiceToggle 
+                                label="Google Drive"
+                                icon={<Folder />}
+                                accountType="work"
+                                serviceConnected={!!workProvider}
+                                onToggle={(checked) => handleToggle('work', checked)}
+                            />
+                             <ServiceToggle 
+                                label="Gmail"
+                                icon={<Mail />}
+                                accountType="work"
+                                serviceConnected={!!workProvider}
+                                onToggle={(checked) => handleToggle('work', checked)}
+                            />
+                             <ServiceToggle 
+                                label="Google Calendar"
+                                icon={<Calendar />}
+                                accountType="work"
+                                serviceConnected={!!workProvider}
+                                onToggle={(checked) => handleToggle('work', checked)}
+                            />
                         </div>
-                        {workProvider ? (
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="destructive">Disconnect</Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle /> Are you sure?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            This will disconnect your Google Work account from Ryzor. You will need to reconnect it to access its data.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDisconnect('work')} className="bg-destructive hover:bg-destructive/90">Disconnect</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        ) : (
-                            <Button onClick={() => handleConnect('work')}><LinkIcon className="mr-2 h-4 w-4"/> Connect</Button>
-                        )}
                     </div>
+                    <Separator />
                     {/* Personal Account */}
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                            <h3 className="font-semibold flex items-center gap-2"><GoogleIcon /> Google Personal Account</h3>
-                            <p className="text-sm text-muted-foreground">{personalProvider ? `Connected` : 'Not connected'}</p>
+                     <div className='space-y-4'>
+                        <h3 className="font-semibold text-lg flex items-center gap-2"><GoogleIcon /> Google Personal Account</h3>
+                        <div className="space-y-2 pl-4 border-l-2">
+                             <ServiceToggle 
+                                label="Google Drive"
+                                icon={<Folder />}
+                                accountType="personal"
+                                serviceConnected={!!personalProvider}
+                                onToggle={(checked) => handleToggle('personal', checked)}
+                            />
+                             <ServiceToggle 
+                                label="Gmail"
+                                icon={<Mail />}
+                                accountType="personal"
+                                serviceConnected={!!personalProvider}
+                                onToggle={(checked) => handleToggle('personal', checked)}
+                            />
+                             <ServiceToggle 
+                                label="Google Calendar"
+                                icon={<Calendar />}
+                                accountType="personal"
+                                serviceConnected={!!personalProvider}
+                                onToggle={(checked) => handleToggle('personal', checked)}
+                            />
                         </div>
-                         {personalProvider ? (
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="destructive">Disconnect</Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle /> Are you sure?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            This will disconnect your Google Personal account from Ryzor. You will need to reconnect it to access its data.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDisconnect('personal')} className="bg-destructive hover:bg-destructive/90">Disconnect</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        ) : (
-                            <Button onClick={() => handleConnect('personal')}><LinkIcon className="mr-2 h-4 w-4"/> Connect</Button>
-                        )}
                     </div>
                     <div className="pt-4 text-xs text-muted-foreground flex gap-2 items-start">
                         <ShieldCheck className="h-4 w-4 shrink-0 mt-0.5" />
                         <span>Ryzor requests read-only permissions for Drive, Gmail, and Calendar to provide its services. We never store your passwords. You can revoke access at any time from your Google Account settings.</span>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Separator />
-            
-            {/* Appearance */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Palette /> Appearance</CardTitle>
-                    <CardDescription>Choose a primary color that reflects your brand or style.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-8">
-                    <div className="space-y-4">
-                        <label htmlFor="hue-slider" className="font-medium">Primary Color</label>
-                        <input
-                            id="hue-slider"
-                            type="range"
-                            min="0"
-                            max="360"
-                            value={hue}
-                            onChange={handleColorChange}
-                            className="w-full h-2 rounded-lg appearance-none cursor-pointer"
-                            style={{
-                                background: 'linear-gradient(to right, hsl(0, 100%, 50%), hsl(60, 100%, 50%), hsl(120, 100%, 50%), hsl(180, 100%, 50%), hsl(240, 100%, 50%), hsl(300, 100%, 50%), hsl(360, 100%, 50%))',
-                            }}
-                        />
-                        <div className="text-center text-sm text-muted-foreground">Hue: {hue}</div>
-                    </div>
-                     <div className="flex justify-end gap-4">
-                        <Button variant="ghost" onClick={() => router.push('/')}>Cancel</Button>
-                        <Button onClick={handleSaveTheme}>Save Theme</Button>
                     </div>
                 </CardContent>
             </Card>
