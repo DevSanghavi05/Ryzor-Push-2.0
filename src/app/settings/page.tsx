@@ -6,14 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import withAuth from '@/firebase/auth/with-auth';
-import { UserCog, AlertTriangle, ShieldCheck, MessageSquare, Mail, Calendar, Folder, Palette } from 'lucide-react';
+import { UserCog, ShieldCheck, MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useUser, AccountType } from '@/firebase/auth/use-user';
-import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
 
 const GoogleIcon = () => (
     <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2">
@@ -30,24 +28,7 @@ function SettingsPage() {
   const { toast } = useToast();
   const { user, workProvider, personalProvider, signInWithGoogle, disconnectGoogleAccount } = useUser();
   const [feedback, setFeedback] = useState('');
-  const [primaryHue, setPrimaryHue] = useState(240);
-
-   useEffect(() => {
-    const savedHue = localStorage.getItem('theme_primary_hue');
-    if (savedHue) {
-      const hue = parseInt(savedHue, 10);
-      setPrimaryHue(hue);
-      document.documentElement.style.setProperty('--primary-hue', `${hue}`);
-    }
-  }, []);
-
-  const handleHueChange = (hueValue: number[]) => {
-    const hue = hueValue[0];
-    setPrimaryHue(hue);
-    document.documentElement.style.setProperty('--primary-hue', `${hue}`);
-    localStorage.setItem('theme_primary_hue', `${hue}`);
-  };
-
+  
   const handleToggle = async (accountType: AccountType, serviceConnected: boolean) => {
     if (serviceConnected) {
       disconnectGoogleAccount(accountType);
@@ -129,30 +110,6 @@ function SettingsPage() {
                     </div>
                 </CardContent>
             </Card>
-
-             {/* Appearance */}
-             <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Palette /> Appearance</CardTitle>
-                    <CardDescription>Customize the look and feel of your workspace.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div>
-                        <Label htmlFor="hue-slider">Primary Color</Label>
-                        <div className="flex items-center gap-4 mt-2">
-                           <Slider
-                                id="hue-slider"
-                                min={0}
-                                max={360}
-                                step={1}
-                                value={[primaryHue]}
-                                onValueChange={handleHueChange}
-                            />
-                            <div className="w-10 h-10 rounded-md border" style={{ backgroundColor: `hsl(${primaryHue}, 10%, 3.9%)` }}></div>
-                        </div>
-                    </div>
-                </CardContent>
-             </Card>
 
              {/* Feedback */}
              <Card>
