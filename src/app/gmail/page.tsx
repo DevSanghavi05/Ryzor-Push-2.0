@@ -9,10 +9,9 @@ import { useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import withAuth from '@/firebase/auth/with-auth';
 import { Loader2, Send, Mail, AlertCircle, Wand2, Inbox, RefreshCw, CornerUpLeft, Archive, Trash2, FileEdit } from 'lucide-react';
-import { summarizeEmails, draftReply, getEmails, summarizeSingleEmail, type Email } from '@/ai/flows/gmail-flow';
+import { summarizeEmails, draftReply, getEmails, summarizeSingleEmail, type Email, draftNewEmail } from '@/ai/flows/gmail-flow';
 import { MarkdownContent } from '@/components/chat/markdown-content';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import {
   Dialog,
@@ -39,9 +38,16 @@ function GmailPage() {
 
   const [globalSummary, setGlobalSummary] = useState('');
   const [isGlobalSummaryOpen, setIsGlobalSummaryOpen] = useState(false);
+  
+  // State for drafting replies
   const [draft, setDraft] = useState('');
   const [draftPrompt, setDraftPrompt] = useState('');
   
+  // State for composing new emails
+  const [newEmailDraft, setNewEmailDraft] = useState('');
+  const [newEmailPrompt, setNewEmailPrompt] = useState('');
+  const [isComposing, setIsComposing] = useState(false);
+
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [isDraftModalOpen, setIsDraftModalOpen] = useState(false);
   const [isComposeModalOpen, setIsComposeModalOpen] = useState(false);
@@ -113,8 +119,16 @@ function GmailPage() {
   }
   
   const handleOpenDraftModal = () => {
+    setDraft('');
+    setDraftPrompt('');
     setIsEmailModalOpen(false);
     setIsDraftModalOpen(true);
+  }
+  
+  const handleOpenComposeModal = () => {
+    setNewEmailDraft('');
+    setNewEmailPrompt('');
+    setIsComposeModalOpen(true);
   }
 
   const handleDraftReply = async () => {
@@ -134,6 +148,20 @@ function GmailPage() {
       setIsDrafting(false);
     }
   };
+  
+  const handleDraftNew = async () => {
+    if (!accessToken || !newEmailPrompt) return;
+    setIsComposing(true);
+    setNewEmailDraft('');
+    try {
+        const { draft } = await draftNewEmail({ prompt: newEmailPrompt, accessToken });
+        setNewEmailDraft(draft);
+    } catch(e: any) {
+        toast({ variant: 'destructive', title: 'Failed to generate draft' });
+    } finally {
+        setIsComposing(false);
+    }
+  }
 
 
   const handleConnect = async (accountType: 'work' | 'personal') => {
@@ -182,23 +210,23 @@ function GmailPage() {
         ) : (
           <div className="border bg-card text-card-foreground rounded-lg shadow-lg max-w-7xl mx-auto h-[75vh] flex">
             {/* Sidebar */}
-            <div className="w-64 border-r p-4 flex flex-col">
-              <Button size="lg" className="mb-4" onClick={() => setIsComposeModalOpen(true)}>
-                <FileEdit className="mr-2 h-4 w-4"/> Compose
+            <div className="w-64 border-r p-4 flex flex-col gap-2">
+              <Button size="lg" className="mb-4 rounded-full h-12" onClick={handleOpenComposeModal}>
+                <FileEdit className="mr-2 h-5 w-5"/> Compose
               </Button>
-              <div className="flex flex-col gap-2">
-                <Button variant={activeCategory === 'primary' ? 'secondary' : 'ghost'} className="justify-start" onClick={() => fetchEmails('primary')}>
-                  <Inbox className="mr-2 h-4 w-4"/> Primary
+              <div className="flex flex-col gap-1">
+                <Button variant={activeCategory === 'primary' ? 'secondary' : 'ghost'} className="justify-start rounded-full text-base py-6" onClick={() => fetchEmails('primary')}>
+                  <Inbox className="mr-3 h-5 w-5"/> Primary
                 </Button>
-                 <Button variant={activeCategory === 'unread' ? 'secondary' : 'ghost'} className="justify-start" onClick={() => fetchEmails('unread')}>
-                  <Mail className="mr-2 h-4 w-4"/> Unread
+                 <Button variant={activeCategory === 'unread' ? 'secondary' : 'ghost'} className="justify-start rounded-full text-base py-6" onClick={() => fetchEmails('unread')}>
+                  <Mail className="mr-3 h-5 w-5"/> Unread
                 </Button>
               </div>
             </div>
 
             {/* Email List */}
             <div className="flex-1 flex flex-col">
-              <div className="p-2 border-b flex items-center justify-between gap-2">
+              <div className="p-3 border-b flex items-center justify-between gap-2">
                   <Button variant="outline" size="sm" onClick={() => fetchEmails(activeCategory)} disabled={isLoading}>
                     <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin':''}`} /> Refresh
                   </Button>
@@ -219,11 +247,11 @@ function GmailPage() {
                           onClick={() => handleOpenEmail(email)}
                        >
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-baseline justify-between text-xs">
-                                <p className="font-bold truncate">{email.from.split('<')[0].trim()}</p>
-                                <p className="text-muted-foreground">{new Date(email.date).toLocaleDateString()}</p>
+                            <div className="flex items-baseline justify-between">
+                                <p className="font-bold truncate text-sm">{email.from.split('<')[0].trim()}</p>
+                                <p className="text-xs text-muted-foreground">{new Date(email.date).toLocaleDateString()}</p>
                             </div>
-                            <p className="font-semibold text-sm truncate mt-1">{email.subject}</p>
+                            <p className="font-medium text-sm truncate mt-1">{email.subject}</p>
                             <p className="text-xs text-muted-foreground truncate">{email.snippet}</p>
                           </div>
                           <div className="ml-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -338,16 +366,32 @@ function GmailPage() {
             <DialogTitle>Compose Email</DialogTitle>
           </DialogHeader>
            <div className="grid gap-4 py-4">
-              {/* Basic compose fields. A real implementation would have more complex state management */}
               <input placeholder="To" className="p-2 bg-transparent border-b" />
               <input placeholder="Subject" className="p-2 bg-transparent border-b" />
-              <Textarea 
-                placeholder="Your message..."
-                className="min-h-[250px] mt-2"
+               <Textarea 
+                  id="compose-body"
+                  placeholder="Your message..."
+                  className="min-h-[200px] mt-2"
+                  value={newEmailDraft}
+                  onChange={e => setNewEmailDraft(e.target.value)}
               />
+              <Separator />
+               <div className="space-y-2">
+                 <label htmlFor="compose-prompt" className="text-sm font-medium">Smart Compose</label>
+                 <Textarea 
+                    id="compose-prompt"
+                    placeholder="Tell the AI what to write (e.g., 'Draft an intro email to the marketing team...')"
+                    value={newEmailPrompt}
+                    onChange={e => setNewEmailPrompt(e.target.value)}
+                  />
+                   <Button onClick={handleDraftNew} disabled={isComposing} className="w-full">
+                     {isComposing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                     Generate
+                   </Button>
+               </div>
            </div>
            <DialogFooter>
-             <Button onClick={() => toast({title: "Coming Soon!", description: "This would send the email."})}>
+             <Button onClick={() => toast({title: "Coming Soon!", description: "This would send the email."})} disabled={!newEmailDraft}>
               <Send className="mr-2 h-4 w-4" /> Send
             </Button>
            </DialogFooter>
@@ -359,5 +403,3 @@ function GmailPage() {
 }
 
 export default withAuth(GmailPage);
-
-    

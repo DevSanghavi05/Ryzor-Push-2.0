@@ -68,6 +68,18 @@ const SummarizeSingleEmailOutputSchema = z.object({
 });
 export type SummarizeSingleEmailOutput = z.infer<typeof SummarizeSingleEmailOutputSchema>;
 
+const DraftNewEmailInputSchema = z.object({
+  prompt: z.string().describe("The user's instruction for the new email draft."),
+  accessToken: z.string(),
+});
+export type DraftNewEmailInput = z.infer<typeof DraftNewEmailInputSchema>;
+
+const DraftNewEmailOutputSchema = z.object({
+    draft: z.string().describe("The generated email draft in markdown format."),
+});
+export type DraftNewEmailOutput = z.infer<typeof DraftNewEmailOutputSchema>;
+
+
 
 // Main Functions
 export async function getEmails(input: GetEmailsInput): Promise<GetEmailsOutput> {
@@ -137,6 +149,11 @@ export async function summarizeSingleEmail(input: SummarizeSingleEmailInput): Pr
 export async function draftReply(input: DraftReplyInput): Promise<DraftReplyOutput> {
   return draftReplyFlow(input);
 }
+
+export async function draftNewEmail(input: DraftNewEmailInput): Promise<DraftNewEmailOutput> {
+    return draftNewEmailFlow(input);
+}
+
 
 // Flows
 const summarizeEmailsFlow = ai.defineFlow(
@@ -212,6 +229,26 @@ const draftReplyFlow = ai.defineFlow(
             ---
             
             Here are the user's instructions for the reply:
+            "${input.prompt}"
+
+            Now, write the email draft. Respond ONLY with the body of the email. Do not include a subject line or any other headers.
+            `
+        });
+        return { draft: text };
+    }
+);
+
+const draftNewEmailFlow = ai.defineFlow(
+    {
+        name: 'draftNewEmailFlow',
+        inputSchema: DraftNewEmailInputSchema,
+        outputSchema: DraftNewEmailOutputSchema,
+    },
+    async (input) => {
+        const { text } = await ai.generate({
+            prompt: `You are an AI assistant drafting a new email based on the user's instructions.
+            
+            User's instructions:
             "${input.prompt}"
 
             Now, write the email draft. Respond ONLY with the body of the email. Do not include a subject line or any other headers.
