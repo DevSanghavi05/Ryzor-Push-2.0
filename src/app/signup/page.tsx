@@ -78,10 +78,17 @@ export default function SignUpPage() {
       await signUpWithEmail(email, password);
       // The useEffect will handle redirection on successful sign-up
     } catch (error: any) {
+      let description = 'An unknown error occurred. Please try again.';
+      if (error.code === 'auth/email-already-in-use') {
+        description = 'An account with this email already exists. Please sign in instead.';
+      } else if (error.message) {
+        description = error.message;
+      }
+      
       toast({
         variant: 'destructive',
         title: 'Sign Up Failed',
-        description: error.message || 'An unknown error occurred.',
+        description: description,
       });
       setIsSubmitting(false);
     }
