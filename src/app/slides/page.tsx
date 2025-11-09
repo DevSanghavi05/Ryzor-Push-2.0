@@ -4,12 +4,10 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
 import withAuth from '@/firebase/auth/with-auth';
 import { useToast } from '@/hooks/use-toast';
 import {
-  Wand2, Presentation, Palette, FileText, Image as ImageIcon, BarChart2, Users, Bot, Download,
-  Music, Sparkles, Share2, Type, Search, Plus, ThumbsUp, MoreVertical, Folder, Star
+  Wand2, Presentation, Search, Plus, MoreVertical, Star, Folder, Loader2, Mail
 } from 'lucide-react';
 import Image from 'next/image';
 import {
@@ -22,6 +20,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Textarea } from '@/components/ui/textarea';
+import { useUser, AccountType } from '@/firebase';
+import { useEffect, useState } from 'react';
 
 
 const TemplateCard = ({ title, imageUrl, isAi = false }: { title: string, imageUrl?: string, isAi?: boolean }) => {
@@ -76,18 +76,20 @@ const TemplateCard = ({ title, imageUrl, isAi = false }: { title: string, imageU
   )
 }
 
-const RecentPresentationCard = ({ title, opened, imageUrl }: { title: string, opened: string, imageUrl: string }) => {
+const RecentPresentationCard = ({ title, modifiedTime, webViewLink, iconLink }: { title: string, modifiedTime: string, webViewLink: string, iconLink: string }) => {
   return (
      <div className="space-y-2">
-      <Card className="group cursor-pointer">
-        <CardContent className="p-0 aspect-[4/3] flex items-center justify-center bg-secondary/30 relative overflow-hidden">
-             <Image src={imageUrl} alt={title} layout="fill" objectFit="cover" className="group-hover:scale-105 transition-transform duration-300" />
-        </CardContent>
-      </Card>
+      <a href={webViewLink} target="_blank" rel="noopener noreferrer">
+        <Card className="group cursor-pointer">
+          <CardContent className="p-0 aspect-[4/3] flex items-center justify-center bg-secondary/30 relative overflow-hidden">
+              <Image src={`https://picsum.photos/seed/${title}/400/300`} alt={title} layout="fill" objectFit="cover" className="group-hover:scale-105 transition-transform duration-300" />
+          </CardContent>
+        </Card>
+      </a>
       <h3 className="font-medium text-foreground truncate">{title}</h3>
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Presentation className="h-4 w-4" />
-        <span>Opened {opened}</span>
+        <Image src={iconLink} alt="slide icon" width={16} height={16} />
+        <span>Opened {new Date(modifiedTime).toLocaleDateString()}</span>
         <MoreVertical className="h-4 w-4 ml-auto cursor-pointer hover:text-foreground" />
       </div>
     </div>
@@ -98,6 +100,53 @@ const RecentPresentationCard = ({ title, opened, imageUrl }: { title: string, op
 function SlidesPage() {
   const { toast } = useToast();
   const comingSoon = () => toast({ title: 'Coming Soon!', description: 'This feature is under development.' });
+  const { workProvider, personalProvider, workAccessToken, personalAccessToken, fetchDriveFiles, signInWithGoogle } = useUser();
+  
+  const [presentations, setPresentations] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const connectedAccountType = workProvider ? 'work' : personalProvider ? 'personal' : null;
+  
+  useEffect(() => {
+    const loadPresentations = async () => {
+        if (!connectedAccountType) {
+            setIsLoading(false);
+            return;
+        }
+        
+        setIsLoading(true);
+        setError(null);
+        
+        try {
+            const allFiles = await fetchDriveFiles(connectedAccountType);
+            if(allFiles) {
+                const slides = allFiles.filter(file => file.mimeType === 'application/vnd.google-apps.presentation')
+                                     .sort((a, b) => new Date(b.modifiedTime).getTime() - new Date(a.modifiedTime).getTime());
+                setPresentations(slides);
+            }
+        } catch (e: any) {
+            setError('Failed to fetch presentations. Please try reconnecting your account.');
+            console.error(e);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    loadPresentations();
+  }, [connectedAccountType, fetchDriveFiles]);
+
+  const handleConnect = async (accountType: AccountType) => {
+    toast({ title: `Connecting to Google ${accountType} Account...`, description: 'Please follow the prompts.' });
+    try {
+        await signInWithGoogle(accountType);
+        // The useEffect will trigger a reload of presentations
+        toast({ title: 'Successfully connected!', description: 'You can now see your presentations.'});
+    } catch (e: any) {
+        toast({ variant: 'destructive', title: 'Connection Failed', description: e.message });
+    }
+  };
+
 
   const templates = [
       { title: 'AI Presentation Maker', isAi: true },
@@ -107,11 +156,6 @@ function SlidesPage() {
       { title: 'Photo Album', imageUrl: 'https://picsum.photos/seed/slide4/400/300' },
   ];
   
-  const recentPresentations = [
-      { title: 'Q3 Earnings Report', opened: 'yesterday', imageUrl: 'https://picsum.photos/seed/recent1/400/300' },
-      { title: 'Project Phoenix Kick-off', opened: 'Oct 28, 2024', imageUrl: 'https://picsum.photos/seed/recent2/400/300' },
-      { title: 'Marketing Strategy 2025', opened: 'Oct 25, 2024', imageUrl: 'https://picsum.photos/seed/recent3/400/300' },
-  ];
 
   return (
     <div className="relative min-h-screen w-full pt-16 bg-secondary/30">
@@ -160,11 +204,37 @@ function SlidesPage() {
                     {/* View toggles can go here */}
                 </div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {recentPresentations.map((pres, i) => (
-                    <RecentPresentationCard key={i} {...pres} />
-                ))}
-            </div>
+            {!connectedAccountType ? (
+                <Card className="max-w-xl mx-auto text-center p-8">
+                    <CardHeader>
+                        <Mail className="mx-auto h-12 w-12 text-muted-foreground" />
+                        <CardTitle>Connect your Google Account</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="mb-6 text-muted-foreground">Authorize Ryzor to access your Google Slides to see your presentations.</p>
+                        <div className="flex gap-4 justify-center">
+                            <Button onClick={() => handleConnect('work')}>Connect Work Account</Button>
+                            <Button onClick={() => handleConnect('personal')}>Connect Personal Account</Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            ) : isLoading ? (
+                <div className="flex justify-center items-center h-48">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            ) : error ? (
+                <div className="text-center text-destructive p-8 bg-destructive/10 rounded-lg">{error}</div>
+            ) : presentations.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {presentations.map((pres, i) => (
+                        <RecentPresentationCard key={i} {...pres} />
+                    ))}
+                </div>
+            ) : (
+                <div className="text-center p-12 border-2 border-dashed rounded-lg text-muted-foreground">
+                    <p>No Google Slides presentations found in your connected account.</p>
+                </div>
+            )}
         </div>
       </div>
     </div>
@@ -172,6 +242,3 @@ function SlidesPage() {
 }
 
 export default withAuth(SlidesPage);
-
-
-    
