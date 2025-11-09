@@ -352,6 +352,23 @@ function LoggedInView() {
   );
 }
 
+function AnimatedSection({ children, className }: { children: React.ReactNode, className?: string }) {
+    const ref = useRef(null);
+    const isInView = useInView(ref, { once: true, amount: 0.2 });
+
+    return (
+        <motion.div
+            ref={ref}
+            className={className}
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: isInView ? 1 : 0, y: isInView ? 0 : 40 }}
+            transition={{ duration: 0.8, ease: 'easeOut' }}
+        >
+            {children}
+        </motion.div>
+    );
+}
+
 function LandingPage() {
     const [typedText, setTypedText] = useState('');
     const [aiResponse, setAiResponse] = useState('');
@@ -657,3 +674,4 @@ export default function Home() {
 
   return user ? <LoggedInView /> : <LandingPage />;
 }
+
