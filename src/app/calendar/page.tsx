@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -74,6 +75,7 @@ function CalendarPage() {
                 title: 'Event Created!',
                 description: `"${result.summary}" has been added to your calendar.`,
             });
+            (document.getElementById('event-prompt') as HTMLInputElement).value = '';
             fetchEvents(); // Refresh events list
         } catch (e: any) {
             setError('Failed to create event.');
@@ -95,6 +97,7 @@ function CalendarPage() {
         try {
             const result = await findOptimalTime({ prompt, accessToken });
             setOptimalTime(result.bestTime);
+             (document.getElementById('find-time-prompt') as HTMLInputElement).value = '';
             toast({
                 title: 'Found a time!',
                 description: `Suggested time: ${new Date(result.bestTime).toLocaleString()}`,
@@ -151,41 +154,12 @@ function CalendarPage() {
                     className="p-0 [&_td]:w-10 [&_td]:h-10"
                   />
                   <Separator />
-                  <div className="space-y-4">
-                      <Card className="bg-transparent border-0 shadow-none">
-                        <CardHeader className="p-2">
-                          <CardTitle className="text-base flex items-center gap-2"><PlusCircle className="h-5 w-5"/> Create Event</CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-2">
-                          <div className="flex gap-2">
-                            <Input id="event-prompt" placeholder="Team sync tomorrow at 10am" className="text-xs" />
-                            <Button onClick={handleCreateEvent} disabled={isCreatingEvent} size="icon">
-                              {isCreatingEvent ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      <Card className="bg-transparent border-0 shadow-none">
-                        <CardHeader className="p-2">
-                          <CardTitle className="text-base flex items-center gap-2"><Sparkles className="h-5 w-5"/> Find Best Time</CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-2">
-                          <div className="flex gap-2">
-                            <Input id="find-time-prompt" placeholder="30 min chat next week" className="text-xs" />
-                            <Button onClick={handleFindTime} disabled={isFindingTime} size="icon">
-                              {isFindingTime ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                            </Button>
-                          </div>
-                          {optimalTime && (
-                            <div className="mt-3 p-3 bg-primary/10 rounded-lg text-xs">
-                                <p className="font-semibold text-primary">Suggested Time:</p>
-                                <p className="text-foreground">{new Date(optimalTime).toLocaleString()}</p>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                  </div>
+                   {optimalTime && (
+                        <div className="mt-3 p-3 bg-primary/10 rounded-lg text-sm space-y-1">
+                            <p className="font-semibold text-primary flex items-center gap-2"><Sparkles className="h-4 w-4"/> Suggested Time:</p>
+                            <p className="text-foreground">{new Date(optimalTime).toLocaleString()}</p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Main Content */}
@@ -200,6 +174,22 @@ function CalendarPage() {
                         </div>
                         <p className="text-sm text-muted-foreground">Connected Account: {connectedAccount}</p>
                     </div>
+
+                    <div className="p-4 border-b space-y-4">
+                        <div className="flex items-center gap-2">
+                            <Input id="event-prompt" placeholder="Use AI to create an event (e.g., 'Team sync tomorrow at 10am')" className="text-sm" />
+                            <Button onClick={handleCreateEvent} disabled={isCreatingEvent}>
+                              {isCreatingEvent ? <Loader2 className="h-4 w-4 animate-spin" /> : <><PlusCircle className="h-4 w-4 mr-2" /> Add Event</>}
+                            </Button>
+                        </div>
+                         <div className="flex items-center gap-2">
+                            <Input id="find-time-prompt" placeholder="Find the best time for... (e.g., 'A 30 min chat next week')" className="text-sm" />
+                            <Button onClick={handleFindTime} disabled={isFindingTime}>
+                              {isFindingTime ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Search className="h-4 w-4 mr-2" /> Find Time</>}
+                            </Button>
+                        </div>
+                    </div>
+
 
                      {error && (
                       <div className="m-4 bg-destructive/10 text-destructive p-4 rounded-md text-sm flex items-center gap-3">
@@ -244,3 +234,5 @@ function CalendarPage() {
 }
 
 export default withAuth(CalendarPage);
+
+    
