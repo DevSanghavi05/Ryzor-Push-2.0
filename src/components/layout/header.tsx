@@ -88,12 +88,6 @@ export function Header() {
             <Button asChild variant="ghost">
               <Link href="/calendar">Calendar</Link>
             </Button>
-             <Button asChild variant="ghost">
-              <Link href="/history">History</Link>
-            </Button>
-            <Button asChild variant="ghost">
-              <Link href="/add">Add Source</Link>
-            </Button>
           </>
         ) : (
           <div className="hidden md:flex items-center gap-6">
@@ -134,6 +128,29 @@ const UserArea = () => {
   const { user } = useUser();
   return user ? (
     <div className="flex items-center gap-2">
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                    <FolderPlus className="h-5 w-5" />
+                    <span className="sr-only">Add or View History</span>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                    <Link href="/history">
+                        <History className="mr-2 h-4 w-4" />
+                        <span>Chat History</span>
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link href="/add">
+                        <FolderPlus className="mr-2 h-4 w-4" />
+                        <span>Add Source</span>
+                    </Link>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+
         <Button asChild variant="ghost" size="icon">
             <Link href="/settings"><Settings className="h-5 w-5"/></Link>
         </Button>
