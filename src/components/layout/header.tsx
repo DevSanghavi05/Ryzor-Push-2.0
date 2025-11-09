@@ -1,7 +1,7 @@
 
 'use client';
 
-import { LogOut, Plus, Settings, User } from 'lucide-react';
+import { LogOut, Plus, Settings, User, History, FolderPlus } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/firebase';
@@ -89,21 +89,12 @@ export function Header() {
             <Button asChild variant="ghost">
               <Link href="/calendar">Calendar</Link>
             </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem asChild>
-                  <Link href="/history">Chat History</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/add">Add Source</Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+             <Button asChild variant="ghost">
+              <Link href="/history">History</Link>
+            </Button>
+            <Button asChild variant="ghost">
+              <Link href="/add">Add Source</Link>
+            </Button>
           </>
         ) : (
           <div className="hidden md:flex items-center gap-6">
@@ -143,7 +134,12 @@ export function Header() {
 const UserArea = () => {
   const { user } = useUser();
   return user ? (
-    <UserAvatar />
+    <div className="flex items-center gap-2">
+        <Button asChild variant="ghost" size="icon">
+            <Link href="/settings"><Settings className="h-4 w-4"/></Link>
+        </Button>
+        <UserAvatar />
+    </div>
   ) : (
     <div className="flex items-center gap-2">
       <Button asChild size="sm" variant="ghost">
