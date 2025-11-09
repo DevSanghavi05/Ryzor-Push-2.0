@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dialog"
 
 
-function GmailPage() {
+function MailPage() {
   const { workAccessToken, personalAccessToken, signInWithGoogle, workProvider, personalProvider } = useUser();
   const { toast } = useToast();
   
@@ -168,7 +168,7 @@ function GmailPage() {
       toast({ title: 'Connecting to Google...', description: 'Please follow the prompts.'});
       try {
         await signInWithGoogle(accountType);
-        toast({ title: 'Successfully connected!', description: 'You can now use the Gmail features.'});
+        toast({ title: 'Successfully connected!', description: 'You can now use the Mail features.'});
       } catch(e: any) {
         toast({ variant: 'destructive', title: 'Connection Failed', description: e.message });
       }
@@ -195,7 +195,7 @@ function GmailPage() {
       <div className="bg-aurora"></div>
       <div className="relative container mx-auto py-12 px-4 md:px-6">
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold font-headline">Gmail Assistant</h1>
+          <h1 className="text-4xl md:text-5xl font-bold font-headline">Mail Assistant</h1>
           <p className="mt-4 text-lg text-muted-foreground max-w-3xl mx-auto">
             Summarize, draft, and manage your inbox with AI.
           </p>
@@ -361,7 +361,7 @@ function GmailPage() {
            </div>
            <DialogFooter>
              <Button disabled={!draft} onClick={() => toast({title: "Coming Soon!", description: "This would open a Gmail compose window."})}>
-              <Send className="mr-2 h-4 w-4" /> Open in Gmail
+              <Send className="mr-2 h-4 w-4" /> Open in Mail
             </Button>
            </DialogFooter>
         </DialogContent>
@@ -410,4 +410,4 @@ function GmailPage() {
   );
 }
 
-export default withAuth(GmailPage);
+export default withAuth(MailPage);

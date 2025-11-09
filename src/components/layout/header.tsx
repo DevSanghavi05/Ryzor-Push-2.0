@@ -55,7 +55,7 @@ export function Header() {
               <Link href="/documents">My Documents</Link>
             </Button>
             <Button asChild variant="ghost">
-              <Link href="/gmail">Gmail</Link>
+              <Link href="/gmail">Mail</Link>
             </Button>
             <Button asChild variant="ghost">
               <Link href="/calendar">Calendar</Link>

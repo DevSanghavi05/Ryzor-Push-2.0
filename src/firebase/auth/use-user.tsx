@@ -11,6 +11,7 @@ import {
 import type { User } from 'firebase/auth';
 import {
   GoogleAuthProvider,
+  OAuthProvider,
   signInWithPopup,
   onAuthStateChanged as onFirebaseAuthStateChanged,
   signOut as firebaseSignOut,
@@ -20,7 +21,7 @@ import {
 } from 'firebase/auth';
 import { useAuth } from '@/firebase/provider';
 import { setCookie, destroyCookie, parseCookies } from 'nookies';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 export type AccountType = 'work' | 'personal';
 
@@ -28,14 +29,15 @@ export interface UserContextValue {
   user: User | null;
   loading: boolean;
   signInWithGoogle: (accountType?: AccountType) => Promise<UserCredential | void>;
+  signInWithMicrosoft: (accountType?: AccountType) => Promise<UserCredential | void>;
   signOut: () => Promise<void>;
   signUpWithEmail: (email: string, password: string) => Promise<UserCredential | void>;
   signInWithEmail: (email: string, password: string) => Promise<UserCredential | void>;
   accessToken: string | null;
   workAccessToken: string | null;
   personalAccessToken: string | null;
-  workProvider: 'google' | null;
-  personalProvider: 'google' | null;
+  workProvider: 'google' | 'microsoft' | null;
+  personalProvider: 'google' | 'microsoft' | null;
   fetchDriveFiles: (accountType: AccountType) => Promise<any[] | void>;
   userLoading: boolean;
 }
@@ -51,7 +53,7 @@ export function useUser() {
 }
 
 // --- Cookie Helpers ---
-const setAuthTokenCookie = (token: string, provider: 'google', accountType: AccountType) => {
+const setAuthTokenCookie = (token: string, provider: 'google' | 'microsoft', accountType: AccountType) => {
   const cookieName = `${provider}_access_token_${accountType}`;
   setCookie(null, cookieName, token, {
     maxAge: 3600, // 1 hour
@@ -64,10 +66,12 @@ const setAuthTokenCookie = (token: string, provider: 'google', accountType: Acco
 };
 
 const clearAuthTokenCookies = () => {
-  destroyCookie(null, 'google_access_token_work', { path: '/' });
-  destroyCookie(null, 'google_access_token_personal', { path: '/' });
-  destroyCookie(null, 'provider_work', { path: '/' });
-  destroyCookie(null, 'provider_personal', { path: '/' });
+  const cookies = parseCookies();
+  for (const cookie in cookies) {
+    if (cookie.includes('_access_token_') || cookie.startsWith('provider_')) {
+      destroyCookie(null, cookie, { path: '/' });
+    }
+  }
 };
 
 
@@ -76,23 +80,25 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const searchParams = useSearchParams();
   
   const [accessToken, setAccessToken] = useState<string|null>(null);
   const [workAccessToken, setWorkAccessToken] = useState<string | null>(null);
   const [personalAccessToken, setPersonalAccessToken] = useState<string | null>(null);
-  const [workProvider, setWorkProvider] = useState<'google' | null>(null);
-  const [personalProvider, setPersonalProvider] = useState<'google' | null>(null);
+  const [workProvider, setWorkProvider] = useState<'google' | 'microsoft' | null>(null);
+  const [personalProvider, setPersonalProvider] = useState<'google' | 'microsoft' | null>(null);
 
   // --- Initialize state from cookies ---
   useEffect(() => {
     const cookies = parseCookies();
-    setWorkAccessToken(cookies.google_access_token_work || null);
-    setPersonalAccessToken(cookies.google_access_token_personal || null);
+    const workToken = cookies.google_access_token_work || cookies.microsoft_access_token_work || null;
+    const personalToken = cookies.google_access_token_personal || cookies.microsoft_access_token_personal || null;
+    
+    setWorkAccessToken(workToken);
+    setPersonalAccessToken(personalToken);
     setWorkProvider(cookies.provider_work as any || null);
     setPersonalProvider(cookies.provider_personal as any || null);
-    // Set a general access token, preferring 'work' if both exist.
-    setAccessToken(cookies.google_access_token_work || cookies.google_access_token_personal || null);
+    
+    setAccessToken(workToken || personalToken || null);
   }, []);
   
   // --- Listen to Auth State Changes & Handle Redirect Results ---
@@ -118,59 +124,63 @@ export function UserProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, [auth]);
 
+  const handleOAuthSignIn = useCallback(async (provider: GoogleAuthProvider | OAuthProvider, providerName: 'google' | 'microsoft', accountType: AccountType = 'personal'): Promise<UserCredential | void> => {
+      if (!auth) return;
+      provider.setCustomParameters({ prompt: 'select_account' });
+      
+      try {
+        const result = await signInWithPopup(auth, provider);
+        const credential = OAuthProvider.credentialFromResult(result);
+
+        if (credential?.accessToken) {
+          const token = credential.accessToken;
+          
+          if (accountType === 'work') {
+            setWorkAccessToken(token);
+            setWorkProvider(providerName);
+            setAuthTokenCookie(token, providerName, 'work');
+          } else { // 'personal' or default
+             setPersonalAccessToken(token);
+             setPersonalProvider(providerName);
+             setAuthTokenCookie(token, providerName, 'personal');
+          }
+          // Update general access token
+          setAccessToken(token);
+        }
+
+        if (!user) setUser(result.user);
+        return result;
+      } catch (error: any) {
+        if (['auth/popup-blocked', 'auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(error.code)) {
+          console.warn(`Sign-in flow was interrupted: ${error.message}`);
+          return;
+        }
+        console.error(`Error signing in with ${providerName}:`, error);
+        throw error;
+      }
+  }, [auth, user]);
+
   // --- Sign In with Google (with Drive access) ---
   const signInWithGoogle = useCallback(async (accountType: AccountType = 'personal'): Promise<UserCredential | void> => {
-    if (!auth) return;
-
     const provider = new GoogleAuthProvider();
-    // Drive scopes
     provider.addScope('https://www.googleapis.com/auth/drive.readonly');
     provider.addScope('https://www.googleapis.com/auth/documents.readonly');
     provider.addScope('https://www.googleapis.com/auth/spreadsheets.readonly');
     provider.addScope('https://www.googleapis.com/auth/presentations.readonly');
-    
-    // Gmail scopes
     provider.addScope('https://www.googleapis.com/auth/gmail.readonly');
     provider.addScope('https://www.googleapis.com/auth/gmail.compose');
-
-    // Calendar scopes
     provider.addScope('https://www.googleapis.com/auth/calendar');
     
-    provider.setCustomParameters({ prompt: 'select_account' });
+    return handleOAuthSignIn(provider, 'google', accountType);
+  }, [handleOAuthSignIn]);
 
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-
-      if (credential?.accessToken) {
-        const token = credential.accessToken;
-        
-        if (accountType === 'work') {
-          setWorkAccessToken(token);
-          setWorkProvider('google');
-          setAuthTokenCookie(token, 'google', 'work');
-        } else { // 'personal' or default
-           setPersonalAccessToken(token);
-           setPersonalProvider('google');
-           setAuthTokenCookie(token, 'google', 'personal');
-        }
-        // Update general access token
-        setAccessToken(token);
-      }
-
-      if (!user) setUser(result.user);
-      
-      // Do not redirect here, let the calling component decide
-      return result;
-    } catch (error: any) {
-      if (['auth/popup-blocked', 'auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(error.code)) {
-        console.warn(`Google sign-in flow was interrupted: ${error.message}`);
-        return;
-      }
-      console.error(`Error signing in with Google:`, error);
-      throw error;
-    }
-  }, [auth, user]);
+  // --- Sign In with Microsoft ---
+  const signInWithMicrosoft = useCallback(async (accountType: AccountType = 'personal'): Promise<UserCredential | void> => {
+    const provider = new OAuthProvider('microsoft.com');
+    // Add Microsoft scopes here if needed in the future
+    // provider.addScope('...')
+    return handleOAuthSignIn(provider, 'microsoft', accountType);
+  }, [handleOAuthSignIn]);
 
   // --- Sign Up with Email/Password ---
   const signUpWithEmail = useCallback(async (email: string, password: string): Promise<UserCredential | void> => {
@@ -252,6 +262,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     loading,
     userLoading: loading,
     signInWithGoogle,
+    signInWithMicrosoft,
     signOut,
     signUpWithEmail,
     signInWithEmail,

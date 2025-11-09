@@ -35,9 +35,19 @@ const GoogleIcon = () => (
     </svg>
 );
 
+const MicrosoftIcon = () => (
+    <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2">
+        <title>Microsoft</title>
+        <path fill="#f25022" d="M11.4 11.4H0V0h11.4v11.4z" />
+        <path fill="#00a4ef" d="M11.4 24H0V12.6h11.4V24z" />
+        <path fill="#7fba00" d="M24 11.4H12.6V0H24v11.4z" />
+        <path fill="#ffb900" d="M24 24H12.6V12.6H24V24z" />
+    </svg>
+);
+
 
 export default function SignUpPage() {
-  const { user, loading, signUpWithEmail, signInWithGoogle } = useUser();
+  const { user, loading, signUpWithEmail, signInWithGoogle, signInWithMicrosoft } = useUser();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
@@ -153,6 +163,10 @@ export default function SignUpPage() {
                         <Button variant="outline" className="w-full" onClick={() => signInWithGoogle('work')}>
                             <GoogleIcon />
                             <span>Continue with Google</span>
+                        </Button>
+                        <Button variant="outline" className="w-full" onClick={() => signInWithMicrosoft('work')}>
+                            <MicrosoftIcon />
+                            <span>Continue with Microsoft</span>
                         </Button>
                     </div>
 
