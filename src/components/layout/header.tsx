@@ -39,44 +39,39 @@ export function Header() {
   const NavLinks = () => {
     const { user } = useUser();
     
-    // Only show full nav on pages other than the main chat page
-    if (pathname !== '/') {
-        return (
-          <nav className="hidden md:flex items-center gap-2">
-            {user ? (
-              <>
-                <Button asChild variant="ghost">
-                  <Link href="/">Workspace</Link>
-                </Button>
-                <Button asChild variant="ghost">
-                  <Link href="/documents">My Documents</Link>
-                </Button>
-                <Button asChild variant="ghost">
-                  <Link href="/gmail">Gmail</Link>
-                </Button>
-                <Button asChild variant="ghost">
-                  <Link href="/calendar">Calendar</Link>
-                </Button>
-                <Button asChild variant="ghost">
-                  <Link href="/history">Chat History</Link>
-                </Button>
-                <Button asChild variant="ghost">
-                  <Link href="/add">Add Source</Link>
-                </Button>
-              </>
-            ) : (
-              <div className="hidden md:flex items-center gap-6">
-                <Link href="/#why" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</Link>
-                <Link href="/#roadmap" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Roadmap</Link>
-                <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">About</Link>
-                <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy</Link>
-              </div>
-            )}
-          </nav>
-        );
-    }
-    
-    return null; // No nav links on the main chat page
+    return (
+      <nav className="hidden md:flex items-center gap-2">
+        {user ? (
+          <>
+            <Button asChild variant="ghost">
+              <Link href="/">Workspace</Link>
+            </Button>
+            <Button asChild variant="ghost">
+              <Link href="/documents">My Documents</Link>
+            </Button>
+            <Button asChild variant="ghost">
+              <Link href="/gmail">Gmail</Link>
+            </Button>
+            <Button asChild variant="ghost">
+              <Link href="/calendar">Calendar</Link>
+            </Button>
+            <Button asChild variant="ghost">
+              <Link href="/history">Chat History</Link>
+            </Button>
+            <Button asChild variant="ghost">
+              <Link href="/add">Add Source</Link>
+            </Button>
+          </>
+        ) : (
+          <div className="hidden md:flex items-center gap-6">
+            <Link href="/#why" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</Link>
+            <Link href="/#roadmap" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Roadmap</Link>
+            <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">About</Link>
+            <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy</Link>
+          </div>
+        )}
+      </nav>
+    );
   };
   
   return (
