@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ThemeToggleButton } from '../theme-toggle';
 import { Logo } from './logo';
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 function UserAvatar() {
   const { user, signOut } = useUser();
@@ -19,7 +20,7 @@ function UserAvatar() {
         {user.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'User'} />}
         <AvatarFallback>{user.displayName?.[0] || 'U'}</AvatarFallback>
       </Avatar>
-      <Button onClick={() => signOut()} variant="ghost" size="icon" className="group">
+      <Button onClick={signOut} variant="ghost" size="icon" className="group">
         <LogOut className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
       </Button>
     </div>
@@ -29,6 +30,7 @@ function UserAvatar() {
 
 export function Header() {
   const [isClient, setIsClient] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     setIsClient(true);
@@ -36,39 +38,45 @@ export function Header() {
 
   const NavLinks = () => {
     const { user } = useUser();
-    return (
-      <nav className="hidden md:flex items-center gap-2">
-        {user ? (
-          <>
-            <Button asChild variant="ghost">
-              <Link href="/">Workspace</Link>
-            </Button>
-            <Button asChild variant="ghost">
-              <Link href="/documents">My Documents</Link>
-            </Button>
-            <Button asChild variant="ghost">
-              <Link href="/gmail">Gmail</Link>
-            </Button>
-            <Button asChild variant="ghost">
-              <Link href="/calendar">Calendar</Link>
-            </Button>
-            <Button asChild variant="ghost">
-              <Link href="/history">Chat History</Link>
-            </Button>
-            <Button asChild variant="ghost">
-              <Link href="/add">Add Source</Link>
-            </Button>
-          </>
-        ) : (
-          <div className="hidden md:flex items-center gap-6">
-            <Link href="/#why" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</Link>
-            <Link href="/#roadmap" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Roadmap</Link>
-            <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">About</Link>
-            <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy</Link>
-          </div>
-        )}
-      </nav>
-    );
+    
+    // Only show full nav on pages other than the main chat page
+    if (pathname !== '/') {
+        return (
+          <nav className="hidden md:flex items-center gap-2">
+            {user ? (
+              <>
+                <Button asChild variant="ghost">
+                  <Link href="/">Workspace</Link>
+                </Button>
+                <Button asChild variant="ghost">
+                  <Link href="/documents">My Documents</Link>
+                </Button>
+                <Button asChild variant="ghost">
+                  <Link href="/gmail">Gmail</Link>
+                </Button>
+                <Button asChild variant="ghost">
+                  <Link href="/calendar">Calendar</Link>
+                </Button>
+                <Button asChild variant="ghost">
+                  <Link href="/history">Chat History</Link>
+                </Button>
+                <Button asChild variant="ghost">
+                  <Link href="/add">Add Source</Link>
+                </Button>
+              </>
+            ) : (
+              <div className="hidden md:flex items-center gap-6">
+                <Link href="/#why" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</Link>
+                <Link href="/#roadmap" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Roadmap</Link>
+                <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">About</Link>
+                <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy</Link>
+              </div>
+            )}
+          </nav>
+        );
+    }
+    
+    return null; // No nav links on the main chat page
   };
   
   return (
@@ -99,10 +107,17 @@ const UserArea = () => {
   return user ? (
     <UserAvatar />
   ) : (
-    <Button asChild size="sm" variant="ghost">
-      <Link href="/login">
-          Try It Free
-      </Link>
-    </Button>
+    <div className="flex items-center gap-2">
+      <Button asChild size="sm" variant="ghost">
+        <Link href="/login">
+            Sign In
+        </Link>
+      </Button>
+      <Button asChild size="sm">
+        <Link href="/signup">
+            Sign Up
+        </Link>
+      </Button>
+    </div>
   );
 }

@@ -216,13 +216,12 @@ function LoggedInView() {
 
         {/* Main Chat Area */}
         <div className="flex-1 flex flex-col h-full bg-transparent relative z-10">
-          {/* Chat Messages */}
           <div
             ref={chatContainerRef}
-            className="flex-1 p-6 overflow-y-auto"
+            className="flex-1 w-full max-w-4xl mx-auto flex flex-col justify-end p-6 overflow-y-auto"
           >
             {messages.length > 0 ? (
-                <div className="space-y-6 max-w-4xl mx-auto pb-40">
+                <div className="space-y-6 w-full">
                   {messages.map((msg, i) => (
                     <motion.div
                       key={i}
@@ -234,15 +233,15 @@ function LoggedInView() {
                       }`}
                     >
                       {msg.role === 'model' && (
-                        <div className="w-9 h-9 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center p-2 shrink-0 shadow-lg">
+                        <div className="w-9 h-9 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center p-2 shrink-0 shadow-lg">
                           <Logo />
                         </div>
                       )}
                       <div
-                        className={`px-5 py-3.5 rounded-2xl max-w-[80%] ${
+                        className={`px-5 py-3.5 rounded-lg max-w-[80%] ${
                           msg.role === 'user' 
-                            ? 'bg-primary text-primary-foreground' 
-                            : 'bg-card border border-border'
+                            ? 'bg-secondary text-secondary-foreground' 
+                            : 'bg-transparent text-foreground'
                         }`}
                       >
                          {msg.role === 'model' && msg.content === '' && loading ? (
@@ -254,22 +253,17 @@ function LoggedInView() {
                             <MarkdownContent content={msg.content + (loading && i === messages.length -1 ? '▋' : '')} />
                         )}
                       </div>
-                      {msg.role === 'user' && (
-                        <div className="w-9 h-9 rounded-2xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-border">
-                          <User size={18} />
-                        </div>
-                      )}
                     </motion.div>
                   ))}
                 </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-center max-w-3xl mx-auto -mt-16">
                   <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }}>
-                     <h1 className="text-4xl md:text-5xl font-bold tracking-tighter bg-gradient-to-br from-foreground to-muted-foreground bg-clip-text text-transparent mb-4">
+                      <h1 className="text-4xl md:text-5xl font-bold font-headline mb-4">
                         Your Intelligent Workspace
                       </h1>
                       <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-                          Ask questions, get summaries, and find insights across all your documents instantly.
+                          How can I help you today?
                       </p>
                   </motion.div>
               </div>
@@ -277,7 +271,7 @@ function LoggedInView() {
           </div>
 
           {/* Chat Bar */}
-           <div className="absolute bottom-12 left-0 right-0 p-4 bg-transparent">
+           <div className="w-full p-4 bg-transparent pb-8">
             <div className="mx-auto max-w-4xl">
                  <motion.div 
                     initial={{ opacity: 0, y: 20 }} 
@@ -285,17 +279,8 @@ function LoggedInView() {
                     transition={{ duration: 0.5, delay: 0.2 }}
                     className="relative"
                   >
-                    <div className="relative bg-background/80 backdrop-blur-xl rounded-full border border-border shadow-2xl shadow-black/20">
+                    <div className="relative bg-secondary/80 backdrop-blur-xl rounded-full border border-border shadow-2xl shadow-black/20">
                       <div className="p-2 flex items-center gap-2">
-                        <Input
-                          placeholder='Ask anything about your documents...'
-                          className="border-none focus-visible:ring-0 flex-1 text-base bg-transparent text-foreground placeholder:text-muted-foreground/60 px-4 h-12"
-                          value={input}
-                          onChange={(e) => setInput(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleInteraction()}
-                          disabled={loading}
-                        />
-
                         <Button
                             size="icon"
                             variant="ghost"
@@ -310,6 +295,14 @@ function LoggedInView() {
                               </Badge>
                             )}
                           </Button>
+                        <Input
+                          placeholder='How can Ryzor help?'
+                          className="border-none focus-visible:ring-0 flex-1 text-base bg-transparent text-foreground placeholder:text-muted-foreground/60 px-4 h-12"
+                          value={input}
+                          onChange={(e) => setInput(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleInteraction()}
+                          disabled={loading}
+                        />
 
                         <Button
                           size="icon"
@@ -356,23 +349,6 @@ function LoggedInView() {
 
         </div>
       </div>
-  );
-}
-
-function AnimatedSection({ children, className }: { children: React.ReactNode, className?: string }) {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, amount: 0.15, rootMargin: "0px 0px -100px 0px" });
-
-  return (
-    <motion.section
-      ref={ref}
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: isInView ? 1 : 0, y: isInView ? 0 : 30 }}
-      transition={{ duration: 0.8, ease: 'easeOut' }}
-      className={className}
-    >
-      {children}
-    </motion.section>
   );
 }
 
