@@ -218,20 +218,32 @@ const draftReplyFlow = ai.defineFlow(
         outputSchema: DraftReplyOutputSchema,
     },
     async (input) => {
-        const { text } = await ai.generate({
-            prompt: `You are an AI assistant drafting an email reply.
+        const { accessToken, emailToReplyTo, prompt } = input;
+        
+        // 1. Fetch user's sent emails to learn their style
+        const { emails: sentEmails } = await getEmails({ accessToken, category: 'sent', count: 5 });
 
-            Here is the email you are replying to:
-            From: ${input.emailToReplyTo.from}
-            Subject: ${input.emailToReplyTo.subject}
+        // 2. Generate the draft using the learned style
+        const { text } = await ai.generate({
+            prompt: `You are an AI assistant that drafts email replies in the user's personal writing style.
+
+            First, analyze the style (tone, phrasing, formality, length, greeting, sign-off) of these recently sent emails from the user:
             ---
-            ${input.emailToReplyTo.body?.substring(0, 3000)}
+            ${JSON.stringify(sentEmails.map(e => e.body?.substring(0, 1000)))}
+            ---
+
+            Now, using that learned style, draft a reply to the following email:
+            From: ${emailToReplyTo.from}
+            Subject: ${emailToReplyTo.subject}
+            Body:
+            ---
+            ${emailToReplyTo.body?.substring(0, 2000)}
             ---
             
-            Here are the user's instructions for the reply:
-            "${input.prompt}"
+            The user's instruction for the reply is:
+            "${prompt}"
 
-            Now, write the email draft. Respond ONLY with the body of the email. Do not include a subject line or any other headers.
+            Write the email draft, matching the user's style. Respond ONLY with the body of the email. Do not include a subject line or any other headers.
             `
         });
         return { draft: text };
@@ -257,3 +269,4 @@ const draftNewEmailFlow = ai.defineFlow(
         return { draft: text };
     }
 )
+
