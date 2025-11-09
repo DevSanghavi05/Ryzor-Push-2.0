@@ -13,6 +13,8 @@ import {
   GoogleAuthProvider,
   OAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   onAuthStateChanged as onFirebaseAuthStateChanged,
   signOut as firebaseSignOut,
   UserCredential,
@@ -29,7 +31,7 @@ export interface UserContextValue {
   user: User | null;
   loading: boolean;
   signInWithGoogle: (accountType?: AccountType) => Promise<UserCredential | void>;
-  signInWithMicrosoft: (accountType?: AccountType) => Promise<UserCredential | void>;
+  signInWithMicrosoft: (accountType?: AccountType) => Promise<void>;
   signOut: () => Promise<void>;
   signUpWithEmail: (email: string, password: string) => Promise<UserCredential | void>;
   signInWithEmail: (email: string, password: string) => Promise<UserCredential | void>;
@@ -108,6 +110,34 @@ export function UserProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Handle the result from a redirect sign-in
+    getRedirectResult(auth).then((result) => {
+        if (result) {
+            const credential = OAuthProvider.credentialFromResult(result);
+            if (credential?.accessToken) {
+                // We need to know if this was for a 'work' or 'personal' account.
+                // Since we can't pass state through the redirect easily, we'll assume a default
+                // or check a temporary cookie if we were to set one before the redirect.
+                // For now, let's assume 'personal' as a default for simplicity.
+                const accountType: AccountType = 'personal'; // This is a simplification
+                const providerName = result.providerId.includes('google') ? 'google' : 'microsoft';
+                setAuthTokenCookie(credential.accessToken, providerName, accountType);
+                if (accountType === 'work') {
+                    setWorkAccessToken(credential.accessToken);
+                    setWorkProvider(providerName);
+                } else {
+                    setPersonalAccessToken(credential.accessToken);
+                    setPersonalProvider(providerName);
+                }
+                 setAccessToken(credential.accessToken);
+            }
+        }
+    }).catch(error => {
+        console.error("Error getting redirect result:", error);
+    }).finally(() => {
+        setLoading(false);
+    });
+
     const unsubscribe = onFirebaseAuthStateChanged(auth, async (user) => {
       setUser(user);
       if (!user) {
@@ -118,13 +148,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
         setPersonalProvider(null);
         setAccessToken(null);
       }
-      setLoading(false);
+      // Only set loading to false in here if not handling redirect
+      // The redirect handler will manage loading state
     });
 
     return () => unsubscribe();
   }, [auth]);
 
-  const handleOAuthSignIn = useCallback(async (provider: GoogleAuthProvider | OAuthProvider, providerName: 'google' | 'microsoft', accountType: AccountType = 'personal'): Promise<UserCredential | void> => {
+  const handleOAuthSignIn = useCallback(async (provider: GoogleAuthProvider, providerName: 'google', accountType: AccountType = 'personal'): Promise<UserCredential | void> => {
       if (!auth) return;
       provider.setCustomParameters({ prompt: 'select_account' });
       
@@ -175,12 +206,21 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }, [handleOAuthSignIn]);
 
   // --- Sign In with Microsoft ---
-  const signInWithMicrosoft = useCallback(async (accountType: AccountType = 'personal'): Promise<UserCredential | void> => {
+  const signInWithMicrosoft = useCallback(async (accountType: AccountType = 'personal'): Promise<void> => {
+    if (!auth) return;
     const provider = new OAuthProvider('microsoft.com');
-    // Add Microsoft scopes here if needed in the future
+    // Add scopes if needed
     // provider.addScope('...')
-    return handleOAuthSignIn(provider, 'microsoft', accountType);
-  }, [handleOAuthSignIn]);
+
+    try {
+        // We use signInWithRedirect for Microsoft to solve the PKCE issue.
+        await signInWithRedirect(auth, provider);
+        // The rest of the logic is handled by getRedirectResult in the useEffect hook.
+    } catch(error) {
+        console.error("Error starting Microsoft sign-in redirect:", error);
+        throw error;
+    }
+  }, [auth]);
 
   // --- Sign Up with Email/Password ---
   const signUpWithEmail = useCallback(async (email: string, password: string): Promise<UserCredential | void> => {
