@@ -43,9 +43,9 @@ function UserAvatar() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/feedback">
-            <MessageSquare className="mr-2 h-4 w-4" />
-            <span>Feedback</span>
+          <Link href="/settings">
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Settings</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
@@ -152,7 +152,7 @@ const UserArea = () => {
         </DropdownMenu>
 
         <Button asChild variant="ghost" size="icon">
-            <Link href="/feedback"><MessageSquare className="h-5 w-5"/></Link>
+            <Link href="/settings"><Settings className="h-5 w-5"/></Link>
         </Button>
         <UserAvatar />
     </div>

@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 
 const { fontFamily } = require("tailwindcss/defaultTheme")
@@ -22,6 +23,8 @@ export default {
         sans: ["var(--font-sans)", ...fontFamily.sans],
         body: ['Inter', 'sans-serif'],
         headline: ['"Space Grotesk"', 'sans-serif'],
+        serif: ['"Lora"', 'serif'],
+        mono: ['"Roboto Mono"', 'monospace'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -30,7 +33,7 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "hsl(var(--primary))",
+          DEFAULT: "hsl(var(--primary-hue), 50%, 50%)",
           foreground: "hsl(var(--primary-foreground))",
         },
         secondary: {

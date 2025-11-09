@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,11 +14,9 @@
     
     /* Dynamic Primary Color using Hue */
     --primary-hue: 240; /* Default: Blue */
-    --primary-saturation: 10%;
-    --primary-lightness: 3.9%;
     
-    --primary: var(--primary-hue) var(--primary-saturation) var(--primary-lightness);
-    --primary-foreground: var(--primary-hue) 0% 98%;
+    --primary: var(--primary-hue) 50% 50%;
+    --primary-foreground: var(--primary-hue) 85.7% 97.3%;
 
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
@@ -29,7 +28,7 @@
     --destructive-foreground: 0 0% 98%;
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
-    --ring: var(--primary-hue) var(--primary-saturation) var(--primary-lightness);
+    --ring: var(--primary-hue) 40% 50%;
     --radius: 0.5rem;
   }
 
@@ -42,8 +41,8 @@
     --popover-foreground: 0 0% 98%;
     
     /* In dark mode, we flip the primary and foreground */
-    --primary: var(--primary-hue) 0% 98%;
-    --primary-foreground: var(--primary-hue) var(--primary-saturation) var(--primary-lightness);
+    --primary: var(--primary-hue) 60% 60%;
+    --primary-foreground: var(--primary-hue) 85.7% 97.3%;
 
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
@@ -55,7 +54,7 @@
     --destructive-foreground: 0 0% 98%;
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
-    --ring: var(--primary-hue) 0% 98%;
+    --ring: var(--primary-hue) 50% 50%;
   }
 }
 
