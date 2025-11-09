@@ -16,6 +16,7 @@ import {
   Lock,
   RotateCw,
   Target,
+  Mic,
 } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { ask } from '@/app/actions';
@@ -49,6 +50,58 @@ function LoggedInView() {
   const [isDocPickerOpen, setIsDocPickerOpen] = useState(false);
   const [allDocs, setAllDocs] = useState<any[]>([]);
   const [focusedDocIds, setFocusedDocIds] = useState<Set<string>>(new Set());
+
+  // Voice Input State
+  const [isRecording, setIsRecording] = useState(false);
+  const [isSpeechApiAvailable, setIsSpeechApiAvailable] = useState(false);
+  const recognitionRef = useRef<any>(null); // Using 'any' for broader compatibility
+
+  // Check for SpeechRecognition API
+  useEffect(() => {
+      if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+          setIsSpeechApiAvailable(true);
+          const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+          recognitionRef.current = new SpeechRecognition();
+          recognitionRef.current.continuous = true;
+          recognitionRef.current.interimResults = true;
+
+          recognitionRef.current.onresult = (event: any) => {
+              let interimTranscript = '';
+              let finalTranscript = '';
+              for (let i = event.resultIndex; i < event.results.length; ++i) {
+                  if (event.results[i].isFinal) {
+                      finalTranscript += event.results[i][0].transcript;
+                  } else {
+                      interimTranscript += event.results[i][0].transcript;
+                  }
+              }
+              setInput(input + finalTranscript + interimTranscript);
+          };
+          
+          recognitionRef.current.onerror = (event: any) => {
+              console.error("Speech recognition error", event.error);
+              toast({ variant: 'destructive', title: 'Voice Error', description: `An error occurred: ${event.error}` });
+              setIsRecording(false);
+          }
+
+          recognitionRef.current.onend = () => {
+              setIsRecording(false);
+          }
+      }
+  }, [input, toast]);
+
+  const toggleRecording = () => {
+      if (!isSpeechApiAvailable) {
+          toast({ variant: 'destructive', title: 'Unsupported Browser', description: 'Voice recognition is not supported in this browser.' });
+          return;
+      }
+      if (isRecording) {
+          recognitionRef.current?.stop();
+      } else {
+          recognitionRef.current?.start();
+      }
+      setIsRecording(!isRecording);
+  }
 
   // Load all documents from local storage on mount
   useEffect(() => {
@@ -303,6 +356,17 @@ function LoggedInView() {
                           onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleInteraction()}
                           disabled={loading}
                         />
+                         {isSpeechApiAvailable && (
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                className={`rounded-full hover:bg-accent/10 transition-all duration-200 shrink-0 h-10 w-10 ${isRecording ? 'text-red-500 animate-pulse' : 'text-muted-foreground hover:text-foreground'}`}
+                                onClick={toggleRecording}
+                                disabled={loading}
+                            >
+                                <Mic className="w-5 h-5" />
+                            </Button>
+                         )}
 
                         <Button
                           size="icon"
@@ -674,6 +738,3 @@ export default function Home() {
 
   return user ? <LoggedInView /> : <LandingPage />;
 }
-
-
-    
