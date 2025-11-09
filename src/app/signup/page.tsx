@@ -58,11 +58,7 @@ export default function SignUpPage() {
   const [isSignUpComplete, setIsSignUpComplete] = useState(false);
 
   useEffect(() => {
-    if (!loading && user && isSignUpComplete) {
-      // For new sign-ups, redirect to the settings page first.
-      router.push('/settings');
-    } else if (!loading && user && !isSignUpComplete) {
-      // If user is already logged in and stumbles here, send them to the homepage.
+    if (!loading && user) {
       const redirectUrl = searchParams.get('redirect') || '/';
       router.push(redirectUrl);
     }

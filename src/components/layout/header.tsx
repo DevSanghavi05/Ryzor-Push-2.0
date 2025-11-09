@@ -1,7 +1,7 @@
 
 'use client';
 
-import { LogOut, Settings, History, FolderPlus } from 'lucide-react';
+import { LogOut, Settings, History, FolderPlus, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/firebase';
@@ -43,9 +43,9 @@ function UserAvatar() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/settings">
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Settings</span>
+          <Link href="/feedback">
+            <MessageSquare className="mr-2 h-4 w-4" />
+            <span>Feedback</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
@@ -152,7 +152,7 @@ const UserArea = () => {
         </DropdownMenu>
 
         <Button asChild variant="ghost" size="icon">
-            <Link href="/settings"><Settings className="h-5 w-5"/></Link>
+            <Link href="/feedback"><MessageSquare className="h-5 w-5"/></Link>
         </Button>
         <UserAvatar />
     </div>
