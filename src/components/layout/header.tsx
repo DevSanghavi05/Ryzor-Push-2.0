@@ -19,7 +19,7 @@ function UserAvatar() {
         {user.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'User'} />}
         <AvatarFallback>{user.displayName?.[0] || 'U'}</AvatarFallback>
       </Avatar>
-      <Button onClick={signOut} variant="ghost" size="icon" className="group">
+      <Button onClick={() => signOut()} variant="ghost" size="icon" className="group">
         <LogOut className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
       </Button>
     </div>
@@ -45,6 +45,12 @@ export function Header() {
             </Button>
             <Button asChild variant="ghost">
               <Link href="/documents">My Documents</Link>
+            </Button>
+            <Button asChild variant="ghost">
+              <Link href="/gmail">Gmail</Link>
+            </Button>
+            <Button asChild variant="ghost">
+              <Link href="/calendar">Calendar</Link>
             </Button>
             <Button asChild variant="ghost">
               <Link href="/history">Chat History</Link>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -129,10 +128,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (!auth) return;
 
     const provider = new GoogleAuthProvider();
+    // Drive scopes
     provider.addScope('https://www.googleapis.com/auth/drive.readonly');
     provider.addScope('https://www.googleapis.com/auth/documents.readonly');
     provider.addScope('https://www.googleapis.com/auth/spreadsheets.readonly');
     provider.addScope('https://www.googleapis.com/auth/presentations.readonly');
+    
+    // Gmail scopes
+    provider.addScope('https://www.googleapis.com/auth/gmail.readonly');
+    provider.addScope('https://www.googleapis.com/auth/gmail.compose');
+
+    // Calendar scopes
+    provider.addScope('https://www.googleapis.com/auth/calendar');
+    
     provider.setCustomParameters({ prompt: 'select_account' });
 
     try {
