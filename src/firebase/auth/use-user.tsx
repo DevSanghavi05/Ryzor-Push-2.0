@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -42,6 +43,7 @@ export interface UserContextValue {
   personalProvider: 'google' | 'microsoft' | null;
   fetchDriveFiles: (accountType: AccountType) => Promise<any[] | void>;
   userLoading: boolean;
+  disconnectGoogleAccount: (accountType: AccountType) => void;
 }
 
 const UserContext = createContext<UserContextValue | undefined>(undefined);
@@ -255,6 +257,26 @@ export function UserProvider({ children }: { children: ReactNode }) {
       console.error('Error signing out:', error);
     }
   };
+  
+  // --- Disconnect Google Account ---
+  const disconnectGoogleAccount = useCallback((accountType: AccountType) => {
+    if (accountType === 'work') {
+      destroyCookie(null, 'google_access_token_work', { path: '/' });
+      destroyCookie(null, 'provider_work', { path: '/' });
+      setWorkAccessToken(null);
+      setWorkProvider(null);
+    } else {
+      destroyCookie(null, 'google_access_token_personal', { path: '/' });
+      destroyCookie(null, 'provider_personal', { path: '/' });
+      setPersonalAccessToken(null);
+      setPersonalProvider(null);
+    }
+    // Re-evaluate the main access token
+    const cookies = parseCookies();
+    const workToken = cookies.google_access_token_work || null;
+    const personalToken = cookies.google_access_token_personal || null;
+    setAccessToken(workToken || personalToken);
+  }, []);
 
   // --- Fetch Cloud Files ---
   const fetchDriveFiles = useCallback(async (accountType: AccountType) => {
@@ -312,6 +334,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     workProvider,
     personalProvider,
     fetchDriveFiles,
+    disconnectGoogleAccount,
   };
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
