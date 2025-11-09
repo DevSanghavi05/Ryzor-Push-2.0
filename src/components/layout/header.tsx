@@ -1,7 +1,7 @@
 
 'use client';
 
-import { LogOut, Plus, Settings, User, History, FolderPlus } from 'lucide-react';
+import { LogOut, Settings, History, FolderPlus } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/firebase';
@@ -9,7 +9,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ThemeToggleButton } from '../theme-toggle';
 import { Logo } from './logo';
 import { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -136,7 +135,7 @@ const UserArea = () => {
   return user ? (
     <div className="flex items-center gap-2">
         <Button asChild variant="ghost" size="icon">
-            <Link href="/settings"><Settings className="h-4 w-4"/></Link>
+            <Link href="/settings"><Settings className="h-5 w-5"/></Link>
         </Button>
         <UserAvatar />
     </div>

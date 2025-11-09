@@ -7,11 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import withAuth from '@/firebase/auth/with-auth';
-import { Palette, Sun, Moon, UserCog, Link as LinkIcon, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Palette, UserCog, Link as LinkIcon, AlertTriangle, ShieldCheck, MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useUser, AccountType } from '@/firebase/auth/use-user';
 import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Textarea } from '@/components/ui/textarea';
 
 const GoogleIcon = () => (
     <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2">
@@ -27,22 +28,16 @@ function SettingsPage() {
   const { toast } = useToast();
   const router = useRouter();
   const { user, workProvider, personalProvider, signInWithGoogle, disconnectGoogleAccount } = useUser();
+  const [feedback, setFeedback] = useState('');
   
   const [hue, setHue] = useState(240);
-  const [saturation, setSaturation] = useState(10);
-  const [lightness, setLightness] = useState(4);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const rootStyle = getComputedStyle(document.documentElement);
-      const primaryColor = rootStyle.getPropertyValue('--primary').trim();
-      if (primaryColor) {
-        const [h, s, l] = primaryColor.split(' ').map(parseFloat);
-        if(!isNaN(h) && !isNaN(s) && !isNaN(l)) {
-          setHue(h);
-          setSaturation(s);
-          setLightness(l);
-        }
+      const primaryColor = rootStyle.getPropertyValue('--primary-hue')?.trim();
+      if (primaryColor && !isNaN(parseInt(primaryColor, 10))) {
+        setHue(parseInt(primaryColor, 10));
       }
     }
   }, []);
@@ -52,15 +47,28 @@ function SettingsPage() {
     setHue(newHue);
     document.documentElement.style.setProperty('--primary-hue', newHue.toString());
   };
-
+  
   const handleSaveTheme = () => {
+    // In a real app, you would save this to a user profile in a database.
+    // For now, we'll save it to localStorage.
+    localStorage.setItem(`theme_hue_${user?.uid}`, hue.toString());
     toast({
       title: 'Theme Saved!',
       description: 'Your new brand color has been applied.',
     });
-    // In a real app, this would persist to a database.
-    // For now, it's just a live preview that resets on refresh.
   };
+
+  useEffect(() => {
+    if (user) {
+      const savedHue = localStorage.getItem(`theme_hue_${user.uid}`);
+      if (savedHue && !isNaN(parseInt(savedHue, 10))) {
+        const newHue = parseInt(savedHue, 10);
+        setHue(newHue);
+        document.documentElement.style.setProperty('--primary-hue', newHue.toString());
+      }
+    }
+  }, [user]);
+
 
   const handleConnect = async (accountType: AccountType) => {
       toast({ title: `Connecting to Google ${accountType} account...`});
@@ -76,9 +84,18 @@ function SettingsPage() {
       disconnectGoogleAccount(accountType);
       toast({ title: `Disconnected from Google ${accountType} account.`});
   }
-
-  const tempPrimary = `${hue} ${saturation}% ${lightness}%`;
-  const tempForeground = `${hue} 0% 98%`;
+  
+  const handleFeedbackSubmit = () => {
+    if(!feedback.trim()) {
+        toast({ variant: 'destructive', title: 'Please enter your feedback.'});
+        return;
+    }
+    toast({
+        title: 'Feedback Submitted!',
+        description: 'Thank you for helping us improve Ryzor.'
+    });
+    setFeedback('');
+  }
 
   return (
     <div className="relative min-h-screen w-full pt-16">
@@ -158,8 +175,8 @@ function SettingsPage() {
                             <Button onClick={() => handleConnect('personal')}><LinkIcon className="mr-2 h-4 w-4"/> Connect</Button>
                         )}
                     </div>
-                    <div className="pt-4 text-xs text-muted-foreground flex gap-2 items-center">
-                        <ShieldCheck className="h-4 w-4 shrink-0" />
+                    <div className="pt-4 text-xs text-muted-foreground flex gap-2 items-start">
+                        <ShieldCheck className="h-4 w-4 shrink-0 mt-0.5" />
                         <span>Ryzor requests read-only permissions for Drive, Gmail, and Calendar to provide its services. We never store your passwords. You can revoke access at any time from your Google Account settings.</span>
                     </div>
                 </CardContent>
@@ -175,58 +192,48 @@ function SettingsPage() {
                 </CardHeader>
                 <CardContent className="space-y-8">
                     <div className="space-y-4">
-                    <label htmlFor="hue-slider" className="font-medium">
-                        Primary Color Hue
-                    </label>
-                    <input
-                        id="hue-slider"
-                        type="range"
-                        min="0"
-                        max="360"
-                        value={hue}
-                        onChange={handleColorChange}
-                        className="w-full h-2 bg-gradient-to-r from-red-500 via-yellow-500 to-red-500 rounded-lg appearance-none cursor-pointer"
-                        style={{
-                        background: 'linear-gradient(to right, hsl(0, 100%, 50%), hsl(60, 100%, 50%), hsl(120, 100%, 50%), hsl(180, 100%, 50%), hsl(240, 100%, 50%), hsl(300, 100%, 50%), hsl(360, 100%, 50%))',
-                        }}
-                    />
-                    <div className="text-center text-sm text-muted-foreground">
-                        Hue: {hue}
+                        <label htmlFor="hue-slider" className="font-medium">Primary Color</label>
+                        <input
+                            id="hue-slider"
+                            type="range"
+                            min="0"
+                            max="360"
+                            value={hue}
+                            onChange={handleColorChange}
+                            className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+                            style={{
+                                background: 'linear-gradient(to right, hsl(0, 100%, 50%), hsl(60, 100%, 50%), hsl(120, 100%, 50%), hsl(180, 100%, 50%), hsl(240, 100%, 50%), hsl(300, 100%, 50%), hsl(360, 100%, 50%))',
+                            }}
+                        />
+                        <div className="text-center text-sm text-muted-foreground">Hue: {hue}</div>
                     </div>
-                    </div>
-
-                    <div className="space-y-4">
-                    <h3 className="font-medium text-center">Live Preview</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="border rounded-lg p-6 bg-white space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h4 className="font-semibold text-black flex items-center gap-2"><Sun className="w-5 h-5"/> Light Mode</h4>
-                            <div style={{ backgroundColor: `hsl(${tempPrimary})` }} className="w-6 h-6 rounded-full border"></div>
-                        </div>
-                        <Button style={{ backgroundColor: `hsl(${tempPrimary})`, color: `hsl(${tempForeground})` }}>
-                            Primary Button
-                        </Button>
-                        <p className="text-sm" style={{color: `hsl(${tempPrimary})`}}>This is some sample accent text.</p>
-                        </div>
-                        <div className="border rounded-lg p-6 bg-gray-900 space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h4 className="font-semibold text-white flex items-center gap-2"><Moon className="w-5 h-5"/> Dark Mode</h4>
-                            <div style={{ backgroundColor: `hsl(${tempForeground})` }} className="w-6 h-6 rounded-full border"></div>
-                        </div>
-                        <Button style={{ backgroundColor: `hsl(${tempForeground})`, color: `hsl(${tempPrimary})` }}>
-                            Primary Button
-                        </Button>
-                        <p className="text-sm" style={{color: `hsl(${tempForeground})`}}>This is some sample accent text.</p>
-                        </div>
-                    </div>
-                    </div>
-
-                    <div className="flex justify-end gap-4 pt-4">
-                    <Button variant="ghost" onClick={() => router.push('/')}>Cancel</Button>
-                    <Button onClick={handleSaveTheme}>Save Theme</Button>
+                     <div className="flex justify-end gap-4">
+                        <Button variant="ghost" onClick={() => router.push('/')}>Cancel</Button>
+                        <Button onClick={handleSaveTheme}>Save Theme</Button>
                     </div>
                 </CardContent>
             </Card>
+
+             <Separator />
+
+             {/* Feedback */}
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><MessageSquare /> Submit Feedback</CardTitle>
+                    <CardDescription>Have an idea or found a bug? Let us know!</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <Textarea 
+                        placeholder="Tell us what you think..."
+                        value={feedback}
+                        onChange={(e) => setFeedback(e.target.value)}
+                        className="min-h-[120px]"
+                    />
+                     <div className="flex justify-end">
+                         <Button onClick={handleFeedbackSubmit}>Submit Feedback</Button>
+                    </div>
+                </CardContent>
+             </Card>
 
         </motion.div>
       </div>
