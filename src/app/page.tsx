@@ -442,7 +442,7 @@ function LandingPage() {
                         className="max-w-3xl mx-auto text-lg md:text-xl text-muted-foreground leading-relaxed mb-14 font-light"
                         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}
                     >
-                        Ryzor instantly transforms your scattered digital life into a unified, intelligent brain you can talk to. Seamlessly sync documents from both your work and personal accounts—whether it's PDFs from your desktop or files from your Google Drive—and ask complex questions to get immediate, synthesized answers.
+                        Ryzor is your intelligent workspace. It unifies your documents, emails, and calendar, allowing you to find information, generate content in your own voice, and manage your schedule through natural conversation.
                     </motion.p>
                     
                     <motion.div 
@@ -675,3 +675,5 @@ export default function Home() {
   return user ? <LoggedInView /> : <LandingPage />;
 }
 
+
+    
