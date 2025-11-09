@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview A server-side flow for extracting text from a PDF file.
+ * @fileOverview A server-side flow for extracting text from a PDF file using Gemini Vision.
  *
  * - extractPdfText - A function that handles the text extraction.
  * - ExtractPdfTextInput - The input type for the function.
@@ -10,7 +10,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import pdf from 'pdf-parse';
 
 // Define Zod schemas for input and output
 const ExtractPdfTextInputSchema = z.object({
@@ -39,17 +38,25 @@ const extractPdfTextFlow = ai.defineFlow(
   },
   async (input) => {
     try {
-      // 1. Convert data URI to a Buffer
-      const base64Data = input.pdfDataUri.split(',')[1];
-      if (!base64Data) {
-        throw new Error("Invalid data URI: Missing base64 data.");
-      }
-      const pdfBuffer = Buffer.from(base64Data, 'base64');
-      
-      // 2. Use pdf-parse to extract text
-      const data = await pdf(pdfBuffer);
+        const { text } = await ai.generate({
+            model: 'googleai/gemini-pro-vision',
+            prompt: [
+                {
+                    text: 'Extract all text from the provided document. Respond only with the raw text content.'
+                },
+                {
+                    media: {
+                        url: input.pdfDataUri,
+                        contentType: 'application/pdf',
+                    }
+                }
+            ],
+            config: {
+              temperature: 0, // Lower temperature for more deterministic text extraction
+            }
+        });
 
-      return { text: data.text };
+      return { text };
     } catch (error: any) {
       console.error("Error in PDF text extraction flow:", error);
       // Re-throw to make the error visible to the caller
