@@ -55,13 +55,18 @@ export default function SignUpPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const [isSignUpComplete, setIsSignUpComplete] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && user && isSignUpComplete) {
+      // For new sign-ups, redirect to the settings page first.
+      router.push('/settings');
+    } else if (!loading && user && !isSignUpComplete) {
+      // If user is already logged in and stumbles here, send them to the homepage.
       const redirectUrl = searchParams.get('redirect') || '/';
       router.push(redirectUrl);
     }
-  }, [user, loading, router, searchParams]);
+  }, [user, loading, router, searchParams, isSignUpComplete]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,7 +81,8 @@ export default function SignUpPage() {
     setIsSubmitting(true);
     try {
       await signUpWithEmail(email, password);
-      // The useEffect will handle redirection on successful sign-up
+      // Mark sign-up as complete to trigger the redirect effect.
+      setIsSignUpComplete(true);
     } catch (error: any) {
       let description = 'An unknown error occurred. Please try again.';
       if (error.code === 'auth/email-already-in-use') {
@@ -93,6 +99,18 @@ export default function SignUpPage() {
       setIsSubmitting(false);
     }
   };
+
+  const handleProviderSignUp = async (provider: 'google' | 'microsoft') => {
+    try {
+        if (provider === 'google') await signInWithGoogle('work');
+        if (provider === 'microsoft') await signInWithMicrosoft('work');
+        setIsSignUpComplete(true);
+    } catch(e: any) {
+        // Error is handled in the useUser hook, but we can prevent submission state change
+        console.error(e);
+    }
+  }
+
 
   if (loading || user) {
     return (
@@ -167,11 +185,11 @@ export default function SignUpPage() {
                     </div>
                     
                     <div className="space-y-2 w-full">
-                        <Button variant="outline" className="w-full" onClick={() => signInWithGoogle('work')}>
+                        <Button variant="outline" className="w-full" onClick={() => handleProviderSignUp('google')}>
                             <GoogleIcon />
                             <span>Continue with Google</span>
                         </Button>
-                        <Button variant="outline" className="w-full" onClick={() => signInWithMicrosoft('work')}>
+                        <Button variant="outline" className="w-full" onClick={() => handleProviderSignUp('microsoft')}>
                             <MicrosoftIcon />
                             <span>Continue with Microsoft</span>
                         </Button>
