@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -13,6 +12,7 @@ import { getCalendarEvents, createCalendarEvent, findOptimalTime } from '@/ai/fl
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Calendar } from '@/components/ui/calendar';
 import { Separator } from '@/components/ui/separator';
+import { useRouter } from 'next/navigation';
 
 interface CalendarEvent {
     summary: string;
@@ -24,6 +24,7 @@ interface CalendarEvent {
 function CalendarPage() {
     const { workAccessToken, personalAccessToken, signInWithGoogle, workProvider, personalProvider } = useUser();
     const { toast } = useToast();
+    const router = useRouter();
     const [events, setEvents] = useState<CalendarEvent[]>([]);
     const [isLoadingEvents, setIsLoadingEvents] = useState(false);
     const [isCreatingEvent, setIsCreatingEvent] = useState(false);
@@ -37,7 +38,6 @@ function CalendarPage() {
 
     const fetchEvents = async () => {
         if (!accessToken) {
-            toast({ variant: 'destructive', title: 'Not Connected' });
             return;
         }
         setIsLoadingEvents(true);
@@ -46,7 +46,7 @@ function CalendarPage() {
             const result = await getCalendarEvents({ accessToken });
             setEvents(result.events);
         } catch (e: any) {
-            setError('Failed to fetch calendar events. Your token may have expired.');
+            setError('Failed to fetch calendar events. Your token may have expired. Please reconnect from the Documents page.');
             console.error(e);
         } finally {
             setIsLoadingEvents(false);
@@ -109,16 +109,6 @@ function CalendarPage() {
             setIsFindingTime(false);
         }
     }
-
-    const handleConnect = async (accountType: 'work' | 'personal') => {
-      toast({ title: 'Connecting to Google...', description: 'Please follow the prompts.'});
-      try {
-        await signInWithGoogle(accountType);
-        toast({ title: 'Successfully connected!', description: 'You can now use the Calendar features.'});
-      } catch(e: any) {
-        toast({ variant: 'destructive', title: 'Connection Failed', description: e.message });
-      }
-    }
     
     return (
         <div className="relative min-h-screen w-full pt-16">
@@ -132,11 +122,8 @@ function CalendarPage() {
                             <CardTitle>Connect your Google Account</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p className="mb-6 text-muted-foreground">You need to authorize Ryzor to access your Google Calendar.</p>
-                            <div className="flex gap-4 justify-center">
-                                <Button onClick={() => handleConnect('work')}>Connect Work Account</Button>
-                                <Button onClick={() => handleConnect('personal')}>Connect Personal Account</Button>
-                            </div>
+                            <p className="mb-6 text-muted-foreground">To use the Calendar, connect your Google account from the Documents page.</p>
+                             <Button onClick={() => router.push('/documents')}>Go to Documents</Button>
                         </CardContent>
                     </Card>
                 </div>
@@ -234,5 +221,3 @@ function CalendarPage() {
 }
 
 export default withAuth(CalendarPage);
-
-    

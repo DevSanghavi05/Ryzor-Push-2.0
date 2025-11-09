@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -22,6 +21,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useUser, AccountType } from '@/firebase';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 
 const TemplateCard = ({ title, imageUrl, isAi = false }: { title: string, imageUrl?: string, isAi?: boolean }) => {
@@ -101,6 +101,7 @@ function SlidesPage() {
   const { toast } = useToast();
   const comingSoon = () => toast({ title: 'Coming Soon!', description: 'This feature is under development.' });
   const { workProvider, personalProvider, workAccessToken, personalAccessToken, fetchDriveFiles, signInWithGoogle } = useUser();
+  const router = useRouter();
   
   const [presentations, setPresentations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -126,7 +127,7 @@ function SlidesPage() {
                 setPresentations(slides);
             }
         } catch (e: any) {
-            setError('Failed to fetch presentations. Please try reconnecting your account.');
+            setError('Failed to fetch presentations. Your access token might have expired. Please try reconnecting your account from the Documents page.');
             console.error(e);
         } finally {
             setIsLoading(false);
@@ -135,17 +136,6 @@ function SlidesPage() {
     
     loadPresentations();
   }, [connectedAccountType, fetchDriveFiles]);
-
-  const handleConnect = async (accountType: AccountType) => {
-    toast({ title: `Connecting to Google ${accountType} Account...`, description: 'Please follow the prompts.' });
-    try {
-        await signInWithGoogle(accountType);
-        // The useEffect will trigger a reload of presentations
-        toast({ title: 'Successfully connected!', description: 'You can now see your presentations.'});
-    } catch (e: any) {
-        toast({ variant: 'destructive', title: 'Connection Failed', description: e.message });
-    }
-  };
 
 
   const templates = [
@@ -207,15 +197,12 @@ function SlidesPage() {
             {!connectedAccountType ? (
                 <Card className="max-w-xl mx-auto text-center p-8">
                     <CardHeader>
-                        <Mail className="mx-auto h-12 w-12 text-muted-foreground" />
+                        <Presentation className="mx-auto h-12 w-12 text-muted-foreground" />
                         <CardTitle>Connect your Google Account</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="mb-6 text-muted-foreground">Authorize Ryzor to access your Google Slides to see your presentations.</p>
-                        <div className="flex gap-4 justify-center">
-                            <Button onClick={() => handleConnect('work')}>Connect Work Account</Button>
-                            <Button onClick={() => handleConnect('personal')}>Connect Personal Account</Button>
-                        </div>
+                        <p className="mb-6 text-muted-foreground">To see your presentations, connect your Google account from the Documents page.</p>
+                        <Button onClick={() => router.push('/documents')}>Go to Documents</Button>
                     </CardContent>
                 </Card>
             ) : isLoading ? (

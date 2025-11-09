@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -22,11 +21,13 @@ import {
   DialogFooter,
   DialogClose
 } from "@/components/ui/dialog"
+import { useRouter } from 'next/navigation';
 
 
 function MailPage() {
   const { workAccessToken, personalAccessToken, signInWithGoogle, workProvider, personalProvider } = useUser();
   const { toast } = useToast();
+  const router = useRouter();
   
   const [emails, setEmails] = useState<Email[]>([]);
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
@@ -67,7 +68,7 @@ function MailPage() {
       setEmails(result.emails);
       setActiveCategory(category);
     } catch (e: any) {
-      setError('Failed to fetch emails. Your token may have expired.');
+      setError('Failed to fetch emails. Your token may have expired. Please reconnect from the Documents page.');
     } finally {
       setIsLoading(false);
     }
@@ -163,17 +164,6 @@ function MailPage() {
     }
   }
 
-
-  const handleConnect = async (accountType: 'work' | 'personal') => {
-      toast({ title: 'Connecting to Google...', description: 'Please follow the prompts.'});
-      try {
-        await signInWithGoogle(accountType);
-        toast({ title: 'Successfully connected!', description: 'You can now use the Mail features.'});
-      } catch(e: any) {
-        toast({ variant: 'destructive', title: 'Connection Failed', description: e.message });
-      }
-  }
-
   const handleAction = (action: 'archive' | 'delete') => {
     toast({
         title: `Action: ${action}`,
@@ -208,11 +198,8 @@ function MailPage() {
                     <CardTitle>Connect your Google Account</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="mb-6 text-muted-foreground">Authorize Ryzor to access your Gmail to use this feature.</p>
-                    <div className="flex gap-4 justify-center">
-                        <Button onClick={() => handleConnect('work')}>Connect Work Account</Button>
-                        <Button onClick={() => handleConnect('personal')}>Connect Personal Account</Button>
-                    </div>
+                    <p className="mb-6 text-muted-foreground">To use the Mail Assistant, connect your Google account from the Documents page.</p>
+                    <Button onClick={() => router.push('/documents')}>Go to Documents</Button>
                 </CardContent>
             </Card>
         ) : (
