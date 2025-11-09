@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import withAuth from '@/firebase/auth/with-auth';
 import { Loader2, Calendar as CalendarIcon, Wand2, AlertCircle, PlusCircle, Sparkles } from 'lucide-react';
 import { getCalendarEvents, createCalendarEvent, findOptimalTime } from '@/ai/flows/calendar-flow';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface CalendarEvent {
     summary: string;
@@ -28,7 +30,7 @@ function CalendarPage() {
     const [error, setError] = useState('');
 
     const accessToken = workAccessToken || personalAccessToken;
-    const connectedAccount = workProvider ? 'Work' : personalProvider ? 'Account' : null;
+    const connectedAccount = workProvider ? 'Work' : personalProvider ? 'Personal' : null;
 
     const fetchEvents = async () => {
         if (!accessToken) {
