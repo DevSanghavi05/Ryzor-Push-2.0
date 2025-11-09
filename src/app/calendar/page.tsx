@@ -8,9 +8,11 @@ import { Input } from '@/components/ui/input';
 import { useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import withAuth from '@/firebase/auth/with-auth';
-import { Loader2, Calendar as CalendarIcon, Wand2, AlertCircle, PlusCircle, Sparkles } from 'lucide-react';
+import { Loader2, Calendar as CalendarIcon, Wand2, AlertCircle, PlusCircle, Sparkles, Plus, Clock, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { getCalendarEvents, createCalendarEvent, findOptimalTime } from '@/ai/flows/calendar-flow';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Calendar } from '@/components/ui/calendar';
+import { Separator } from '@/components/ui/separator';
 
 interface CalendarEvent {
     summary: string;
@@ -28,6 +30,7 @@ function CalendarPage() {
     const [isFindingTime, setIsFindingTime] = useState(false);
     const [optimalTime, setOptimalTime] = useState<string | null>(null);
     const [error, setError] = useState('');
+    const [currentDate, setCurrentDate] = useState(new Date());
 
     const accessToken = workAccessToken || personalAccessToken;
     const connectedAccount = workProvider ? 'Work' : personalProvider ? 'Personal' : null;
@@ -119,100 +122,120 @@ function CalendarPage() {
         <div className="relative min-h-screen w-full pt-16">
           <div className="bg-aurora"></div>
           <div className="relative container mx-auto py-12 px-4 md:px-6">
-            <div className="text-center mb-12">
-              <h1 className="text-4xl md:text-5xl font-bold font-headline">Calendar Assistant</h1>
-              <p className="mt-4 text-lg text-muted-foreground max-w-3xl mx-auto">
-                Manage your schedule with natural language.
-              </p>
-            </div>
-    
             {!connectedAccount ? (
-                <Card className="max-w-xl mx-auto text-center p-8">
-                    <CardHeader>
-                        <CalendarIcon className="mx-auto h-12 w-12 text-muted-foreground" />
-                        <CardTitle>Connect your Google Account</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="mb-6 text-muted-foreground">You need to authorize Ryzor to access your Google Calendar.</p>
-                        <div className="flex gap-4 justify-center">
-                            <Button onClick={() => handleConnect('work')}>Connect Work Account</Button>
-                            <Button onClick={() => handleConnect('personal')}>Connect Personal Account</Button>
-                        </div>
-                    </CardContent>
-                </Card>
+                <div className="flex h-[70vh] items-center justify-center">
+                    <Card className="max-w-xl mx-auto text-center p-8">
+                        <CardHeader>
+                            <CalendarIcon className="mx-auto h-12 w-12 text-muted-foreground" />
+                            <CardTitle>Connect your Google Account</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="mb-6 text-muted-foreground">You need to authorize Ryzor to access your Google Calendar.</p>
+                            <div className="flex gap-4 justify-center">
+                                <Button onClick={() => handleConnect('work')}>Connect Work Account</Button>
+                                <Button onClick={() => handleConnect('personal')}>Connect Personal Account</Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
             ) : (
-              <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Upcoming Events</CardTitle>
-                     <p className="text-sm text-muted-foreground">Connected Account: {connectedAccount}</p>
-                  </CardHeader>
-                  <CardContent>
-                    {error && (
-                      <div className="bg-destructive/10 text-destructive p-4 rounded-md text-sm flex items-center gap-3 mb-4">
+              <div className="h-[80vh] flex border bg-card text-card-foreground rounded-lg shadow-lg">
+                {/* Sidebar */}
+                <div className="w-72 border-r p-4 flex flex-col gap-4">
+                  <Button size="lg" className="rounded-full h-14 text-lg justify-start pl-6">
+                    <Plus className="mr-3 h-6 w-6"/> Create
+                  </Button>
+                  <Calendar
+                    mode="single"
+                    selected={currentDate}
+                    onSelect={(day) => day && setCurrentDate(day)}
+                    className="p-0 [&_td]:w-10 [&_td]:h-10"
+                  />
+                  <Separator />
+                  <div className="space-y-4">
+                      <Card className="bg-transparent border-0 shadow-none">
+                        <CardHeader className="p-2">
+                          <CardTitle className="text-base flex items-center gap-2"><PlusCircle className="h-5 w-5"/> Create Event</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-2">
+                          <div className="flex gap-2">
+                            <Input id="event-prompt" placeholder="Team sync tomorrow at 10am" className="text-xs" />
+                            <Button onClick={handleCreateEvent} disabled={isCreatingEvent} size="icon">
+                              {isCreatingEvent ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="bg-transparent border-0 shadow-none">
+                        <CardHeader className="p-2">
+                          <CardTitle className="text-base flex items-center gap-2"><Sparkles className="h-5 w-5"/> Find Best Time</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-2">
+                          <div className="flex gap-2">
+                            <Input id="find-time-prompt" placeholder="30 min chat next week" className="text-xs" />
+                            <Button onClick={handleFindTime} disabled={isFindingTime} size="icon">
+                              {isFindingTime ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                            </Button>
+                          </div>
+                          {optimalTime && (
+                            <div className="mt-3 p-3 bg-primary/10 rounded-lg text-xs">
+                                <p className="font-semibold text-primary">Suggested Time:</p>
+                                <p className="text-foreground">{new Date(optimalTime).toLocaleString()}</p>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                  </div>
+                </div>
+
+                {/* Main Content */}
+                <div className="flex-1 flex flex-col">
+                    <div className="p-3 border-b flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-4">
+                            <h2 className="text-xl font-medium">{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h2>
+                            <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="icon"><ChevronLeft className="h-5 w-5" /></Button>
+                                <Button variant="ghost" size="icon"><ChevronRight className="h-5 w-5" /></Button>
+                            </div>
+                        </div>
+                        <p className="text-sm text-muted-foreground">Connected Account: {connectedAccount}</p>
+                    </div>
+
+                     {error && (
+                      <div className="m-4 bg-destructive/10 text-destructive p-4 rounded-md text-sm flex items-center gap-3">
                         <AlertCircle className="h-5 w-5"/>
                         {error}
                       </div>
                     )}
-                    <ScrollArea className="h-96">
-                      {isLoadingEvents ? (
-                        <div className="flex justify-center items-center h-full">
-                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                        </div>
-                      ) : events.length > 0 ? (
-                        <ul className="space-y-4">
-                          {events.map((event, i) => (
-                            <li key={i} className="p-3 bg-background/50 rounded-lg border">
-                              <a href={event.link} target="_blank" rel="noopener noreferrer" className="font-semibold hover:underline">{event.summary}</a>
-                              <p className="text-sm text-muted-foreground">
-                                {new Date(event.start).toLocaleString()} - {new Date(event.end).toLocaleTimeString()}
-                              </p>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="text-center text-muted-foreground pt-16">No upcoming events found.</p>
-                      )}
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
-    
-                <div className="space-y-8">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Create New Event</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex gap-2">
-                          <Input id="event-prompt" placeholder="e.g., 'Meeting with John tomorrow at 2pm for 1 hour'" />
-                          <Button onClick={handleCreateEvent} disabled={isCreatingEvent}>
-                            {isCreatingEvent ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
-                          </Button>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-2">Describe an event and the AI will add it to your calendar.</p>
-                      </CardContent>
-                    </Card>
 
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Find Best Time for a Meeting</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex gap-2">
-                          <Input id="find-time-prompt" placeholder="e.g., '30 minute coffee chat with Sarah next week'" />
-                          <Button onClick={handleFindTime} disabled={isFindingTime}>
-                            {isFindingTime ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                          </Button>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-2">The AI will look at your calendar and suggest an open slot.</p>
-                        {optimalTime && (
-                            <div className="mt-4 p-3 bg-primary/10 rounded-lg text-sm">
-                                <p className="font-semibold">Suggested Time:</p>
-                                <p>{new Date(optimalTime).toLocaleString()}</p>
-                            </div>
+                    <ScrollArea className="flex-1">
+                      <div className="p-4">
+                        <h3 className="font-semibold mb-4 text-lg">Upcoming Events</h3>
+                        {isLoadingEvents ? (
+                          <div className="flex justify-center items-center h-64">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                          </div>
+                        ) : events.length > 0 ? (
+                          <ul className="space-y-4">
+                            {events.map((event, i) => (
+                              <li key={i} className="p-4 bg-secondary/30 rounded-lg border hover:bg-secondary/50 transition-colors">
+                                <a href={event.link} target="_blank" rel="noopener noreferrer" className="font-semibold text-foreground hover:underline">{event.summary}</a>
+                                <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
+                                  <Clock className="h-4 w-4" />
+                                  {new Date(event.start).toLocaleString([], { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'})}
+                                </p>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <div className="text-center text-muted-foreground py-16">
+                            <CalendarIcon className="mx-auto h-12 w-12 mb-4"/>
+                            <p>No upcoming events found in your primary calendar.</p>
+                          </div>
                         )}
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </ScrollArea>
                 </div>
               </div>
             )}
