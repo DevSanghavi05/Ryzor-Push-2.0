@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   FileText, Sheet, Presentation, UploadCloud,
-  FolderUp, ChevronRight, Cloud, FileUp as FileUpIcon, Loader2, CheckCircle2, X, AlertTriangle
+  ChevronRight, Cloud, FileUp as FileUpIcon, X
 } from 'lucide-react';
 import withAuth from '@/firebase/auth/with-auth';
 import { useUser, AccountType } from '@/firebase';
@@ -31,27 +31,27 @@ function AddDocumentPage() {
   const [isComplete, setIsComplete] = useState(false);
   const [dragActive, setDragActive] = useState(false);
 
-  const sources: Source[] = useMemo(() => {
-    const available: Source[] = [];
+  const sources: any[] = useMemo(() => {
+    const available: any[] = [];
     
     available.push(
-      { name: 'Upload Files', icon: <UploadCloud className="w-6 h-6 text-purple-500" />, description: 'Upload one or more PDF files.', action: 'upload' },
-      { name: 'Sync Google Drive', icon: <Cloud className="w-6 h-6 text-sky-500" />, description: 'Sync and import your Drive files.', action: 'sync-drive' }
+      { name: 'Upload Files', icon: <UploadCloud className="w-6 h-6 text-foreground" />, description: 'Upload one or more PDF files.', action: 'upload' },
+      { name: 'Sync Google Drive', icon: <Cloud className="w-6 h-6 text-foreground" />, description: 'Sync and import your Drive files.', action: 'sync-drive' }
     );
       
     // Add create links if any google account is connected
     if (personalProvider === 'google' || workProvider === 'google') {
        available.unshift(
-        { name: 'Google Docs', icon: <FileText className="w-6 h-6 text-blue-500" />, description: 'Create a new Google Doc.', action: 'create', url: 'https://docs.google.com/document/create', provider: 'google' },
-        { name: 'Google Sheets', icon: <Sheet className="w-6 h-6 text-green-500" />, description: 'Create a new Google Sheet.', action: 'create', url: 'https://docs.google.com/spreadsheets/create', provider: 'google' },
-        { name: 'Google Slides', icon: <Presentation className="w-6 h-6 text-yellow-500" />, description: 'Create a new Google Slide deck.', action: 'create', url: 'https://docs.google.com/presentation/create', provider: 'google' },
+        { name: 'Google Docs', icon: <FileText className="w-6 h-6 text-foreground" />, description: 'Create a new Google Doc.', action: 'create', url: 'https://docs.google.com/document/create', provider: 'google' },
+        { name: 'Google Sheets', icon: <Sheet className="w-6 h-6 text-foreground" />, description: 'Create a new Google Sheet.', action: 'create', url: 'https://docs.google.com/spreadsheets/create', provider: 'google' },
+        { name: 'Google Slides', icon: <Presentation className="w-6 h-6 text-foreground" />, description: 'Create a new Google Slide deck.', action: 'create', url: 'https://docs.google.com/presentation/create', provider: 'google' },
       );
     }
     
     return available;
   }, [personalProvider, workProvider]);
 
-  const handleSourceClick = (source: Source) => {
+  const handleSourceClick = (source: any) => {
     if (source.action === 'upload') fileInputRef.current?.click();
     else if (source.action === 'upload-folder') folderInputRef.current?.click();
     else if (source.action === 'create' && source.url) window.open(source.url, '_blank');

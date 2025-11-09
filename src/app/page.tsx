@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -7,9 +8,6 @@ import {
   Send, 
   Loader2, 
   User, 
-  PlusCircle, 
-  Brain, 
-  MessageSquare, 
   Sparkles,
   FileText,
   Zap,
@@ -18,12 +16,9 @@ import {
   Lock,
   RotateCw,
   Target,
-  Paperclip,
-  ChevronDown
 } from 'lucide-react';
 import { useUser } from '@/firebase';
 import { ask } from '@/app/actions';
-import withAuth from '@/firebase/auth/with-auth';
 import Link from 'next/link';
 import { MarkdownContent } from '@/components/chat/markdown-content';
 import { useToast } from '@/hooks/use-toast';
@@ -239,14 +234,14 @@ function LoggedInView() {
                       }`}
                     >
                       {msg.role === 'model' && (
-                        <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-blue-500 via-violet-500 to-pink-500 flex items-center justify-center text-white p-2 shrink-0 shadow-lg shadow-violet-500/30">
+                        <div className="w-9 h-9 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center p-2 shrink-0 shadow-lg">
                           <Logo />
                         </div>
                       )}
                       <div
                         className={`px-5 py-3.5 rounded-2xl max-w-[80%] ${
                           msg.role === 'user' 
-                            ? 'bg-gradient-to-br from-blue-500 to-violet-500 text-white shadow-lg shadow-blue-500/30' 
+                            ? 'bg-primary text-primary-foreground' 
                             : 'bg-card border border-border'
                         }`}
                       >
@@ -290,7 +285,6 @@ function LoggedInView() {
                     transition={{ duration: 0.5, delay: 0.2 }}
                     className="relative"
                   >
-                    <div className="absolute -inset-0.5 bg-gradient-to-r from-primary via-accent to-primary rounded-full blur-lg opacity-25 group-hover:opacity-40 transition duration-1000" />
                     <div className="relative bg-background/80 backdrop-blur-xl rounded-full border border-border shadow-2xl shadow-black/20">
                       <div className="p-2 flex items-center gap-2">
                         <Input
@@ -319,7 +313,7 @@ function LoggedInView() {
 
                         <Button
                           size="icon"
-                          className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 shrink-0 h-10 w-10 shadow-lg shadow-primary/30"
+                          className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 shrink-0 h-10 w-10 shadow-lg"
                           onClick={handleInteraction}
                           disabled={loading || !input.trim()}
                         >
@@ -432,9 +426,9 @@ function LandingPage() {
                 <section className="hero text-center pt-32 pb-24">
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}>
                         <div className="inline-flex items-center gap-3 bg-background/50 border border-border text-foreground py-2 px-5 rounded-full text-sm mb-10 backdrop-blur-xl shadow-lg">
-                            <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 animate-pulse" />
-                            <Sparkles className="w-4 h-4 text-violet-400" />
-                            <span className="font-semibold bg-gradient-to-r from-blue-400 via-violet-400 to-pink-400 bg-clip-text text-transparent">Stop searching. Start knowing.</span>
+                            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                            <Sparkles className="w-4 h-4 text-primary" />
+                            <span className="font-semibold text-primary-foreground">Stop searching. Start knowing.</span>
                         </div>
                     </motion.div>
                     
@@ -442,11 +436,11 @@ function LandingPage() {
                         className="text-6xl md:text-8xl lg:text-9xl font-black mb-8 tracking-tighter leading-[0.9]"
                         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
                     >
-                        <span className="bg-gradient-to-r from-blue-400 via-violet-400 to-pink-400 bg-clip-text text-transparent">
+                        <span className="text-foreground">
                           No More Folders,
                         </span>
                         <br />
-                        <span className="bg-gradient-to-r from-violet-500 via-pink-500 to-rose-500 bg-clip-text text-transparent">
+                        <span className="text-foreground">
                           Just Answers
                         </span>
                     </motion.h1>
@@ -462,7 +456,7 @@ function LandingPage() {
                         className="flex gap-5 justify-center flex-wrap"
                         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }}
                     >
-                        <Button asChild size="lg" className="relative group bg-gradient-to-r from-blue-500 via-violet-500 to-pink-500 hover:from-blue-600 hover:via-violet-600 hover:to-pink-600 h-14 px-10 text-lg font-bold text-primary-foreground border-0 shadow-2xl shadow-violet-500/50 hover:shadow-violet-500/80 hover:scale-105 transition-all duration-300">
+                        <Button asChild size="lg" className="relative group bg-primary h-14 px-10 text-lg font-bold text-primary-foreground border-0 shadow-2xl hover:scale-105 transition-all duration-300">
                             <Link href="/login">
                               <span className="relative z-10 flex items-center gap-2">
                                 Start Free Trial
@@ -481,13 +475,13 @@ function LandingPage() {
                         initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.5 }}
                     >
                         <div className="relative group">
-                          <div className="absolute -inset-4 bg-gradient-to-r from-blue-500 via-violet-500 to-pink-500 rounded-[2.5rem] blur-2xl opacity-20 group-hover:opacity-30 transition-opacity duration-500" />
+                          <div className="absolute -inset-4 bg-primary/20 rounded-[2.5rem] blur-2xl opacity-20 group-hover:opacity-30 transition-opacity duration-500" />
                           <div className="relative browser-frame bg-background/60 border border-border rounded-[2rem] overflow-hidden shadow-2xl backdrop-blur-2xl">
                               <div className="browser-header bg-background/80 px-6 py-5 flex items-center gap-3 border-b border-border backdrop-blur-xl">
                                   <div className="flex gap-2.5">
-                                    <div className="dot w-3.5 h-3.5 rounded-full bg-gradient-to-br from-red-500 to-red-600 shadow-lg shadow-red-500/50"></div>
-                                    <div className="dot w-3.5 h-3.5 rounded-full bg-gradient-to-br from-yellow-500 to-yellow-600 shadow-lg shadow-yellow-500/50"></div>
-                                    <div className="dot w-3.5 h-3.5 rounded-full bg-gradient-to-br from-green-500 to-green-600 shadow-lg shadow-green-500/50"></div>
+                                    <div className="dot w-3.5 h-3.5 rounded-full bg-red-500"></div>
+                                    <div className="dot w-3.5 h-3.5 rounded-full bg-yellow-500"></div>
+                                    <div className="dot w-3.5 h-3.5 rounded-full bg-green-500"></div>
                                   </div>
                                   <div className="flex-1 flex justify-center">
                                     <div className="bg-secondary border border-border rounded-xl px-6 py-2 text-xs text-muted-foreground font-mono backdrop-blur-sm">
@@ -497,11 +491,11 @@ function LandingPage() {
                               </div>
                               <div className="browser-content p-10 md:p-14">
                                   <div className="search-demo relative group/search mb-8">
-                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-violet-500/20 to-pink-500/20 rounded-2xl blur-xl opacity-0 group-hover/search:opacity-100 transition-opacity duration-500" />
+                                    <div className="absolute inset-0 bg-primary/20 rounded-2xl blur-xl opacity-0 group-hover/search:opacity-100 transition-opacity duration-500" />
                                     <div className="relative bg-secondary/50 border border-border rounded-2xl px-7 py-6 text-lg text-foreground backdrop-blur-xl min-h-[60px] flex items-center">
                                       {typedText}
                                       {isTyping && (
-                                        <span className="inline-block w-0.5 h-6 bg-gradient-to-b from-blue-400 via-violet-400 to-pink-400 ml-2 animate-blink shadow-lg"></span>
+                                        <span className="inline-block w-0.5 h-6 bg-primary ml-2 animate-blink shadow-lg"></span>
                                       )}
                                     </div>
                                   </div>
@@ -515,8 +509,8 @@ function LandingPage() {
                                     >
                                       <div className="flex gap-4 items-start">
                                         <div className="relative shrink-0">
-                                          <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-violet-500 to-pink-500 rounded-2xl blur-lg opacity-50 animate-pulse" />
-                                          <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 via-violet-500 to-pink-500 flex items-center justify-center text-white p-2.5 shadow-xl">
+                                          <div className="absolute inset-0 bg-primary rounded-2xl blur-lg opacity-50 animate-pulse" />
+                                          <div className="relative w-12 h-12 rounded-2xl bg-primary flex items-center justify-center text-primary-foreground p-2.5 shadow-xl">
                                             <Sparkles className="w-6 h-6" />
                                           </div>
                                         </div>
@@ -524,7 +518,7 @@ function LandingPage() {
                                           <p className="text-foreground leading-relaxed">
                                             {aiResponse}
                                             {aiResponse.length < fullAnswer.length && (
-                                              <span className="inline-block w-0.5 h-5 bg-gradient-to-b from-blue-400 via-violet-400 to-pink-400 ml-1 animate-blink"></span>
+                                              <span className="inline-block w-0.5 h-5 bg-primary ml-1 animate-blink"></span>
                                             )}
                                           </p>
                                         </div>
@@ -533,29 +527,29 @@ function LandingPage() {
                                   )}
 
                                   <div className="feature-pills flex gap-4 flex-wrap">
-                                      <div className="bg-background/50 border border-blue-500/30 py-4 px-6 rounded-2xl text-sm text-foreground flex items-center gap-3 backdrop-blur-xl hover:border-blue-400/50 hover:bg-blue-500/10 transition-all duration-300 shadow-lg group/pill">
-                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/50 group-hover/pill:scale-110 transition-transform">
-                                          <FileText className="w-5 h-5 text-white" />
+                                      <div className="bg-background/50 border border-border py-4 px-6 rounded-2xl text-sm text-foreground flex items-center gap-3 backdrop-blur-xl hover:border-primary/50 hover:bg-primary/10 transition-all duration-300 shadow-lg group/pill">
+                                        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg group-hover/pill:scale-110 transition-transform">
+                                          <FileText className="w-5 h-5 text-primary-foreground" />
                                         </div>
                                         <span className="font-semibold">All your documents</span>
                                       </div>
-                                      <div className="bg-background/50 border border-violet-500/30 py-4 px-6 rounded-2xl text-sm text-foreground flex items-center gap-3 backdrop-blur-xl hover:border-violet-400/50 hover:bg-violet-500/10 transition-all duration-300 shadow-lg group/pill">
-                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center shadow-lg shadow-violet-500/50 group-hover/pill:scale-110 transition-transform">
-                                          <Brain className="w-5 h-5 text-white" />
+                                      <div className="bg-background/50 border border-border py-4 px-6 rounded-2xl text-sm text-foreground flex items-center gap-3 backdrop-blur-xl hover:border-primary/50 hover:bg-primary/10 transition-all duration-300 shadow-lg group/pill">
+                                        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg group-hover/pill:scale-110 transition-transform">
+                                          <Zap className="w-5 h-5 text-primary-foreground" />
                                         </div>
                                         <span className="font-semibold">Smart search</span>
                                       </div>
-                                      <div className="bg-background/50 border border-pink-500/30 py-4 px-6 rounded-2xl text-sm text-foreground flex items-center gap-3 backdrop-blur-xl hover:border-pink-400/50 hover:bg-pink-500/10 transition-all duration-300 shadow-lg group/pill">
-                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center shadow-lg shadow-pink-500/50 group-hover/pill:scale-110 transition-transform">
-                                          <MessageSquare className="w-5 h-5 text-white" />
+                                      <div className="bg-background/50 border border-border py-4 px-6 rounded-2xl text-sm text-foreground flex items-center gap-3 backdrop-blur-xl hover:border-primary/50 hover:bg-primary/10 transition-all duration-300 shadow-lg group/pill">
+                                        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg group-hover/pill:scale-110 transition-transform">
+                                          <Globe className="w-5 h-5 text-primary-foreground" />
                                         </div>
                                         <span className="font-semibold">Natural questions</span>
                                       </div>
-                                      <div className="bg-background/50 border border-amber-500/30 py-4 px-6 rounded-2xl text-sm text-foreground flex items-center gap-3 backdrop-blur-xl hover:border-amber-400/50 hover:bg-amber-500/10 transition-all duration-300 shadow-lg group/pill">
-                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/50 group-hover/pill:scale-110 transition-transform">
-                                          <Zap className="w-5 h-5 text-white" />
+                                      <div className="bg-background/50 border border-border py-4 px-6 rounded-2xl text-sm text-foreground flex items-center gap-3 backdrop-blur-xl hover:border-primary/50 hover:bg-primary/10 transition-all duration-300 shadow-lg group/pill">
+                                        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg group-hover/pill:scale-110 transition-transform">
+                                          <Lock className="w-5 h-5 text-primary-foreground" />
                                         </div>
-                                        <span className="font-semibold">Instant sharing</span>
+                                        <span className="font-semibold">Private & Secure</span>
                                       </div>
                                   </div>
                               </div>
@@ -566,7 +560,7 @@ function LandingPage() {
 
                 <section className="py-32" id="why">
                     <AnimatedSection className="max-w-3xl mx-auto mb-20 text-center">
-                        <h2 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 bg-gradient-to-r from-slate-700 to-slate-900 dark:from-slate-200 dark:to-slate-400 bg-clip-text text-transparent">
+                        <h2 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 text-foreground">
                           Beyond Simple Search
                         </h2>
                         <p className="text-lg md:text-xl text-muted-foreground font-light leading-relaxed">
@@ -576,11 +570,11 @@ function LandingPage() {
                     
                     <div className="grid md:grid-cols-2 gap-8">
                       {/* Card 1 */}
-                      <AnimatedSection className="group relative bg-card/50 border border-border p-10 rounded-3xl backdrop-blur-xl shadow-2xl hover:border-blue-500/50 transition-all duration-300">
-                        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-500/10 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <AnimatedSection className="group relative bg-card/50 border border-border p-10 rounded-3xl backdrop-blur-xl shadow-2xl hover:border-primary/50 transition-all duration-300">
+                        <div className="absolute top-0 left-0 w-full h-full bg-primary/5 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
                         <div className="relative z-10">
-                          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mb-6 shadow-lg shadow-blue-500/50 group-hover:scale-105 transition-transform">
-                            <Globe className="w-8 h-8 text-white" />
+                          <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mb-6 shadow-lg group-hover:scale-105 transition-transform">
+                            <Globe className="w-8 h-8 text-primary-foreground" />
                           </div>
                           <h3 className="text-3xl font-bold mb-4 text-foreground">One Workspace, Every File</h3>
                           <p className="text-muted-foreground leading-relaxed">
@@ -590,11 +584,11 @@ function LandingPage() {
                       </AnimatedSection>
 
                       {/* Card 2 */}
-                      <AnimatedSection className="group relative bg-card/50 border border-border p-10 rounded-3xl backdrop-blur-xl shadow-2xl hover:border-violet-500/50 transition-all duration-300">
-                        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-violet-500/10 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <AnimatedSection className="group relative bg-card/50 border border-border p-10 rounded-3xl backdrop-blur-xl shadow-2xl hover:border-primary/50 transition-all duration-300">
+                        <div className="absolute top-0 left-0 w-full h-full bg-primary/5 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
                         <div className="relative z-10">
-                          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center mb-6 shadow-lg shadow-violet-500/50 group-hover:scale-105 transition-transform">
-                            <Zap className="w-8 h-8 text-white" />
+                          <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mb-6 shadow-lg group-hover:scale-105 transition-transform">
+                            <Zap className="w-8 h-8 text-primary-foreground" />
                           </div>
                           <h3 className="text-3xl font-bold mb-4 text-foreground">Answers, Not Links</h3>
                           <p className="text-muted-foreground leading-relaxed">
@@ -604,11 +598,11 @@ function LandingPage() {
                       </AnimatedSection>
                       
                       {/* Card 3 */}
-                      <AnimatedSection className="group relative bg-card/50 border border-border p-10 rounded-3xl backdrop-blur-xl shadow-2xl hover:border-pink-500/50 transition-all duration-300">
-                        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-pink-500/10 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <AnimatedSection className="group relative bg-card/50 border border-border p-10 rounded-3xl backdrop-blur-xl shadow-2xl hover:border-primary/50 transition-all duration-300">
+                        <div className="absolute top-0 left-0 w-full h-full bg-primary/5 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
                         <div className="relative z-10">
-                          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center mb-6 shadow-lg shadow-pink-500/50 group-hover:scale-105 transition-transform">
-                            <Brain className="w-8 h-8 text-white" />
+                          <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mb-6 shadow-lg group-hover:scale-105 transition-transform">
+                            <Sparkles className="w-8 h-8 text-primary-foreground" />
                           </div>
                           <h3 className="text-3xl font-bold mb-4 text-foreground">Uncover Hidden Insights</h3>
                           <p className="text-muted-foreground leading-relaxed">
@@ -618,11 +612,11 @@ function LandingPage() {
                       </AnimatedSection>
                       
                       {/* Card 4 */}
-                      <AnimatedSection className="group relative bg-card/50 border border-border p-10 rounded-3xl backdrop-blur-xl shadow-2xl hover:border-amber-500/50 transition-all duration-300">
-                        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-amber-500/10 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <AnimatedSection className="group relative bg-card/50 border border-border p-10 rounded-3xl backdrop-blur-xl shadow-2xl hover:border-primary/50 transition-all duration-300">
+                        <div className="absolute top-0 left-0 w-full h-full bg-primary/5 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
                         <div className="relative z-10">
-                          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mb-6 shadow-lg shadow-amber-500/50 group-hover:scale-105 transition-transform">
-                            <Lock className="w-8 h-8 text-white" />
+                          <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mb-6 shadow-lg group-hover:scale-105 transition-transform">
+                            <Lock className="w-8 h-8 text-primary-foreground" />
                           </div>
                           <h3 className="text-3xl font-bold mb-4 text-foreground">Private by Design</h3>
                           <p className="text-muted-foreground leading-relaxed">
@@ -634,9 +628,8 @@ function LandingPage() {
 
                 <section className="py-32">
                     <AnimatedSection className="relative overflow-hidden bg-background/50 border border-border p-14 rounded-3xl text-center backdrop-blur-sm" id="roadmap">
-                        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-violet-500/5 animate-pulse" style={{ animationDuration: '4s' }} />
                         <div className="relative z-10">
-                          <div className="inline-block bg-violet-500/15 border border-violet-500/30 py-2 px-4 rounded-full text-xs text-violet-300 mb-6 font-semibold tracking-wider uppercase backdrop-blur-sm">Coming Soon</div>
+                          <div className="inline-block bg-primary/15 border border-primary/30 py-2 px-4 rounded-full text-xs text-primary mb-6 font-semibold tracking-wider uppercase backdrop-blur-sm">Coming Soon</div>
                           <h3 className="text-4xl md:text-5xl font-bold mb-5 text-foreground">Your Complete AI Workspace</h3>
                           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed font-light">
                             Soon, you'll be able to ask Ryzor about your calendar, emails, and more. Schedule meetings, find that message from last week, and manage everything through natural conversation.
@@ -653,11 +646,11 @@ function LandingPage() {
 
                 <section className="text-center py-32">
                     <AnimatedSection>
-                        <h2 className="text-5xl md:text-7xl font-bold mb-6 tracking-tighter bg-gradient-to-r from-slate-700 to-slate-900 dark:from-slate-200 dark:to-slate-400 bg-clip-text text-transparent">Ready to end the search?</h2>
+                        <h2 className="text-5xl md:text-7xl font-bold mb-6 tracking-tighter text-foreground">Ready to end the search?</h2>
                         <p className="text-lg md:text-xl text-muted-foreground mb-12 font-light">
                           Get started for free. No credit card required.
                         </p>
-                        <Button asChild size="lg" className="relative group bg-gradient-to-r from-blue-500 via-violet-500 to-pink-500 hover:from-blue-600 hover:via-violet-600 hover:to-pink-600 h-14 px-10 text-lg font-bold text-primary-foreground border-0 shadow-2xl shadow-violet-500/50 hover:shadow-violet-500/80 hover:scale-105 transition-all duration-300">
+                        <Button asChild size="lg" className="relative group bg-primary h-14 px-10 text-lg font-bold text-primary-foreground border-0 shadow-2xl hover:scale-105 transition-all duration-300">
                             <Link href="/login">
                               <span className="relative z-10">
                                 Sign Up Now
