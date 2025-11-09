@@ -113,6 +113,7 @@ function CalendarPage() {
       try {
         await signInWithGoogle(accountType);
         toast({ title: 'Successfully connected!', description: 'You can now use the Calendar features.'});
+        window.location.reload();
       } catch(e: any) {
         toast({ variant: 'destructive', title: 'Connection Failed', description: e.message });
       }
