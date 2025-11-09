@@ -1,6 +1,6 @@
 'use client';
 
-import { LogOut, Plus } from 'lucide-react';
+import { LogOut, Plus, Presentation } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/firebase';
@@ -53,6 +53,9 @@ export function Header() {
             </Button>
             <Button asChild variant="ghost">
               <Link href="/documents">My Documents</Link>
+            </Button>
+            <Button asChild variant="ghost">
+              <Link href="/slides">Slides</Link>
             </Button>
             <Button asChild variant="ghost">
               <Link href="/gmail">Mail</Link>
