@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import withAuth from '@/firebase/auth/with-auth';
-import { Loader2, Send, Mail, BookOpen, AlertCircle, Wand2, Inbox, RefreshCw, CornerUpLeft } from 'lucide-react';
+import { Loader2, Send, Mail, AlertCircle, Wand2, Inbox, RefreshCw, CornerUpLeft, Archive, Trash2, FileEdit } from 'lucide-react';
 import { summarizeEmails, draftReply, getEmails, summarizeSingleEmail, type Email } from '@/ai/flows/gmail-flow';
 import { MarkdownContent } from '@/components/chat/markdown-content';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -41,7 +41,10 @@ function GmailPage() {
   const [isGlobalSummaryOpen, setIsGlobalSummaryOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const [draftPrompt, setDraftPrompt] = useState('');
+  
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [isDraftModalOpen, setIsDraftModalOpen] = useState(false);
+  const [isComposeModalOpen, setIsComposeModalOpen] = useState(false);
 
   const [error, setError] = useState('');
   
@@ -103,6 +106,16 @@ function GmailPage() {
         setIsSummarizing(false);
     }
   };
+  
+  const handleOpenEmail = (email: Email) => {
+    setSelectedEmail(email);
+    setIsEmailModalOpen(true);
+  }
+  
+  const handleOpenDraftModal = () => {
+    setIsEmailModalOpen(false);
+    setIsDraftModalOpen(true);
+  }
 
   const handleDraftReply = async () => {
     if (!selectedEmail || !accessToken || !draftPrompt) return;
@@ -133,6 +146,14 @@ function GmailPage() {
       }
   }
 
+  const handleAction = (action: 'archive' | 'delete') => {
+    toast({
+        title: `Action: ${action}`,
+        description: `This is a demo. The email would be ${action}d.`,
+    });
+  }
+
+
   return (
     <div className="relative min-h-screen w-full pt-16">
       <div className="bg-aurora"></div>
@@ -162,7 +183,9 @@ function GmailPage() {
           <div className="border bg-card text-card-foreground rounded-lg shadow-lg max-w-7xl mx-auto h-[75vh] flex">
             {/* Sidebar */}
             <div className="w-64 border-r p-4 flex flex-col">
-              <h2 className="text-xl font-bold mb-4">Inbox</h2>
+              <Button size="lg" className="mb-4" onClick={() => setIsComposeModalOpen(true)}>
+                <FileEdit className="mr-2 h-4 w-4"/> Compose
+              </Button>
               <div className="flex flex-col gap-2">
                 <Button variant={activeCategory === 'primary' ? 'secondary' : 'ghost'} className="justify-start" onClick={() => fetchEmails('primary')}>
                   <Inbox className="mr-2 h-4 w-4"/> Primary
@@ -174,7 +197,7 @@ function GmailPage() {
             </div>
 
             {/* Email List */}
-            <div className="w-[30rem] border-r flex flex-col">
+            <div className="flex-1 flex flex-col">
               <div className="p-2 border-b flex items-center justify-between gap-2">
                   <Button variant="outline" size="sm" onClick={() => fetchEmails(activeCategory)} disabled={isLoading}>
                     <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin':''}`} /> Refresh
@@ -191,14 +214,22 @@ function GmailPage() {
                 ) : emails.length > 0 ? (
                   <ul>
                     {emails.map(email => (
-                      <li key={email.id} onClick={() => setSelectedEmail(email)}
-                          className={`p-4 border-b cursor-pointer hover:bg-accent/50 ${selectedEmail?.id === email.id ? 'bg-accent' : ''}`}>
-                          <div className="flex items-baseline justify-between text-xs">
-                              <p className="font-bold truncate">{email.from.split('<')[0].trim()}</p>
-                              <p className="text-muted-foreground">{new Date(email.date).toLocaleDateString()}</p>
+                      <li key={email.id}
+                          className="group p-4 border-b cursor-pointer hover:bg-accent/50 flex justify-between items-start"
+                          onClick={() => handleOpenEmail(email)}
+                       >
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-baseline justify-between text-xs">
+                                <p className="font-bold truncate">{email.from.split('<')[0].trim()}</p>
+                                <p className="text-muted-foreground">{new Date(email.date).toLocaleDateString()}</p>
+                            </div>
+                            <p className="font-semibold text-sm truncate mt-1">{email.subject}</p>
+                            <p className="text-xs text-muted-foreground truncate">{email.snippet}</p>
                           </div>
-                          <p className="font-semibold text-sm truncate mt-1">{email.subject}</p>
-                          <p className="text-xs text-muted-foreground truncate">{email.snippet}</p>
+                          <div className="ml-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleAction('archive')}}><Archive className="h-4 w-4 text-muted-foreground" /></Button>
+                            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleAction('delete')}}><Trash2 className="h-4 w-4 text-muted-foreground" /></Button>
+                          </div>
                       </li>
                     ))}
                   </ul>
@@ -207,49 +238,11 @@ function GmailPage() {
                 )}
               </ScrollArea>
             </div>
-
-            {/* Email Detail */}
-            <div className="flex-1 p-4 flex flex-col">
-              {selectedEmail ? (
-                <>
-                  <div className="border-b pb-4">
-                      <div className="flex items-center gap-4">
-                          <Avatar>
-                              <AvatarFallback>{selectedEmail.from.charAt(0).toUpperCase()}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                              <h2 className="text-xl font-bold">{selectedEmail.subject}</h2>
-                              <p className="text-sm text-muted-foreground">From: {selectedEmail.from}</p>
-                              <p className="text-sm text-muted-foreground">Date: {new Date(selectedEmail.date).toLocaleString()}</p>
-                          </div>
-                      </div>
-                      <div className="flex gap-2 mt-4">
-                        <Button size="sm" onClick={handleSummarizeSingle} disabled={isSummarizing}>
-                           {isSummarizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Wand2 className="mr-2 h-4 w-4"/>} Summarize
-                        </Button>
-                         <Button size="sm" onClick={() => setIsDraftModalOpen(true)}>
-                           <CornerUpLeft className="mr-2 h-4 w-4"/> Draft Reply
-                        </Button>
-                      </div>
-                  </div>
-                  <ScrollArea className="flex-1 mt-4">
-                    <div className="prose prose-sm dark:prose-invert max-w-full whitespace-pre-wrap"
-                         dangerouslySetInnerHTML={{ __html: selectedEmail.body || ''}} />
-                  </ScrollArea>
-                </>
-              ) : (
-                <div className="flex h-full items-center justify-center text-center text-muted-foreground">
-                  <div >
-                    <Mail className="h-16 w-16 mx-auto mb-4"/>
-                    <p>Select an email to read</p>
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
         )}
       </div>
 
+      {/* Global Summary Modal */}
        <Dialog open={isGlobalSummaryOpen} onOpenChange={setIsGlobalSummaryOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
@@ -266,6 +259,37 @@ function GmailPage() {
         </DialogContent>
       </Dialog>
       
+      {/* Email View Modal */}
+      <Dialog open={isEmailModalOpen} onOpenChange={setIsEmailModalOpen}>
+        <DialogContent className="max-w-3xl h-[80vh] flex flex-col">
+          {selectedEmail && (
+            <>
+              <DialogHeader>
+                  <DialogTitle className="truncate">{selectedEmail.subject}</DialogTitle>
+                  <DialogDescription>
+                      From: {selectedEmail.from} | {new Date(selectedEmail.date).toLocaleString()}
+                  </DialogDescription>
+              </DialogHeader>
+              <div className="border-t -mx-6 px-6 pt-4 flex-1 min-h-0">
+                  <ScrollArea className="h-full">
+                      <div className="prose prose-sm dark:prose-invert max-w-full whitespace-pre-wrap"
+                           dangerouslySetInnerHTML={{ __html: selectedEmail.body || ''}} />
+                  </ScrollArea>
+              </div>
+              <DialogFooter className="border-t -mx-6 px-6 pt-4">
+                <Button size="sm" onClick={handleSummarizeSingle} disabled={isSummarizing}>
+                   {isSummarizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Wand2 className="mr-2 h-4 w-4"/>} Summarize
+                </Button>
+                 <Button size="sm" onClick={handleOpenDraftModal}>
+                   <CornerUpLeft className="mr-2 h-4 w-4"/> Draft Reply
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Draft Reply Modal */}
       <Dialog open={isDraftModalOpen} onOpenChange={setIsDraftModalOpen}>
         <DialogContent className="sm:max-w-2xl">
            <DialogHeader>
@@ -302,6 +326,29 @@ function GmailPage() {
            <DialogFooter>
              <Button disabled={!draft} onClick={() => toast({title: "Coming Soon!", description: "This would open a Gmail compose window."})}>
               <Send className="mr-2 h-4 w-4" /> Open in Gmail
+            </Button>
+           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+       {/* Compose Modal */}
+       <Dialog open={isComposeModalOpen} onOpenChange={setIsComposeModalOpen}>
+        <DialogContent className="sm:max-w-2xl">
+           <DialogHeader>
+            <DialogTitle>Compose Email</DialogTitle>
+          </DialogHeader>
+           <div className="grid gap-4 py-4">
+              {/* Basic compose fields. A real implementation would have more complex state management */}
+              <input placeholder="To" className="p-2 bg-transparent border-b" />
+              <input placeholder="Subject" className="p-2 bg-transparent border-b" />
+              <Textarea 
+                placeholder="Your message..."
+                className="min-h-[250px] mt-2"
+              />
+           </div>
+           <DialogFooter>
+             <Button onClick={() => toast({title: "Coming Soon!", description: "This would send the email."})}>
+              <Send className="mr-2 h-4 w-4" /> Send
             </Button>
            </DialogFooter>
         </DialogContent>
