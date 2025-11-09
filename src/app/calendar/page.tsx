@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -113,7 +112,6 @@ function CalendarPage() {
       try {
         await signInWithGoogle(accountType);
         toast({ title: 'Successfully connected!', description: 'You can now use the Calendar features.'});
-        window.location.reload();
       } catch(e: any) {
         toast({ variant: 'destructive', title: 'Connection Failed', description: e.message });
       }
@@ -125,7 +123,7 @@ function CalendarPage() {
           <div className="relative container mx-auto py-12 px-4 md:px-6">
             {!connectedAccount ? (
                 <div className="flex h-[70vh] items-center justify-center">
-                    <Card className="max-w-xl mx-auto text-center p-8">
+                    <Card className="max-w-xl mx-auto text-center p-8 bg-card/50 backdrop-blur-sm">
                         <CardHeader>
                             <CalendarIcon className="mx-auto h-12 w-12 text-muted-foreground" />
                             <CardTitle>Connect your Google Account</CardTitle>
@@ -140,7 +138,7 @@ function CalendarPage() {
                     </Card>
                 </div>
             ) : (
-              <div className="h-[80vh] flex border bg-card text-card-foreground rounded-lg shadow-lg">
+              <div className="h-[80vh] flex border bg-card/80 text-card-foreground backdrop-blur-sm rounded-lg shadow-lg">
                 {/* Sidebar */}
                 <div className="w-72 border-r p-4 flex flex-col gap-4">
                   <Button size="lg" className="rounded-full h-14 text-lg justify-start pl-6">

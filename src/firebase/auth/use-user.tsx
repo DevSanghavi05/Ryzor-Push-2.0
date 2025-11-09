@@ -118,11 +118,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, [auth]);
 
-  const handleSuccessfulSignIn = () => {
-    const redirectUrl = searchParams.get('redirect') || '/documents';
-    router.push(redirectUrl);
-  }
-
   // --- Sign In with Google (with Drive access) ---
   const signInWithGoogle = useCallback(async (accountType: AccountType = 'personal'): Promise<UserCredential | void> => {
     if (!auth) return;
@@ -166,7 +161,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
       if (!user) setUser(result.user);
       
       // Do not redirect here, let the calling component decide
-      // handleSuccessfulSignIn(); 
       return result;
     } catch (error: any) {
       if (['auth/popup-blocked', 'auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(error.code)) {
