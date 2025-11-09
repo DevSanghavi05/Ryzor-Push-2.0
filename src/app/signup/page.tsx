@@ -102,8 +102,8 @@ export default function SignUpPage() {
 
   const handleProviderSignUp = async (provider: 'google' | 'microsoft') => {
     try {
-        if (provider === 'google') await signInWithGoogle('work');
-        if (provider === 'microsoft') await signInWithMicrosoft('work');
+        if (provider === 'google') await signInWithGoogle('personal');
+        if (provider === 'microsoft') await signInWithMicrosoft('personal');
         setIsSignUpComplete(true);
     } catch(e: any) {
         // Error is handled in the useUser hook, but we can prevent submission state change
@@ -112,7 +112,7 @@ export default function SignUpPage() {
   }
 
 
-  if (loading || user) {
+  if (loading || (user && !isSignUpComplete)) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="animate-spin text-primary" />
