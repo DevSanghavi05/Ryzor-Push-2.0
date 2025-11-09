@@ -93,7 +93,7 @@ const UserArea = () => {
   return user ? (
     <UserAvatar />
   ) : (
-    <Button asChild size="sm">
+    <Button asChild size="sm" variant="ghost">
       <Link href="/login">
           Try It Free
       </Link>
