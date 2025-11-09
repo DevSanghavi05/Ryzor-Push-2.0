@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Flows for interacting with Gmail.
@@ -8,12 +9,28 @@ import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 // Schemas
-const EmailSummary = z.object({
+const EmailSchema = z.object({
     id: z.string().describe("The unique ID of the email message."),
-    from: z.string().describe("The sender of the email."),
+    from: z.string().describe("The sender of the email, formatted as 'Name <email@example.com>'."),
     subject: z.string().describe("The subject of the email."),
-    summary: z.string().describe("A concise 1-2 sentence summary of the email's content."),
+    snippet: z.string().describe("A short snippet of the email's content."),
+    body: z.string().optional().describe("The full body of the email, either in plain text or HTML."),
+    date: z.string().describe("The date the email was received in ISO 8601 format."),
 });
+export type Email = z.infer<typeof EmailSchema>;
+
+const GetEmailsInputSchema = z.object({
+  accessToken: z.string(),
+  count: z.number().max(50).default(15),
+  category: z.enum(['primary', 'unread', 'read', 'sent']).default('primary'),
+});
+export type GetEmailsInput = z.infer<typeof GetEmailsInputSchema>;
+
+const GetEmailsOutputSchema = z.object({
+  emails: z.array(EmailSchema),
+});
+export type GetEmailsOutput = z.infer<typeof GetEmailsOutputSchema>;
+
 
 const SummarizeEmailsInputSchema = z.object({
   accessToken: z.string(),
@@ -23,13 +40,14 @@ const SummarizeEmailsInputSchema = z.object({
 export type SummarizeEmailsInput = z.infer<typeof SummarizeEmailsInputSchema>;
 
 const SummarizeEmailsOutputSchema = z.object({
-  emails: z.array(EmailSummary),
+  summary: z.string().describe("A single, concise summary of all the provided emails combined. Should be a few sentences long."),
 });
 export type SummarizeEmailsOutput = z.infer<typeof SummarizeEmailsOutputSchema>;
 
+
 const DraftReplyInputSchema = z.object({
   prompt: z.string().describe("The user's instruction for the reply."),
-  emailContext: z.string().describe("The content of the email to reply to."),
+  emailToReplyTo: EmailSchema,
   accessToken: z.string(),
 });
 export type DraftReplyInput = z.infer<typeof DraftReplyInputSchema>;
@@ -39,52 +57,85 @@ const DraftReplyOutputSchema = z.object({
 });
 export type DraftReplyOutput = z.infer<typeof DraftReplyOutputSchema>;
 
-// Tools
-const getEmailsTool = ai.defineTool(
-  {
-    name: 'getEmails',
-    description: 'Retrieves a list of emails from the user\'s Gmail account.',
-    inputSchema: z.object({
-      count: z.number().describe("Number of emails to retrieve."),
-      read: z.boolean().describe("Whether to fetch read or unread emails."),
-    }),
-    outputSchema: z.array(z.object({
-        id: z.string(),
-        snippet: z.string(),
-        payload: z.any(),
-    })),
-  },
-  async (input, context) => {
-    const accessToken = (context?.auth as any)?.accessToken;
+const SummarizeSingleEmailInputSchema = z.object({
+    email: EmailSchema,
+    accessToken: z.string(),
+});
+export type SummarizeSingleEmailInput = z.infer<typeof SummarizeSingleEmailInputSchema>;
+
+const SummarizeSingleEmailOutputSchema = z.object({
+    summary: z.string().describe("A concise summary of the single email provided."),
+});
+export type SummarizeSingleEmailOutput = z.infer<typeof SummarizeSingleEmailOutputSchema>;
+
+
+// Main Functions
+export async function getEmails(input: GetEmailsInput): Promise<GetEmailsOutput> {
+    const accessToken = input.accessToken;
     if (!accessToken) throw new Error("Authentication token not found.");
     
-    const query = input.read ? 'is:read' : 'is:unread';
-    const response = await fetch(`https://www.googleapis.com/gmail/v1/users/me/messages?maxResults=${input.count}&q=${query}`, {
+    let query = 'in:inbox';
+    if (input.category === 'unread') query = 'is:unread';
+    if (input.category === 'read') query = 'is:read';
+    if (input.category === 'sent') query = 'in:sent';
+
+
+    const listResponse = await fetch(`https://www.googleapis.com/gmail/v1/users/me/messages?maxResults=${input.count}&q=${query}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
     });
-    if (!response.ok) throw new Error('Failed to fetch email list from Gmail.');
-    const data = await response.json();
+    if (!listResponse.ok) throw new Error('Failed to fetch email list from Gmail.');
+    const listData = await listResponse.json();
 
-    if (!data.messages) return [];
+    if (!listData.messages) return { emails: [] };
 
-    const emailPromises = data.messages.map(async (msg: any) => {
+    const emailPromises = listData.messages.map(async (msg: any) => {
         const emailRes = await fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=full`, {
             headers: { Authorization: `Bearer ${accessToken}` },
         });
-        return emailRes.json();
+        if (!emailRes.ok) return null;
+        const detail = await emailRes.json();
+        
+        const headers = detail.payload.headers;
+        const fromHeader = headers.find((h:any) => h.name.toLowerCase() === 'from')?.value || 'N/A';
+        const subjectHeader = headers.find((h:any) => h.name.toLowerCase() === 'subject')?.value || 'No Subject';
+        const dateHeader = headers.find((h:any) => h.name.toLowerCase() === 'date')?.value || new Date().toISOString();
+
+        let body = '';
+        if (detail.payload.parts) {
+            const part = detail.payload.parts.find((p:any) => p.mimeType === 'text/plain') || detail.payload.parts.find((p:any) => p.mimeType === 'text/html');
+            if (part && part.body.data) {
+                body = Buffer.from(part.body.data, 'base64').toString('utf8');
+            }
+        } else if (detail.payload.body.data) {
+            body = Buffer.from(detail.payload.body.data, 'base64').toString('utf8');
+        }
+
+        return {
+            id: detail.id,
+            from: fromHeader,
+            subject: subjectHeader,
+            snippet: detail.snippet,
+            body: body,
+            date: new Date(dateHeader).toISOString(),
+        };
     });
 
-    return Promise.all(emailPromises);
-  }
-);
+    const emails = (await Promise.all(emailPromises)).filter(e => e !== null) as Email[];
 
-// Main Functions
+    return { emails };
+}
+
+
 export async function summarizeEmails(input: SummarizeEmailsInput): Promise<SummarizeEmailsOutput> {
   return summarizeEmailsFlow(input, { auth: { accessToken: input.accessToken } });
 }
 
+export async function summarizeSingleEmail(input: SummarizeSingleEmailInput): Promise<SummarizeSingleEmailOutput> {
+    return summarizeSingleEmailFlow(input, { auth: { accessToken: input.accessToken } });
+}
+
 export async function draftReply(input: DraftReplyInput): Promise<DraftReplyOutput> {
-  return draftReplyFlow(input, { auth: { accessToken: input.accessToken } });
+  return draftReplyFlow(input);
 }
 
 // Flows
@@ -94,45 +145,54 @@ const summarizeEmailsFlow = ai.defineFlow(
     inputSchema: SummarizeEmailsInputSchema,
     outputSchema: SummarizeEmailsOutputSchema,
   },
-  async (input) => {
-    const llm = ai.getModel('googleai/gemini-pro');
-    const { history } = await llm.generate({
-      prompt: `You are a helpful email assistant. Your goal is to summarize the user's latest emails. Fetch the user's ${input.count} most recent ${input.read ? 'read' : 'unread'} emails and provide a concise 1-2 sentence summary for each.`,
-      tools: [getEmailsTool],
-      toolConfig: {
-          json: {
-              schema: zodToJsonSchema(SummarizeEmailsOutputSchema)
-          }
-      }
+  async (input, context) => {
+    const accessToken = (context?.auth as any)?.accessToken;
+    if (!accessToken) throw new Error("Authentication token not found.");
+    
+    const { emails } = await getEmails({ accessToken: accessToken, category: input.read ? 'read' : 'unread', count: input.count });
+
+    if (emails.length === 0) {
+        return { summary: `No ${input.read ? 'read' : 'unread'} emails found to summarize.`}
+    }
+
+    const { text } = await ai.generate({
+      prompt: `Summarize the following emails into a single, concise paragraph.
+      
+      EMAILS:
+      ---
+      ${JSON.stringify(emails.map(e => ({ from: e.from, subject: e.subject, snippet: e.snippet })))}
+      ---
+      `,
     });
 
-    const toolCalls = history.filter(msg => msg.role === 'tool' && msg.content[0].toolRequest);
-    if (toolCalls.length > 0) {
-        // This is a simplified approach. A real implementation would loop until the model provides the final JSON.
-        const finalResponse = await llm.generate({
-            history: history,
-            prompt: `Now, based on the emails you fetched, provide the final summary object.`,
-             toolConfig: {
-                json: {
-                    schema: zodToJsonSchema(SummarizeEmailsOutputSchema)
-                }
-            }
-        });
-
-        if (finalResponse.output?.json) {
-            return finalResponse.output.json as SummarizeEmailsOutput;
-        }
-    }
-    
-    // Fallback or if the model directly outputs JSON
-    const finalLlmOutput = history[history.length - 1];
-    if(finalLlmOutput.role === 'model' && finalLlmOutput.content[0].json) {
-        return finalLlmOutput.content[0].json as SummarizeEmailsOutput;
-    }
-
-    throw new Error("Could not generate email summary.");
+    return { summary: text };
   }
 );
+
+
+const summarizeSingleEmailFlow = ai.defineFlow(
+    {
+        name: 'summarizeSingleEmailFlow',
+        inputSchema: SummarizeSingleEmailInputSchema,
+        outputSchema: SummarizeSingleEmailOutputSchema,
+    },
+    async (input) => {
+        const { text } = await ai.generate({
+            prompt: `Provide a concise, one-paragraph summary of the following email.
+            
+            EMAIL:
+            From: ${input.email.from}
+            Subject: ${input.email.subject}
+            Body:
+            ---
+            ${input.email.body?.substring(0, 4000)}
+            ---
+            `,
+        });
+        return { summary: text };
+    }
+);
+
 
 const draftReplyFlow = ai.defineFlow(
     {
@@ -142,19 +202,19 @@ const draftReplyFlow = ai.defineFlow(
     },
     async (input) => {
         const { text } = await ai.generate({
-            prompt: `Based on the following email content, write a reply based on the user's instructions.
+            prompt: `You are an AI assistant drafting an email reply.
+
+            Here is the email you are replying to:
+            From: ${input.emailToReplyTo.from}
+            Subject: ${input.emailToReplyTo.subject}
+            ---
+            ${input.emailToReplyTo.body?.substring(0, 3000)}
+            ---
             
-            EMAIL CONTENT:
-            ---
-            ${input.emailContext}
-            ---
+            Here are the user's instructions for the reply:
+            "${input.prompt}"
 
-            USER INSTRUCTIONS:
-            ---
-            ${input.prompt}
-            ---
-
-            Respond only with the draft of the email.
+            Now, write the email draft. Respond ONLY with the body of the email. Do not include a subject line or any other headers.
             `
         });
         return { draft: text };
