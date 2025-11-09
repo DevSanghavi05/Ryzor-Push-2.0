@@ -421,7 +421,7 @@ function LandingPage() {
                         <div className="inline-flex items-center gap-3 bg-background/50 border border-border text-foreground py-2 px-5 rounded-full text-sm mb-10 backdrop-blur-xl shadow-lg">
                             <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                             <Sparkles className="w-4 h-4 text-primary" />
-                            <span className="font-semibold text-primary-foreground">Stop searching. Start knowing.</span>
+                            <span className="font-semibold text-foreground">Stop searching. Start knowing.</span>
                         </div>
                     </motion.div>
                     
