@@ -1,6 +1,6 @@
 'use client';
 
-import { LogOut } from 'lucide-react';
+import { LogOut, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/firebase';
@@ -9,6 +9,12 @@ import { ThemeToggleButton } from '../theme-toggle';
 import { Logo } from './logo';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 function UserAvatar() {
   const { user, signOut } = useUser();
@@ -30,8 +36,7 @@ function UserAvatar() {
 
 export function Header() {
   const [isClient, setIsClient] = useState(false);
-  const pathname = usePathname();
-
+  
   useEffect(() => {
     setIsClient(true);
   }, []);
@@ -55,12 +60,21 @@ export function Header() {
             <Button asChild variant="ghost">
               <Link href="/calendar">Calendar</Link>
             </Button>
-            <Button asChild variant="ghost">
-              <Link href="/history">Chat History</Link>
-            </Button>
-            <Button asChild variant="ghost">
-              <Link href="/add">Add Source</Link>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem asChild>
+                  <Link href="/history">Chat History</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/add">Add Source</Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </>
         ) : (
           <div className="hidden md:flex items-center gap-6">
