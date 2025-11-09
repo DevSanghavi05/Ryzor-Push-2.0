@@ -181,6 +181,14 @@ function GmailPage() {
     });
   }
 
+  const truncateSnippet = (snippet: string, wordLimit: number) => {
+    const words = snippet.split(' ');
+    if (words.length > wordLimit) {
+      return words.slice(0, wordLimit).join(' ') + '...';
+    }
+    return snippet;
+  }
+
 
   return (
     <div className="relative min-h-screen w-full pt-16">
@@ -252,7 +260,7 @@ function GmailPage() {
                                 <p className="text-xs text-muted-foreground">{new Date(email.date).toLocaleDateString()}</p>
                             </div>
                             <p className="font-medium text-sm truncate mt-1">{email.subject}</p>
-                            <p className="text-xs text-muted-foreground truncate">{email.snippet}</p>
+                            <p className="text-xs text-muted-foreground">{truncateSnippet(email.snippet, 15)}</p>
                           </div>
                           <div className="ml-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleAction('archive')}}><Archive className="h-4 w-4 text-muted-foreground" /></Button>
