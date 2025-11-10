@@ -11,6 +11,10 @@ export async function createCheckoutSession(priceId: string, userId: string, use
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (!appUrl) {
+    throw new Error('NEXT_PUBLIC_APP_URL is not set in environment variables. Please configure it in your .env file.');
+  }
+
 
   try {
     // Check if customer exists in Stripe, if not, create one
@@ -47,6 +51,8 @@ export async function createCheckoutSession(priceId: string, userId: string, use
     }
   } catch (error) {
     console.error('Stripe Error:', error);
-    throw new Error('Failed to create checkout session.');
+    // Provide a more specific error message if available
+    const errorMessage = (error as Error).message || 'An unknown error occurred with Stripe.';
+    throw new Error(`Failed to create checkout session: ${errorMessage}`);
   }
 }
