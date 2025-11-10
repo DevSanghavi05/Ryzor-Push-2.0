@@ -88,13 +88,16 @@ export function Header() {
             <Button asChild variant="ghost">
               <Link href="/calendar">Calendar</Link>
             </Button>
+             <Button asChild variant="ghost">
+              <Link href="/pricing">Pricing</Link>
+            </Button>
           </>
         ) : (
           <div className="hidden md:flex items-center gap-6">
             <Link href="/#why" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</Link>
             <Link href="/#roadmap" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Roadmap</Link>
             <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">About</Link>
-            <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy</Link>
+            <Link href="/pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</Link>
           </div>
         )}
       </nav>
