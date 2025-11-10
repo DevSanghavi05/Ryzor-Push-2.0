@@ -73,7 +73,7 @@ function PricingPage() {
       <div className="bg-aurora"></div>
       <div className="relative container mx-auto py-12 px-4 md:px-6">
         <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold font-headline text-primary">Find the plan that's right for you</h1>
+          <h1 className="text-4xl md:text-5xl font-bold font-headline text-foreground">Find the plan that's right for you</h1>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
             Start for free and scale up as your needs grow. No hidden fees.
           </p>
@@ -94,7 +94,7 @@ function PricingPage() {
                 <ul className="space-y-3">
                   {tier.features.map((feature) => (
                     <li key={feature} className="flex items-center gap-2">
-                      <Check className="h-5 w-5 text-primary" />
+                      <Check className="h-5 w-5 text-foreground" />
                       <span>{feature}</span>
                     </li>
                   ))}
