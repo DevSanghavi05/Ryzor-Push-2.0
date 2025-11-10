@@ -1,28 +1,38 @@
-import { FC, memo } from 'react';
+import { FC, memo, useEffect, useState } from 'react';
+import { useUser } from '@/firebase';
 
 // A simple markdown to HTML converter
-const toHtml = (markdown: string): string => {
+const toHtml = (markdown: string, allDocs: any[]): string => {
   if (!markdown) return '';
   
-  // First, handle the blinking cursor special character
   let html = markdown.replace(/▋/g, '<span class="animate-blink inline-block">▋</span>');
 
-  // Convert markdown to HTML without affecting the cursor span
+  // Convert markdown basics
   html = html
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
-    .replace(/\*(.*?)\*/g, '<em>$1</em>'); // Italics
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+  // Handle @file references
+  html = html.replace(/@([^\s.,;!?]+)/g, (match, fileName) => {
+    const doc = allDocs.find(d => d.name.trim() === fileName.trim());
+    if (doc) {
+      const url = doc.source === 'drive' && doc.webViewLink ? doc.webViewLink : `/documents/${doc.id}`;
+      const target = doc.source === 'drive' && doc.webViewLink ? '_blank' : '_self';
+      return `<a href="${url}" target="${target}" class="text-primary hover:underline font-semibold" data-doc-id="${doc.id}">@${fileName}</a>`;
+    }
+    return match; // Return original if no doc found
+  });
 
   // Handle lists
   html = html.replace(/^\s*[-*]\s+(.+)/gm, '<li>$1</li>');
   html = html.replace(/((<li>.*<\/li>\s*)+)/g, '<ul>$1</ul>');
   html = html.replace(/<\/ul>\s*<ul>/g, '');
 
-  // Handle newlines, but be careful not to add <br> inside list structure or after the cursor
+  // Handle newlines
   html = html.split('\n').map(line => {
     if (line.trim().startsWith('<li') || line.trim().startsWith('<ul') || line.trim().startsWith('</ul')) {
       return line;
     }
-    // Don't add a <br> if the line is just the cursor
     if (line.includes('<span class="animate-blink') && line.trim().length < 50) {
         return line;
     }
@@ -41,7 +51,19 @@ interface MarkdownContentProps {
 }
 
 export const MarkdownContent: FC<MarkdownContentProps> = memo(({ content }) => {
-  const htmlContent = toHtml(content);
+  const { user } = useUser();
+  const [allDocs, setAllDocs] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (user) {
+        const storedDocs = localStorage.getItem(`documents_${user.uid}`);
+        if (storedDocs) {
+            setAllDocs(JSON.parse(storedDocs));
+        }
+    }
+  }, [user]);
+
+  const htmlContent = toHtml(content, allDocs);
 
   return (
     <div
