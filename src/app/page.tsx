@@ -30,6 +30,7 @@ import { nanoid } from 'nanoid';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { DocumentPickerSidebar } from '@/components/chat/document-picker-sidebar';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 export interface Message {
@@ -42,7 +43,6 @@ function LoggedInView() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const chatContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const router = useRouter();
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
@@ -133,12 +133,6 @@ function LoggedInView() {
     }
   }, [messages, user]);
 
-
-  useEffect(() => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-    }
-  }, [messages, loading]);
   
   const handleSaveAndReset = () => {
     if (!user || messages.length === 0) return;
@@ -269,62 +263,61 @@ function LoggedInView() {
 
         {/* Main Chat Area */}
         <div className="flex-1 flex flex-col h-full bg-transparent relative z-10">
-          <div
-            ref={chatContainerRef}
-            className="flex-1 w-full max-w-4xl mx-auto flex flex-col justify-end p-6 overflow-y-auto"
-          >
-            {messages.length > 0 ? (
-                <div className="space-y-6 w-full">
-                  {messages.map((msg, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4 }}
-                      className={`flex gap-4 items-start ${
-                        msg.role === 'user' ? 'justify-end' : 'justify-start'
-                      }`}
-                    >
-                      {msg.role === 'model' && (
-                        <div className="w-9 h-9 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center p-2 shrink-0 shadow-lg">
-                          <Logo />
-                        </div>
-                      )}
-                      <div
-                        className={`px-5 py-3.5 rounded-lg max-w-[80%] ${
-                          msg.role === 'user' 
-                            ? 'bg-secondary text-secondary-foreground' 
-                            : 'bg-transparent text-foreground'
+          <ScrollArea className="flex-1 w-full max-w-4xl mx-auto px-6">
+            <div className="pt-6 pb-20">
+              {messages.length > 0 ? (
+                  <div className="space-y-6 w-full">
+                    {messages.map((msg, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4 }}
+                        className={`flex gap-4 items-start ${
+                          msg.role === 'user' ? 'justify-end' : 'justify-start'
                         }`}
                       >
-                         {msg.role === 'model' && msg.content === '' && loading ? (
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                <span>Ryzor is thinking...</span>
-                            </div>
-                        ) : (
-                            <MarkdownContent content={msg.content + (loading && i === messages.length -1 ? '▋' : '')} />
+                        {msg.role === 'model' && (
+                          <div className="w-9 h-9 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center p-2 shrink-0 shadow-lg">
+                            <Logo />
+                          </div>
                         )}
-                      </div>
+                        <div
+                          className={`px-5 py-3.5 rounded-lg max-w-[80%] ${
+                            msg.role === 'user' 
+                              ? 'bg-secondary text-secondary-foreground' 
+                              : 'bg-transparent text-foreground'
+                          }`}
+                        >
+                           {msg.role === 'model' && msg.content === '' && loading ? (
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  <span>Ryzor is thinking...</span>
+                              </div>
+                          ) : (
+                              <MarkdownContent content={msg.content + (loading && i === messages.length -1 ? '▋' : '')} />
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center max-w-3xl mx-auto pt-24">
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }}>
+                        <h1 className="text-4xl md:text-5xl font-bold font-headline mb-4">
+                          Your Intelligent Workspace
+                        </h1>
+                        <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+                            How can I help you today?
+                        </p>
                     </motion.div>
-                  ))}
                 </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center max-w-3xl mx-auto -mt-16">
-                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }}>
-                      <h1 className="text-4xl md:text-5xl font-bold font-headline mb-4">
-                        Your Intelligent Workspace
-                      </h1>
-                      <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-                          How can I help you today?
-                      </p>
-                  </motion.div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          </ScrollArea>
 
           {/* Chat Bar */}
-           <div className="w-full p-4 bg-transparent pb-8">
+           <div className="w-full p-4 bg-transparent pb-8 absolute bottom-0 left-0">
             <div className="mx-auto max-w-4xl">
                  <motion.div 
                     initial={{ opacity: 0, y: 20 }} 
@@ -738,5 +731,3 @@ export default function Home() {
 
   return user ? <LoggedInView /> : <LandingPage />;
 }
-
-    

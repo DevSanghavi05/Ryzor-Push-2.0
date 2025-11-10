@@ -1,3 +1,4 @@
+
 import { FC, memo, useEffect, useState } from 'react';
 import { useUser } from '@/firebase';
 
@@ -14,11 +15,11 @@ const toHtml = (markdown: string, allDocs: any[]): string => {
 
   // Handle @file references
   html = html.replace(/@([^\s.,;!?]+)/g, (match, fileName) => {
-    const doc = allDocs.find(d => d.name.trim() === fileName.trim());
+    const doc = allDocs.find(d => d.name.trim().toLowerCase() === fileName.trim().toLowerCase());
     if (doc) {
       const url = doc.source === 'drive' && doc.webViewLink ? doc.webViewLink : `/documents/${doc.id}`;
       const target = doc.source === 'drive' && doc.webViewLink ? '_blank' : '_self';
-      return `<a href="${url}" target="${target}" class="text-primary hover:underline font-semibold" data-doc-id="${doc.id}">@${fileName}</a>`;
+      return `<a href="${url}" target="${target}" class="inline-block bg-primary/10 text-primary hover:bg-primary/20 rounded-md px-2 py-1 text-sm font-semibold transition-colors" data-doc-id="${doc.id}">@${fileName}</a>`;
     }
     return match; // Return original if no doc found
   });
