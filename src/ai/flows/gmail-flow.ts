@@ -80,6 +80,7 @@ const DraftNewEmailOutputSchema = z.object({
 export type DraftNewEmailOutput = z.infer<typeof DraftNewEmailOutputSchema>;
 
 
+const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 // Main Functions
 export async function getEmails(input: GetEmailsInput): Promise<GetEmailsOutput> {
@@ -100,11 +101,14 @@ export async function getEmails(input: GetEmailsInput): Promise<GetEmailsOutput>
 
     if (!listData.messages) return { emails: [] };
 
-    const emailPromises = listData.messages.map(async (msg: any) => {
+    const emails: Email[] = [];
+
+    for (const msg of listData.messages) {
+        await delay(50); // Add a 50ms delay to avoid hitting rate limits
         const emailRes = await fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=full`, {
             headers: { Authorization: `Bearer ${accessToken}` },
         });
-        if (!emailRes.ok) return null;
+        if (!emailRes.ok) continue;
         const detail = await emailRes.json();
         
         const headers = detail.payload.headers;
@@ -122,17 +126,15 @@ export async function getEmails(input: GetEmailsInput): Promise<GetEmailsOutput>
             body = Buffer.from(detail.payload.body.data, 'base64').toString('utf8');
         }
 
-        return {
+        emails.push({
             id: detail.id,
             from: fromHeader,
             subject: subjectHeader,
             snippet: detail.snippet,
             body: body,
             date: new Date(dateHeader).toISOString(),
-        };
-    });
-
-    const emails = (await Promise.all(emailPromises)).filter(e => e !== null) as Email[];
+        });
+    }
 
     return { emails };
 }
@@ -269,5 +271,3 @@ const draftNewEmailFlow = ai.defineFlow(
         return { draft: text };
     }
 )
-
-

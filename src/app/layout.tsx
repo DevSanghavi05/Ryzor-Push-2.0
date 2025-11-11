@@ -59,8 +59,8 @@ export default function RootLayout({
             <Header />
             <main className="flex-1 flex flex-col relative z-[1]">{children}</main>
             <Footer />
+            <Toaster />
           </FirebaseClientProvider>
-          <Toaster />
         </ThemeProvider>
       </body>
     </html>

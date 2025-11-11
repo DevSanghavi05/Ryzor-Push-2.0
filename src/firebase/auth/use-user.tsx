@@ -150,8 +150,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         setPersonalProvider(null);
         setAccessToken(null);
       }
-      // Only set loading to false in here if not handling redirect
-      // The redirect handler will manage loading state
+       setLoading(false);
     });
 
     return () => unsubscribe();
