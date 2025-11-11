@@ -23,6 +23,8 @@ export default function RootLayout({
 }>) {
 
   React.useEffect(() => {
+    // This code must run in a useEffect to avoid hydration errors,
+    // as localStorage is only available on the client.
     const savedHue = localStorage.getItem('theme-hue');
     if (savedHue) {
       document.documentElement.style.setProperty('--primary-hue', savedHue);
